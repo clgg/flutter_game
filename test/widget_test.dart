@@ -2,10 +2,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_game/app/app.dart';
 
 void main() {
-  testWidgets('app shell opens grass game route', (WidgetTester tester) async {
+  testWidgets('app opens overseas login after splash', (
+    WidgetTester tester,
+  ) async {
     await tester.pumpWidget(const FlutterGameApp());
 
-    expect(find.text('Grass Game Ready'), findsOneWidget);
-    expect(find.text('HP 100'), findsOneWidget);
+    expect(find.text('Start your run'), findsNothing);
+
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Start your run'), findsOneWidget);
+    expect(find.text('Continue with Facebook'), findsOneWidget);
   });
 }

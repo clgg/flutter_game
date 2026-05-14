@@ -1,0 +1,11 @@
+name: app_splash
+description: ODT splash animation and startup handoff for the Flutter game app.
+version: 0.0.1
+publish_to: 'none'
+
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter

@@ -15,6 +15,10 @@
 - 阶段计划：`doc/ideas/割草类小游戏_Flutter_Flame逐步开发计划.md`
 - 素材规范：`doc/ideas/割草类小游戏_角色敌人武器素材设计规范.md`
 - 大型架构：`doc/architecture/大型项目架构设计.md`
+- 多语言架构：`doc/architecture/多语言架构设计.md`
+- 海外登录设计：`doc/architecture/海外登录页面设计.md`
+- ODT 闪屏动画：`doc/architecture/ODT闪屏动画设计.md`
+- Google Play 发版检查：`doc/release/Google Play 发版政策检查清单.md`
 
 修改玩法、架构、资源目录或远程配置前，先查对应设计文档；如果文档与代码冲突，以当前代码事实为准，并在变更中同步修正文档。
 
@@ -25,6 +29,7 @@
 - Dart：核心玩法逻辑、配置模型、运行时状态、系统调度。
 - `shared_preferences`：适合本地设置、最高分、上次有效配置缓存。
 - `flame_audio`：仅在需要音效时引入；第一版可以先不接。
+- 多语言：使用 Flutter 官方 `gen_l10n`、`flutter_localizations`、`intl` 和 ARB；通用文案集中在 `app_i18n` package。
 - 远程 JSON 配置：用于敌人、波次、技能数值、活动开关；不要让配置承载复杂代码逻辑。
 
 新增依赖前先确认是否已有 Flutter/Flame 能力能满足；第一版不要引入复杂物理引擎、第三方 ECS、自研渲染层或骨骼动画运行时。
@@ -39,13 +44,16 @@ lib/
   app/
 packages/
   app_core/
+  app_i18n/
+  app_splash/
+  app_auth/
   grass_game_domain/
   grass_game_data/
   grass_game_runtime/
   grass_game_ui/
 ```
 
-根 App 只负责入口、路由、主题和依赖装配；游戏模型、数据、运行时和 UI 都放在对应 package 中。
+根 App 只负责入口、路由、主题和依赖装配；游戏模型、数据、运行时和 UI 都放在对应 package 中。App 路由统一放在 `lib/app/router/app_router.dart`，使用 `go_router`，不要在页面内私自维护平行路由表。启动首屏走 `/splash`，闪屏动画完成后进入海外登录或首页。
 
 资源建议：
 
@@ -109,6 +117,9 @@ GameConfigRepository
 - 同屏实体变多后优先使用对象池、空间分区、批量查询，避免 O(n²) 碰撞扫描失控。
 - 伤害、拾取等高频事件本地聚合；埋点在开始、升级选择、暂停、结算等关键节点上报。
 - Widget 中避免堆叠复杂业务逻辑；复杂 UI 状态抽到独立 controller/state。
+- 面向用户的 UI 文案必须走多语言资源；`domain`、`runtime`、`data` 不持有 `BuildContext` 或本地化生成类。
+- 当前只做海外版本；登录入口以 Google Play、Apple、Facebook、Email 允许列表为准。
+- ODT 闪屏只允许本地动画和本地状态读取；动画期间不得请求权限、发网络请求或上报埋点。
 - 新增 public API、配置字段、资源命名时保持向后兼容，避免破坏已有存档或远程配置。
 - 代码提交前处理 analyzer 警告，不用 `ignore` 掩盖可修复问题。
 
@@ -131,6 +142,8 @@ flutter test
 ```
 
 涉及真机手感、性能、音效、资源加载、生命周期暂停恢复时，必须在模拟器或真机运行验证，并在结论中说明验证环境。
+
+Google Play 上架前还必须按 `doc/release/Google Play 发版政策检查清单.md` 完成发布、隐私、账号、内容分级、广告、支付和 SDK 检查。
 
 ## 11. 变更前检查
 

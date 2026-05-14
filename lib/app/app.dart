@@ -7,14 +7,13 @@ class FlutterGameApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return MaterialApp.router(
       title: 'Flutter Game',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
         useMaterial3: true,
       ),
-      routes: AppRouter.routes,
-      initialRoute: AppRouter.home,
+      routerConfig: AppRouter.router,
     );
   }
 }
