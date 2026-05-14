@@ -129,8 +129,8 @@ class _AuthBackgroundPainter extends CustomPainter {
     final glowPaint = Paint()
       ..shader = RadialGradient(
         colors: [
-          const Color(0xFF49D17D).withOpacity(0.26),
-          const Color(0xFF49D17D).withOpacity(0),
+          const Color(0xFF49D17D).withValues(alpha: 0.26),
+          const Color(0xFF49D17D).withValues(alpha: 0),
         ],
       ).createShader(
         Rect.fromCircle(
@@ -145,7 +145,7 @@ class _AuthBackgroundPainter extends CustomPainter {
     );
 
     final fieldPaint = Paint()
-      ..color = const Color(0xFF49D17D).withOpacity(0.08)
+      ..color = const Color(0xFF49D17D).withValues(alpha: 0.08)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1;
 
@@ -177,9 +177,9 @@ class _BrandHeader extends StatelessWidget {
           alignment: Alignment.center,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(22),
-            color: const Color(0xFF49D17D).withOpacity(0.12),
+            color: const Color(0xFF49D17D).withValues(alpha: 0.12),
             border: Border.all(
-              color: const Color(0xFF49D17D).withOpacity(0.42),
+              color: const Color(0xFF49D17D).withValues(alpha: 0.42),
             ),
           ),
           child: const Text(
@@ -272,7 +272,8 @@ class _DividerLabel extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: Container(height: 1, color: Colors.white.withOpacity(0.14)),
+          child:
+              Container(height: 1, color: Colors.white.withValues(alpha: 0.14)),
         ),
         const Padding(
           padding: EdgeInsets.symmetric(horizontal: 14),
@@ -286,7 +287,8 @@ class _DividerLabel extends StatelessWidget {
           ),
         ),
         Expanded(
-          child: Container(height: 1, color: Colors.white.withOpacity(0.14)),
+          child:
+              Container(height: 1, color: Colors.white.withValues(alpha: 0.14)),
         ),
       ],
     );
@@ -333,7 +335,7 @@ class _AuthButtonStyles {
       minimumSize: const Size.fromHeight(54),
       foregroundColor: const Color(0xFF07130D),
       backgroundColor: const Color(0xFF49D17D),
-      disabledBackgroundColor: const Color(0xFF49D17D).withOpacity(0.55),
+      disabledBackgroundColor: const Color(0xFF49D17D).withValues(alpha: 0.55),
       textStyle: const TextStyle(
         fontSize: 16,
         fontWeight: FontWeight.w700,
@@ -349,8 +351,8 @@ class _AuthButtonStyles {
     return FilledButton.styleFrom(
       minimumSize: const Size.fromHeight(52),
       foregroundColor: const Color(0xFFE8FFF2),
-      backgroundColor: Colors.white.withOpacity(0.12),
-      disabledBackgroundColor: Colors.white.withOpacity(0.08),
+      backgroundColor: Colors.white.withValues(alpha: 0.12),
+      disabledBackgroundColor: Colors.white.withValues(alpha: 0.08),
       textStyle: const TextStyle(
         fontSize: 15,
         fontWeight: FontWeight.w700,
@@ -366,7 +368,7 @@ class _AuthButtonStyles {
     return OutlinedButton.styleFrom(
       minimumSize: const Size.fromHeight(52),
       foregroundColor: const Color(0xFFE8FFF2),
-      side: BorderSide(color: Colors.white.withOpacity(0.22)),
+      side: BorderSide(color: Colors.white.withValues(alpha: 0.22)),
       textStyle: const TextStyle(
         fontSize: 15,
         fontWeight: FontWeight.w700,

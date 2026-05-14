@@ -133,14 +133,14 @@ class _OdtLogoPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final strokeWidth = size.width * 0.06;
     final logoPaint = Paint()
-      ..color = const Color(0xFFE8FFF2).withOpacity(backgroundProgress)
+      ..color = const Color(0xFFE8FFF2).withValues(alpha: backgroundProgress)
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
 
     final accentPaint = Paint()
-      ..color = const Color(0xFF49D17D).withOpacity(backgroundProgress)
+      ..color = const Color(0xFF49D17D).withValues(alpha: backgroundProgress)
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth
       ..strokeCap = StrokeCap.round
@@ -202,8 +202,8 @@ class _OdtLogoPainter extends CustomPainter {
     _drawPartialPath(canvas, tStemPath, tStemProgress, logoPaint);
 
     final dotPaint = Paint()
-      ..color = const Color(0xFF49D17D).withOpacity(
-        (tStemProgress * backgroundProgress).clamp(0, 1),
+      ..color = const Color(0xFF49D17D).withValues(
+        alpha: (tStemProgress * backgroundProgress).clamp(0, 1),
       );
     canvas.drawCircle(
       Offset(width * 0.32, centerY),
