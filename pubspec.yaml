@@ -30,6 +30,16 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  app_core:
+    path: packages/app_core
+  grass_game_data:
+    path: packages/grass_game_data
+  grass_game_domain:
+    path: packages/grass_game_domain
+  grass_game_runtime:
+    path: packages/grass_game_runtime
+  grass_game_ui:
+    path: packages/grass_game_ui
 
 
   # The following adds the Cupertino Icons font to your application.

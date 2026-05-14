@@ -1,0 +1,11 @@
+name: grass_game_runtime
+description: Runtime and Flame-facing systems for the grass survivor game.
+version: 0.0.1
+publish_to: 'none'
+
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+
+dependencies:
+  grass_game_domain:
+    path: ../grass_game_domain

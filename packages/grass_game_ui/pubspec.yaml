@@ -1,0 +1,17 @@
+name: grass_game_ui
+description: Flutter UI and use-case orchestration for the grass survivor game.
+version: 0.0.1
+publish_to: 'none'
+
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  app_core:
+    path: ../app_core
+  grass_game_domain:
+    path: ../grass_game_domain
+  grass_game_runtime:
+    path: ../grass_game_runtime

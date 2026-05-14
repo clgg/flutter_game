@@ -1,0 +1,7 @@
+name: app_core
+description: Shared core contracts for the Flutter game app.
+version: 0.0.1
+publish_to: 'none'
+
+environment:
+  sdk: '>=3.4.0 <4.0.0'

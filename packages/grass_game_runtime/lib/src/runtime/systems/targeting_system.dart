@@ -1,0 +1,3 @@
+class TargetingSystem {
+  const TargetingSystem();
+}

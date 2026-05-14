@@ -1,0 +1,11 @@
+name: grass_game_domain
+description: Domain models and contracts for the grass survivor game.
+version: 0.0.1
+publish_to: 'none'
+
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+
+dependencies:
+  app_core:
+    path: ../app_core
