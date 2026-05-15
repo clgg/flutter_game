@@ -19,6 +19,7 @@
 - 海外登录设计：`doc/architecture/海外登录页面设计.md`
 - ODT 闪屏动画：`doc/architecture/ODT闪屏动画设计.md`
 - Google Play 发版检查：`doc/release/Google Play 发版政策检查清单.md`
+- 开发环境记录：`doc/environment/开发环境记录.md`
 
 修改玩法、架构、资源目录或远程配置前，先查对应设计文档；如果文档与代码冲突，以当前代码事实为准，并在变更中同步修正文档。
 

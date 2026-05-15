@@ -144,10 +144,10 @@ class _AuthTextField extends StatelessWidget {
         labelText: label,
         labelStyle: const TextStyle(color: Color(0x99E8FFF2)),
         filled: true,
-        fillColor: Colors.white.withValues(alpha: 0.08),
+        fillColor: Colors.white.withOpacity(0.08),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.16)),
+          borderSide: BorderSide(color: Colors.white.withOpacity(0.16)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),

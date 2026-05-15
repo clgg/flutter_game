@@ -52,7 +52,7 @@ class _VirtualJoystickState extends State<VirtualJoystick> {
         child: DecoratedBox(
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: Colors.white.withValues(alpha: 0.16),
+            color: Colors.white.withOpacity(0.16),
             border: Border.all(color: Colors.white24),
           ),
           child: Center(
