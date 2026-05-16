@@ -10,5 +10,6 @@ dependencies:
   flutter:
     sdk: flutter
   flame: ^1.20.0
+  flame_audio: ^2.10.0
   grass_game_domain:
     path: ../grass_game_domain

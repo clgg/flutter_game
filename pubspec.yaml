@@ -30,6 +30,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
   app_core:
     path: packages/app_core
   app_auth:
@@ -50,6 +52,8 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.6
   go_router: ^15.1.2
+  flame_audio: ^2.10.0
+  shared_preferences: ^2.2.3
 
 dev_dependencies:
   flutter_test:
@@ -72,6 +76,15 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  assets:
+    - assets/game/grass_game/images/animals/PNG/Without_shadow/
+    - assets/game/grass_game/images/coins/
+    - assets/game/grass_game/images/exp/
+    - assets/game/grass_game/images/player/
+    - assets/game/grass_game/images/bosses/
+    - assets/game/grass_game/images/weapons/
+    - assets/game/grass_game/audio/
 
   # To add assets to your application, add an assets section, like this:
   # assets:

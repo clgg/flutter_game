@@ -1,5 +1,6 @@
 export 'src/runtime/components/enemy_component.dart';
 export 'src/runtime/components/exp_gem_component.dart';
+export 'src/runtime/components/muzzle_flash_component.dart';
 export 'src/runtime/components/player_component.dart';
 export 'src/runtime/components/projectile_component.dart';
 export 'src/runtime/events/game_over_event.dart';

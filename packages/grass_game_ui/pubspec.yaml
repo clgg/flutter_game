@@ -16,3 +16,4 @@ dependencies:
   grass_game_runtime:
     path: ../grass_game_runtime
   flame: ^1.20.0
+  shared_preferences: ^2.2.3
