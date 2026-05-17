@@ -59,18 +59,30 @@ class EnemyComponent extends SpriteAnimationComponent {
     required this.expDrop,
     required Vector2 position,
     EnemyAnimationSet? animationSet,
+    double? collisionRadiusOverride,
+    Vector2? sizeOverride,
+    this.meleeDamageMin = 8,
+    this.meleeDamageMax = 8,
   })  : hp = maxHp,
-        collisionRadius = enemyId == 'boss'
-            ? 34
-            : enemyId == 'tank'
-                ? 20
-                : 14,
+        collisionRadius = collisionRadiusOverride ??
+            (enemyId == 'boss'
+                ? 34
+                : enemyId == 'tank'
+                    ? 20
+                    : enemyId == 'turkey' || enemyId == 'calf'
+                        ? 17
+                        : enemyId == 'fast'
+                            ? 11
+                            : enemyId.startsWith('guaishou_')
+                                ? 28
+                                : 14),
         _fallbackPaint = ui.Paint()..color = _colorFor(enemyId),
         _animations = animationSet?.createWalkAnimations(),
         super(
           anchor: Anchor.center,
           position: position,
-          size: animationSet?.displaySize ??
+          size: sizeOverride ??
+              animationSet?.displaySize ??
               Vector2.all(enemyId == 'boss'
                   ? 82
                   : enemyId == 'tank'
@@ -81,19 +93,29 @@ class EnemyComponent extends SpriteAnimationComponent {
   }
 
   final String enemyId;
-  final int maxHp;
-  final double moveSpeed;
+  int maxHp;
+  double moveSpeed;
   final int expDrop;
-  final double collisionRadius;
+  double collisionRadius;
+  int meleeDamageMin;
+  int meleeDamageMax;
   final ui.Paint _fallbackPaint;
   final Map<EnemyFacing, SpriteAnimation>? _animations;
   int hp;
   EnemyFacing _facing = EnemyFacing.front;
   double _facingLockSeconds = 0;
+  double _slowTimer = 0;
+  double _slowMultiplier = 1;
 
   bool get isDead => hp <= 0;
 
   void moveToward(Vector2 target, double dt) {
+    if (_slowTimer > 0) {
+      _slowTimer -= dt;
+      if (_slowTimer <= 0) {
+        _slowMultiplier = 1;
+      }
+    }
     final direction = target - position;
     if (direction.length2 == 0) {
       return;
@@ -103,7 +125,7 @@ class EnemyComponent extends SpriteAnimationComponent {
     }
     _setFacing(direction);
     direction.normalize();
-    position += direction * moveSpeed * dt;
+    position += direction * moveSpeed * _slowMultiplier * dt;
   }
 
   void _setFacing(Vector2 direction) {
@@ -140,6 +162,33 @@ class EnemyComponent extends SpriteAnimationComponent {
     hp -= value;
   }
 
+  void applySlow({
+    required double multiplier,
+    required double duration,
+  }) {
+    final nextMultiplier = multiplier.clamp(0.05, 1).toDouble();
+    if (nextMultiplier < _slowMultiplier || duration > _slowTimer) {
+      _slowMultiplier = nextMultiplier;
+      _slowTimer = duration;
+    }
+  }
+
+  void applyBuff({
+    required double hpMultiplier,
+    required double speedMultiplier,
+    required double sizeMultiplier,
+    required double damageMultiplier,
+  }) {
+    final nextMaxHp = (maxHp * hpMultiplier).ceil();
+    hp += nextMaxHp - maxHp;
+    maxHp = nextMaxHp;
+    moveSpeed *= speedMultiplier;
+    size *= sizeMultiplier;
+    collisionRadius *= sizeMultiplier;
+    meleeDamageMin = (meleeDamageMin * damageMultiplier).ceil();
+    meleeDamageMax = (meleeDamageMax * damageMultiplier).ceil();
+  }
+
   @override
   void render(ui.Canvas canvas) {
     if (animation == null) {
@@ -170,8 +219,14 @@ class EnemyComponent extends SpriteAnimationComponent {
   static ui.Color _colorFor(String enemyId) {
     return switch (enemyId) {
       'fast' => const ui.Color(0xFFFFC857),
+      'lamb' => const ui.Color(0xFFE8FFF2),
+      'piglet' => const ui.Color(0xFFFF9BB0),
+      'calf' => const ui.Color(0xFF9BD3FF),
+      'rooster' => const ui.Color(0xFFFF6B6B),
+      'turkey' => const ui.Color(0xFFB68CFF),
       'tank' => const ui.Color(0xFFFF6B6B),
       'boss' => const ui.Color(0xFFE8FFF2),
+      final id when id.startsWith('guaishou_') => const ui.Color(0xFFFF5B6F),
       _ => const ui.Color(0xFF7FDBFF),
     };
   }

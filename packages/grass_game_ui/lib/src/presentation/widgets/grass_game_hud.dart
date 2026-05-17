@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:app_core/app_core.dart';
 import 'package:grass_game_runtime/grass_game_runtime.dart';
 
 class GrassGameHud extends StatelessWidget {
@@ -11,15 +12,37 @@ class GrassGameHud extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hpRatio = snapshot.maxHp == 0 ? 0.0 : snapshot.hp / snapshot.maxHp;
+    final gameTheme = context.gameTheme;
+    final isZh = Localizations.localeOf(context).languageCode == 'zh';
+    final stageName = isZh
+        ? '第 ${snapshot.stageChapter}-${snapshot.stageIndex} 关'
+        : snapshot.stageName;
     final expRatio =
         snapshot.requiredExp == 0 ? 0.0 : snapshot.exp / snapshot.requiredExp;
+    final objective = snapshot.isBossFight
+        ? isZh
+            ? '击败 Boss'
+            : 'Defeat the Boss'
+        : snapshot.bossSecondsRemaining <= 10
+            ? isZh
+                ? 'Boss 即将出现'
+                : 'Boss incoming'
+            : isZh
+                ? 'Boss ${_formatTime(snapshot.bossSecondsRemaining)} 后出现'
+                : 'Boss in ${_formatTime(snapshot.bossSecondsRemaining)}';
+    final objectiveProgress = snapshot.isBossFight
+        ? isZh
+            ? 'Boss 战'
+            : 'Boss Fight'
+        : isZh
+            ? '关卡路线'
+            : 'Stage Route';
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: const Color(0xCC07130D),
+        color: gameTheme.glass,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0x3349D17D)),
+        border: Border.all(color: gameTheme.line),
       ),
       child: Padding(
         padding: const EdgeInsets.all(10),
@@ -27,27 +50,67 @@ class GrassGameHud extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _HudText('HP ${snapshot.hp}/${snapshot.maxHp}'),
+                Icon(
+                  snapshot.isBossFight
+                      ? Icons.warning_rounded
+                      : Icons.flag_rounded,
+                  color:
+                      snapshot.isBossFight ? gameTheme.hot : gameTheme.accent2,
+                  size: 15,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    stageName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: gameTheme.foreground,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0,
+                    ),
+                  ),
+                ),
+                Text(
+                  objective,
+                  style: TextStyle(
+                    color: gameTheme.muted,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 10,
+              runSpacing: 4,
+              alignment: WrapAlignment.spaceBetween,
+              children: [
+                _HudText(objectiveProgress),
                 _HudText('Lv ${snapshot.level}'),
                 _HudText(_formatTime(snapshot.elapsedSeconds)),
-                _HudText('Kills ${snapshot.killCount}'),
-                _HudText('Coins ${snapshot.coins}'),
+                _HudText(
+                    isZh ? '金币 ${snapshot.coins}' : 'Coins ${snapshot.coins}'),
               ],
             ),
             const SizedBox(height: 8),
             _Meter(
-              value: hpRatio,
-              color: const Color(0xFFFF6B6B),
-              backgroundColor: const Color(0x33FFFFFF),
-            ),
-            const SizedBox(height: 5),
-            _Meter(
               value: expRatio,
-              color: const Color(0xFF49D17D),
+              color: gameTheme.accent,
               backgroundColor: const Color(0x22FFFFFF),
             ),
+            if (!snapshot.isBossFight) ...[
+              const SizedBox(height: 5),
+              _Meter(
+                value: snapshot.enemyProgress,
+                color: gameTheme.accent2,
+                backgroundColor: const Color(0x1AFFFFFF),
+              ),
+            ],
           ],
         ),
       ),
@@ -68,10 +131,11 @@ class _HudText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final gameTheme = context.gameTheme;
     return Text(
       text,
-      style: const TextStyle(
-        color: Color(0xFFE8FFF2),
+      style: TextStyle(
+        color: gameTheme.foreground,
         fontSize: 12,
         fontWeight: FontWeight.w700,
         letterSpacing: 0,

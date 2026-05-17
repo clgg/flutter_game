@@ -25,6 +25,12 @@ class FakeAuthController {
     return prefs.getBool(_signedInKey) ?? false;
   }
 
+  Future<void> signOut() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_signedInKey);
+    await prefs.remove(_providerKey);
+  }
+
   Future<void> _saveSession(AuthSession session) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_signedInKey, true);

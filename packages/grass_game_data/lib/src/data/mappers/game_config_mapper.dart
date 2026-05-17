@@ -21,16 +21,8 @@ class GameConfigMapper {
       version: dto.version,
       balance: GameBalance.defaults,
       enemies: enemies.isEmpty ? GrassGameConfig.defaults.enemies : enemies,
-      skills: const [
-        SkillConfig(id: 'arrow', weight: 100, maxLevel: 5),
-      ],
-      waves: const [
-        WaveConfig(
-          startSecond: 0,
-          enemyId: 'basic',
-          spawnIntervalSeconds: 1.2,
-        ),
-      ],
+      skills: GrassGameConfig.defaults.skills,
+      waves: GrassGameConfig.defaults.waves,
     );
   }
 }

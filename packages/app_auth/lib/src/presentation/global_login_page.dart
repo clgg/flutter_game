@@ -25,6 +25,7 @@ class _GlobalLoginPageState extends State<GlobalLoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    final strings = _LoginStrings.of(context);
     final platform = Theme.of(context).platform;
     final primaryProvider = platform == TargetPlatform.iOS
         ? AuthProviderType.apple
@@ -39,10 +40,11 @@ class _GlobalLoginPageState extends State<GlobalLoginPage> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const Spacer(flex: 2),
-                const _BrandHeader(),
+                _BrandHeader(strings: strings),
                 const Spacer(flex: 3),
                 _ProviderButton(
                   provider: primaryProvider,
+                  strings: strings,
                   isPrimary: true,
                   isLoading: _loadingProvider == primaryProvider,
                   onPressed: () => _signIn(primaryProvider),
@@ -50,21 +52,22 @@ class _GlobalLoginPageState extends State<GlobalLoginPage> {
                 const SizedBox(height: 12),
                 _ProviderButton(
                   provider: AuthProviderType.facebook,
+                  strings: strings,
                   isLoading: _loadingProvider == AuthProviderType.facebook,
                   onPressed: () => _signIn(AuthProviderType.facebook),
                 ),
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 20),
-                  child: _DividerLabel(),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  child: _DividerLabel(strings: strings),
                 ),
                 OutlinedButton(
                   onPressed:
                       _loadingProvider == null ? widget.onEmailRequested : null,
                   style: _AuthButtonStyles.outlined,
-                  child: const Text('Continue with Email'),
+                  child: Text(strings.provider(AuthProviderType.email)),
                 ),
                 const SizedBox(height: 20),
-                const _LegalFooter(),
+                _LegalFooter(strings: strings),
               ],
             ),
           ),
@@ -164,7 +167,9 @@ class _AuthBackgroundPainter extends CustomPainter {
 }
 
 class _BrandHeader extends StatelessWidget {
-  const _BrandHeader();
+  const _BrandHeader({required this.strings});
+
+  final _LoginStrings strings;
 
   @override
   Widget build(BuildContext context) {
@@ -193,9 +198,9 @@ class _BrandHeader extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 24),
-        const Text(
-          'Start your run',
-          style: TextStyle(
+        Text(
+          strings.title,
+          style: const TextStyle(
             color: Color(0xFFE8FFF2),
             fontSize: 34,
             height: 1.05,
@@ -204,10 +209,10 @@ class _BrandHeader extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        const Text(
-          'Sign in to sync progress and rewards.',
+        Text(
+          strings.subtitle,
           textAlign: TextAlign.center,
-          style: TextStyle(
+          style: const TextStyle(
             color: Color(0xBFE8FFF2),
             fontSize: 15,
             height: 1.35,
@@ -222,24 +227,21 @@ class _BrandHeader extends StatelessWidget {
 class _ProviderButton extends StatelessWidget {
   const _ProviderButton({
     required this.provider,
+    required this.strings,
     required this.onPressed,
     this.isPrimary = false,
     this.isLoading = false,
   });
 
   final AuthProviderType provider;
+  final _LoginStrings strings;
   final VoidCallback onPressed;
   final bool isPrimary;
   final bool isLoading;
 
   @override
   Widget build(BuildContext context) {
-    final label = switch (provider) {
-      AuthProviderType.googlePlay => 'Continue with Google Play',
-      AuthProviderType.apple => 'Continue with Apple',
-      AuthProviderType.facebook => 'Continue with Facebook',
-      AuthProviderType.email => 'Continue with Email',
-    };
+    final label = strings.provider(provider);
 
     final icon = switch (provider) {
       AuthProviderType.googlePlay => Icons.play_arrow_rounded,
@@ -265,7 +267,9 @@ class _ProviderButton extends StatelessWidget {
 }
 
 class _DividerLabel extends StatelessWidget {
-  const _DividerLabel();
+  const _DividerLabel({required this.strings});
+
+  final _LoginStrings strings;
 
   @override
   Widget build(BuildContext context) {
@@ -274,11 +278,11 @@ class _DividerLabel extends StatelessWidget {
         Expanded(
           child: Container(height: 1, color: Colors.white.withOpacity(0.14)),
         ),
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 14),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14),
           child: Text(
-            'or',
-            style: TextStyle(
+            strings.or,
+            style: const TextStyle(
               color: Color(0x99E8FFF2),
               fontSize: 13,
               letterSpacing: 0,
@@ -294,28 +298,30 @@ class _DividerLabel extends StatelessWidget {
 }
 
 class _LegalFooter extends StatelessWidget {
-  const _LegalFooter();
+  const _LegalFooter({required this.strings});
+
+  final _LoginStrings strings;
 
   @override
   Widget build(BuildContext context) {
-    return const Text.rich(
+    return Text.rich(
       TextSpan(
-        text: 'By continuing, you agree to the ',
+        text: strings.legalPrefix,
         children: [
           TextSpan(
-            text: 'Terms',
-            style: TextStyle(color: Color(0xFF49D17D)),
+            text: strings.terms,
+            style: const TextStyle(color: Color(0xFF49D17D)),
           ),
-          TextSpan(text: ' and '),
+          TextSpan(text: strings.and),
           TextSpan(
-            text: 'Privacy Policy',
-            style: TextStyle(color: Color(0xFF49D17D)),
+            text: strings.privacy,
+            style: const TextStyle(color: Color(0xFF49D17D)),
           ),
-          TextSpan(text: '.'),
+          const TextSpan(text: '.'),
         ],
       ),
       textAlign: TextAlign.center,
-      style: TextStyle(
+      style: const TextStyle(
         color: Color(0x99E8FFF2),
         fontSize: 12,
         height: 1.35,
@@ -323,6 +329,31 @@ class _LegalFooter extends StatelessWidget {
       ),
     );
   }
+}
+
+class _LoginStrings {
+  const _LoginStrings(this.isZh);
+
+  static _LoginStrings of(BuildContext context) {
+    return _LoginStrings(Localizations.localeOf(context).languageCode == 'zh');
+  }
+
+  final bool isZh;
+
+  String get title => isZh ? '开始作战' : 'Start your run';
+  String get subtitle =>
+      isZh ? '登录后同步进度和奖励。' : 'Sign in to sync progress and rewards.';
+  String provider(AuthProviderType provider) {
+    final name = provider.label;
+    return isZh ? '使用 $name 继续' : 'Continue with $name';
+  }
+
+  String get or => isZh ? '或' : 'or';
+  String get legalPrefix =>
+      isZh ? '继续即表示你同意' : 'By continuing, you agree to the ';
+  String get terms => isZh ? '服务条款' : 'Terms';
+  String get and => isZh ? '和' : ' and ';
+  String get privacy => isZh ? '隐私政策' : 'Privacy Policy';
 }
 
 class _AuthButtonStyles {

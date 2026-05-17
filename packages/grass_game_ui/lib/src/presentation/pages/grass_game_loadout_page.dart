@@ -1,18 +1,24 @@
+import 'package:app_core/app_core.dart';
 import 'package:flutter/material.dart';
 
 import '../../application/progression/grass_game_progress_controller.dart';
+import '../widgets/animated_character_sprite.dart';
 
 class GrassGameLoadoutPage extends StatefulWidget {
   const GrassGameLoadoutPage({
     super.key,
     required this.progressController,
     required this.onSettings,
+    required this.onSkillGuide,
     required this.onStart,
+    required this.onDeathmatchStart,
   });
 
   final GrassGameProgressController progressController;
   final VoidCallback onSettings;
+  final VoidCallback onSkillGuide;
   final VoidCallback onStart;
+  final VoidCallback onDeathmatchStart;
 
   @override
   State<GrassGameLoadoutPage> createState() => _GrassGameLoadoutPageState();
@@ -24,8 +30,9 @@ class _GrassGameLoadoutPageState extends State<GrassGameLoadoutPage> {
   @override
   Widget build(BuildContext context) {
     final strings = _LoadoutStrings.of(context);
+    final gameTheme = context.gameTheme;
     return Scaffold(
-      backgroundColor: const Color(0xFF07130D),
+      backgroundColor: gameTheme.background,
       body: SafeArea(
         child: AnimatedBuilder(
           animation: widget.progressController,
@@ -56,7 +63,7 @@ class _GrassGameLoadoutPageState extends State<GrassGameLoadoutPage> {
                 ),
                 SliverToBoxAdapter(
                   child: SizedBox(
-                    height: 166,
+                    height: 170,
                     child: ListView.separated(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       scrollDirection: Axis.horizontal,
@@ -79,6 +86,13 @@ class _GrassGameLoadoutPageState extends State<GrassGameLoadoutPage> {
                       separatorBuilder: (_, __) => const SizedBox(width: 12),
                       itemCount: progressController.characters.length,
                     ),
+                  ),
+                ),
+                SliverToBoxAdapter(
+                  child: _SkillGuideEntry(
+                    title: strings.skillGuide,
+                    subtitle: strings.skillGuideSubtitle,
+                    onOpen: widget.onSkillGuide,
                   ),
                 ),
                 SliverToBoxAdapter(
@@ -114,22 +128,46 @@ class _GrassGameLoadoutPageState extends State<GrassGameLoadoutPage> {
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(16, 18, 16, 22),
-                    child: FilledButton(
-                      onPressed: widget.onStart,
-                      style: FilledButton.styleFrom(
-                        minimumSize: const Size.fromHeight(54),
-                        backgroundColor: const Color(0xFF49D17D),
-                        foregroundColor: const Color(0xFF07130D),
-                        textStyle: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        FilledButton(
+                          onPressed: widget.onStart,
+                          style: FilledButton.styleFrom(
+                            minimumSize: const Size.fromHeight(54),
+                            backgroundColor: gameTheme.accent,
+                            foregroundColor: gameTheme.ink,
+                            textStyle: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: Text(strings.startRun),
                         ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                        const SizedBox(height: 10),
+                        OutlinedButton.icon(
+                          onPressed: widget.onDeathmatchStart,
+                          icon: const Icon(Icons.local_fire_department_rounded),
+                          label: Text(strings.deathmatch),
+                          style: OutlinedButton.styleFrom(
+                            minimumSize: const Size.fromHeight(48),
+                            foregroundColor: gameTheme.hot,
+                            side: BorderSide(color: gameTheme.hot),
+                            textStyle: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
                         ),
-                      ),
-                      child: Text(strings.startRun),
+                      ],
                     ),
                   ),
                 ),
@@ -201,6 +239,7 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final gameTheme = context.gameTheme;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
       child: Column(
@@ -209,8 +248,8 @@ class _Header extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: const TextStyle(
-                  color: Color(0xFFE8FFF2),
+                style: TextStyle(
+                  color: gameTheme.foreground,
                   fontSize: 28,
                   height: 1,
                   fontWeight: FontWeight.w800,
@@ -229,9 +268,9 @@ class _Header extends StatelessWidget {
           const SizedBox(height: 14),
           DecoratedBox(
             decoration: BoxDecoration(
-              color: const Color(0xFF102418),
+              color: gameTheme.deep,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0x3349D17D)),
+              border: Border.all(color: gameTheme.line),
             ),
             child: Padding(
               padding: const EdgeInsets.all(12),
@@ -241,8 +280,8 @@ class _Header extends StatelessWidget {
                     children: [
                       Text(
                         heroLevelLabel,
-                        style: const TextStyle(
-                          color: Color(0xFFE8FFF2),
+                        style: TextStyle(
+                          color: gameTheme.foreground,
                           fontWeight: FontWeight.w800,
                           letterSpacing: 0,
                         ),
@@ -250,8 +289,8 @@ class _Header extends StatelessWidget {
                       const Spacer(),
                       Text(
                         '$exp / $requiredExp EXP',
-                        style: const TextStyle(
-                          color: Color(0xBFE8FFF2),
+                        style: TextStyle(
+                          color: gameTheme.muted,
                           fontSize: 12,
                           letterSpacing: 0,
                         ),
@@ -259,8 +298,7 @@ class _Header extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 8),
-                  _ProgressBar(
-                      value: expProgress, color: const Color(0xFF49D17D)),
+                  _ProgressBar(value: expProgress, color: gameTheme.accent),
                 ],
               ),
             ),
@@ -278,9 +316,10 @@ class _CoinPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final gameTheme = context.gameTheme;
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: const Color(0xFFFFC857),
+        color: gameTheme.accent2,
         borderRadius: BorderRadius.circular(999),
       ),
       child: Padding(
@@ -295,8 +334,8 @@ class _CoinPill extends StatelessWidget {
             const SizedBox(width: 4),
             Text(
               '$coins',
-              style: const TextStyle(
-                color: Color(0xFF07130D),
+              style: TextStyle(
+                color: gameTheme.ink,
                 fontWeight: FontWeight.w900,
                 letterSpacing: 0,
               ),
@@ -312,15 +351,16 @@ class _CoinAmount extends StatelessWidget {
   const _CoinAmount({
     required this.amount,
     this.iconSize = 14,
-    this.textColor = const Color(0xFFE8FFF2),
+    this.textColor,
   });
 
   final int amount;
   final double iconSize;
-  final Color textColor;
+  final Color? textColor;
 
   @override
   Widget build(BuildContext context) {
+    final gameTheme = context.gameTheme;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -336,7 +376,7 @@ class _CoinAmount extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
-            color: textColor,
+            color: textColor ?? gameTheme.foreground,
             fontSize: 11,
             fontWeight: FontWeight.w900,
             letterSpacing: 0,
@@ -358,14 +398,15 @@ class _SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final gameTheme = context.gameTheme;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 18, 16, 10),
       child: Row(
         children: [
           Text(
             title,
-            style: const TextStyle(
-              color: Color(0xFFE8FFF2),
+            style: TextStyle(
+              color: gameTheme.foreground,
               fontSize: 18,
               fontWeight: FontWeight.w800,
               letterSpacing: 0,
@@ -374,8 +415,8 @@ class _SectionTitle extends StatelessWidget {
           const Spacer(),
           Text(
             action,
-            style: const TextStyle(
-              color: Color(0x9949D17D),
+            style: TextStyle(
+              color: gameTheme.accent,
               fontSize: 12,
               fontWeight: FontWeight.w700,
               letterSpacing: 0,
@@ -400,19 +441,20 @@ class _CharacterCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final gameTheme = context.gameTheme;
     final color = Color(character.colorValue);
+    final speed = (character.baseSpeedMultiplier * 8).round();
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
       child: Container(
-        width: 150,
-        padding: const EdgeInsets.all(12),
+        width: 142,
+        padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: const Color(0xFF102418),
+          color: gameTheme.deep,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color:
-                isSelected ? const Color(0xFF49D17D) : const Color(0x3349D17D),
+            color: isSelected ? gameTheme.accent : gameTheme.line,
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -422,27 +464,26 @@ class _CharacterCard extends StatelessWidget {
             Row(
               children: [
                 Container(
-                  width: 50,
-                  height: 50,
+                  width: 42,
+                  height: 42,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: character.isOwned
                         ? color.withOpacity(0.28)
-                        : const Color(0xFF3B4540),
+                        : gameTheme.muted.withOpacity(0.22),
                     border: Border.all(
-                      color:
-                          character.isOwned ? color : const Color(0x66525F59),
+                      color: character.isOwned ? color : gameTheme.line,
                     ),
                   ),
                   child: Opacity(
                     opacity: character.isOwned ? 1 : 0.42,
-                    child: Image.asset(
-                      isSelected
-                          ? character.walkPreviewAssetPath
-                          : character.avatarAssetPath,
-                      fit: BoxFit.contain,
-                      filterQuality: FilterQuality.none,
-                      gaplessPlayback: true,
+                    child: Center(
+                      child: AnimatedCharacterSprite(
+                        spriteSheetAssetPath:
+                            character.gameSpriteSheetAssetPath,
+                        size: 38,
+                        animate: character.isOwned && isSelected,
+                      ),
                     ),
                   ),
                 ),
@@ -451,34 +492,44 @@ class _CharacterCard extends StatelessWidget {
                   character.isOwned
                       ? Icons.check_circle_rounded
                       : Icons.lock_rounded,
-                  color: character.isOwned
-                      ? const Color(0xFF49D17D)
-                      : const Color(0x99E8FFF2),
-                  size: 20,
+                  color: character.isOwned ? gameTheme.accent : gameTheme.muted,
+                  size: 18,
                 ),
               ],
             ),
-            const Spacer(),
+            const SizedBox(height: 6),
             Text(
               character.name,
-              style: const TextStyle(
-                color: Color(0xFFE8FFF2),
+              style: TextStyle(
+                color: gameTheme.foreground,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 0,
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
             Text(
               character.role,
-              style: const TextStyle(
-                color: Color(0x99E8FFF2),
+              style: TextStyle(
+                color: gameTheme.muted,
                 fontSize: 12,
                 letterSpacing: 0,
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
-            const SizedBox(height: 10),
-            _StatLine(label: 'HP', value: character.baseHp / 140),
-            const SizedBox(height: 5),
-            _StatLine(label: 'SPD', value: character.baseSpeedMultiplier / 1.2),
+            const SizedBox(height: 6),
+            _StatLine(
+              label: 'HP',
+              text: '${character.baseHp}',
+              value: character.baseHp / 140,
+            ),
+            const SizedBox(height: 3),
+            _StatLine(
+              label: 'SPD',
+              text: '$speed',
+              value: speed / 10,
+            ),
           ],
         ),
       ),
@@ -489,22 +540,25 @@ class _CharacterCard extends StatelessWidget {
 class _StatLine extends StatelessWidget {
   const _StatLine({
     required this.label,
+    required this.text,
     required this.value,
   });
 
   final String label;
+  final String text;
   final double value;
 
   @override
   Widget build(BuildContext context) {
+    final gameTheme = context.gameTheme;
     return Row(
       children: [
         SizedBox(
-          width: 30,
+          width: 54,
           child: Text(
-            label,
-            style: const TextStyle(
-              color: Color(0x99E8FFF2),
+            '$label $text',
+            style: TextStyle(
+              color: gameTheme.muted,
               fontSize: 10,
               fontWeight: FontWeight.w800,
               letterSpacing: 0,
@@ -514,7 +568,7 @@ class _StatLine extends StatelessWidget {
         Expanded(
           child: _ProgressBar(
             value: value,
-            color: const Color(0xFFE8FFF2),
+            color: gameTheme.foreground,
             height: 4,
           ),
         ),
@@ -583,6 +637,7 @@ class _WeaponShopEntry extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final gameTheme = context.gameTheme;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
       child: InkWell(
@@ -591,9 +646,9 @@ class _WeaponShopEntry extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: const Color(0xFF102418),
+            color: gameTheme.deep,
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: const Color(0x3349D17D)),
+            border: Border.all(color: gameTheme.line),
           ),
           child: Row(
             children: [
@@ -601,12 +656,12 @@ class _WeaponShopEntry extends StatelessWidget {
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF49D17D),
+                  color: gameTheme.accent,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.storefront_rounded,
-                  color: Color(0xFF07130D),
+                  color: gameTheme.ink,
                 ),
               ),
               const SizedBox(width: 12),
@@ -616,16 +671,16 @@ class _WeaponShopEntry extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
-                        color: Color(0xFFE8FFF2),
+                      style: TextStyle(
+                        color: gameTheme.foreground,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 0,
                       ),
                     ),
                     Text(
                       subtitle,
-                      style: const TextStyle(
-                        color: Color(0x99E8FFF2),
+                      style: TextStyle(
+                        color: gameTheme.muted,
                         fontSize: 12,
                         letterSpacing: 0,
                       ),
@@ -633,9 +688,85 @@ class _WeaponShopEntry extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(
+              Icon(
                 Icons.chevron_right_rounded,
-                color: Color(0xFFE8FFF2),
+                color: gameTheme.foreground,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SkillGuideEntry extends StatelessWidget {
+  const _SkillGuideEntry({
+    required this.title,
+    required this.subtitle,
+    required this.onOpen,
+  });
+
+  final String title;
+  final String subtitle;
+  final VoidCallback onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final gameTheme = context.gameTheme;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+      child: InkWell(
+        onTap: onOpen,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: gameTheme.deep,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: gameTheme.line),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: gameTheme.accent2,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.account_tree_rounded,
+                  color: gameTheme.ink,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        color: gameTheme.foreground,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0,
+                      ),
+                    ),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        color: gameTheme.muted,
+                        fontSize: 12,
+                        letterSpacing: 0,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: gameTheme.foreground,
               ),
             ],
           ),
@@ -657,14 +788,15 @@ class _WeaponDetailPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final strings = _LoadoutStrings.of(context);
+    final gameTheme = context.gameTheme;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: const Color(0xFF102418),
+          color: gameTheme.deep,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: const Color(0x3349D17D)),
+          border: Border.all(color: gameTheme.line),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -674,7 +806,7 @@ class _WeaponDetailPanel extends StatelessWidget {
               child: AspectRatio(
                 aspectRatio: 2,
                 child: ColoredBox(
-                  color: const Color(0xFF07130D),
+                  color: gameTheme.glass,
                   child: weapon.wikiImageUrl.isEmpty
                       ? _WeaponImageFallback(weapon: weapon)
                       : Image.network(
@@ -697,8 +829,8 @@ class _WeaponDetailPanel extends StatelessWidget {
                     weapon.name,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Color(0xFFE8FFF2),
+                    style: TextStyle(
+                      color: gameTheme.foreground,
                       fontSize: 16,
                       fontWeight: FontWeight.w900,
                       letterSpacing: 0,
@@ -711,9 +843,8 @@ class _WeaponDetailPanel extends StatelessWidget {
                       ? 'Lv ${progress.level}'
                       : strings.lockedLabel,
                   style: TextStyle(
-                    color: progress.isOwned
-                        ? const Color(0xFF49D17D)
-                        : const Color(0xFFFFC857),
+                    color:
+                        progress.isOwned ? gameTheme.accent : gameTheme.accent2,
                     fontSize: 12,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0,
@@ -779,11 +910,12 @@ class _WeaponCostPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final gameTheme = context.gameTheme;
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: const Color(0x26FFC857),
+        color: gameTheme.accent2.withOpacity(0.16),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: const Color(0x66FFC857)),
+        border: Border.all(color: gameTheme.accent2.withOpacity(0.42)),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
@@ -792,8 +924,8 @@ class _WeaponCostPill extends StatelessWidget {
           children: [
             Text(
               '$label ',
-              style: const TextStyle(
-                color: Color(0xBFE8FFF2),
+              style: TextStyle(
+                color: gameTheme.muted,
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 0,
@@ -802,8 +934,8 @@ class _WeaponCostPill extends StatelessWidget {
             if (cost <= 0)
               Text(
                 freeLabel,
-                style: const TextStyle(
-                  color: Color(0xFFFFC857),
+                style: TextStyle(
+                  color: gameTheme.accent2,
                   fontSize: 11,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 0,
@@ -813,7 +945,7 @@ class _WeaponCostPill extends StatelessWidget {
               _CoinAmount(
                 amount: cost,
                 iconSize: 13,
-                textColor: const Color(0xFFFFC857),
+                textColor: gameTheme.accent2,
               ),
           ],
         ),
@@ -829,18 +961,19 @@ class _WeaponMetaPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final gameTheme = context.gameTheme;
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: const Color(0x1AFFFFFF),
+        color: gameTheme.panel,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: const Color(0x2249D17D)),
+        border: Border.all(color: gameTheme.line),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
         child: Text(
           text,
-          style: const TextStyle(
-            color: Color(0xBFE8FFF2),
+          style: TextStyle(
+            color: gameTheme.muted,
             fontSize: 11,
             fontWeight: FontWeight.w700,
             letterSpacing: 0,
@@ -867,6 +1000,7 @@ class _WeaponChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final strings = _LoadoutStrings.of(context);
+    final gameTheme = context.gameTheme;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
@@ -874,11 +1008,10 @@ class _WeaponChip extends StatelessWidget {
         width: 138,
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: const Color(0xFF102418),
+          color: gameTheme.deep,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color:
-                isSelected ? const Color(0xFF49D17D) : const Color(0x3349D17D),
+            color: isSelected ? gameTheme.accent : gameTheme.line,
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -894,8 +1027,8 @@ class _WeaponChip extends StatelessWidget {
                   Text(
                     weapon.name,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Color(0xFFE8FFF2),
+                    style: TextStyle(
+                      color: gameTheme.foreground,
                       fontWeight: FontWeight.w800,
                       letterSpacing: 0,
                     ),
@@ -904,8 +1037,8 @@ class _WeaponChip extends StatelessWidget {
                     progress.isOwned
                         ? 'Lv ${progress.level}'
                         : strings.lockedLabel,
-                    style: const TextStyle(
-                      color: Color(0x99E8FFF2),
+                    style: TextStyle(
+                      color: gameTheme.muted,
                       fontSize: 12,
                       letterSpacing: 0,
                     ),
@@ -935,11 +1068,12 @@ class _WeaponShopPageState extends State<_WeaponShopPage> {
   @override
   Widget build(BuildContext context) {
     final strings = _LoadoutStrings.of(context);
+    final gameTheme = context.gameTheme;
     return Scaffold(
-      backgroundColor: const Color(0xFF07130D),
+      backgroundColor: gameTheme.background,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF07130D),
-        foregroundColor: const Color(0xFFE8FFF2),
+        backgroundColor: gameTheme.background,
+        foregroundColor: gameTheme.foreground,
         title: Text(strings.weaponShop),
         actions: [
           AnimatedBuilder(
@@ -985,7 +1119,7 @@ class _WeaponShopPageState extends State<_WeaponShopPage> {
                                 crossAxisCount: 3,
                                 crossAxisSpacing: 10,
                                 mainAxisSpacing: 10,
-                                childAspectRatio: 0.82,
+                                childAspectRatio: 0.58,
                               ),
                               itemCount: entry.value.length,
                               itemBuilder: (context, index) {
@@ -1060,8 +1194,9 @@ class _WeaponShopPageState extends State<_WeaponShopPage> {
             final progress = widget.progressController.progressFor(weapon.id);
             final upgradeCost =
                 widget.progressController.upgradeCost(weapon.id);
+            final gameTheme = context.gameTheme;
             return Dialog(
-              backgroundColor: const Color(0xFF102418),
+              backgroundColor: gameTheme.deep,
               insetPadding: const EdgeInsets.symmetric(
                 horizontal: 18,
                 vertical: 24,
@@ -1171,6 +1306,7 @@ class _WeaponStarHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final gameTheme = context.gameTheme;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: InkWell(
@@ -1179,9 +1315,9 @@ class _WeaponStarHeader extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
           decoration: BoxDecoration(
-            color: const Color(0xFF102418),
+            color: gameTheme.deep,
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: const Color(0x3349D17D)),
+            border: Border.all(color: gameTheme.line),
           ),
           child: Row(
             children: [
@@ -1189,16 +1325,16 @@ class _WeaponStarHeader extends StatelessWidget {
                 child: Row(
                   children: [
                     for (var index = 0; index < stars; index++)
-                      const Icon(
+                      Icon(
                         Icons.star_rounded,
-                        color: Color(0xFFFFC857),
+                        color: gameTheme.accent2,
                         size: 18,
                       ),
                     const SizedBox(width: 8),
                     Text(
                       '$stars Star',
-                      style: const TextStyle(
-                        color: Color(0xFFE8FFF2),
+                      style: TextStyle(
+                        color: gameTheme.foreground,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 0,
                       ),
@@ -1208,8 +1344,8 @@ class _WeaponStarHeader extends StatelessWidget {
               ),
               Text(
                 '$count',
-                style: const TextStyle(
-                  color: Color(0x9949D17D),
+                style: TextStyle(
+                  color: gameTheme.accent,
                   fontSize: 12,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 0,
@@ -1220,7 +1356,7 @@ class _WeaponStarHeader extends StatelessWidget {
                 isExpanded
                     ? Icons.keyboard_arrow_up_rounded
                     : Icons.keyboard_arrow_down_rounded,
-                color: const Color(0xFFE8FFF2),
+                color: gameTheme.foreground,
               ),
             ],
           ),
@@ -1246,17 +1382,17 @@ class _WeaponGridTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final strings = _LoadoutStrings.of(context);
+    final gameTheme = context.gameTheme;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
       child: Container(
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(7),
         decoration: BoxDecoration(
-          color: const Color(0xFF102418),
+          color: gameTheme.deep,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color:
-                isSelected ? const Color(0xFF49D17D) : const Color(0x3349D17D),
+            color: isSelected ? gameTheme.accent : gameTheme.line,
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -1264,16 +1400,22 @@ class _WeaponGridTile extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Center(
-              child: _WeaponIcon(weapon: weapon, isOwned: progress.isOwned),
+              child: _WeaponIcon(
+                weapon: weapon,
+                isOwned: progress.isOwned,
+                size: 72,
+                imageSize: 64,
+                lockSize: 20,
+              ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             Text(
               weapon.name,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Color(0xFFE8FFF2),
-                fontSize: 12,
+              style: TextStyle(
+                color: gameTheme.foreground,
+                fontSize: 11,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 0,
               ),
@@ -1304,13 +1446,14 @@ class _WeaponTileStatus extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final gameTheme = context.gameTheme;
     if (progress.isOwned) {
       return Text(
         'Lv ${progress.level}',
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: const TextStyle(
-          color: Color(0xFF49D17D),
+        style: TextStyle(
+          color: gameTheme.accent,
           fontSize: 11,
           fontWeight: FontWeight.w800,
           letterSpacing: 0,
@@ -1318,28 +1461,31 @@ class _WeaponTileStatus extends StatelessWidget {
       );
     }
 
-    return Row(
-      children: [
-        Text(
-          buyLabel,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            color: Color(0xFFFFC857),
-            fontSize: 11,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 0,
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      alignment: Alignment.centerLeft,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            buyLabel,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: gameTheme.accent2,
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0,
+            ),
           ),
-        ),
-        const SizedBox(width: 4),
-        Flexible(
-          child: _CoinAmount(
+          const SizedBox(width: 4),
+          _CoinAmount(
             amount: cost,
             iconSize: 12,
-            textColor: const Color(0xFFFFC857),
+            textColor: gameTheme.accent2,
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -1355,6 +1501,7 @@ class _CostButtonLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textColor = Theme.of(context).colorScheme.onPrimary;
     return FittedBox(
       fit: BoxFit.scaleDown,
       child: Row(
@@ -1365,7 +1512,7 @@ class _CostButtonLabel extends StatelessWidget {
           _CoinAmount(
             amount: cost,
             iconSize: 14,
-            textColor: const Color(0xFFFFFFFF),
+            textColor: textColor,
           ),
         ],
       ),
@@ -1377,38 +1524,58 @@ class _WeaponIcon extends StatelessWidget {
   const _WeaponIcon({
     required this.weapon,
     required this.isOwned,
+    this.size = 42,
+    this.imageSize = 36,
+    this.lockSize = 16,
   });
 
   final WeaponDefinition weapon;
   final bool isOwned;
+  final double size;
+  final double imageSize;
+  final double lockSize;
 
   @override
   Widget build(BuildContext context) {
+    final gameTheme = context.gameTheme;
     return Container(
-      width: 42,
-      height: 42,
+      width: size,
+      height: size,
       decoration: BoxDecoration(
-        color: isOwned ? Color(weapon.baseColorValue) : const Color(0xFF3B4540),
+        color: isOwned
+            ? Color(weapon.baseColorValue)
+            : Color(weapon.baseColorValue).withOpacity(0.18),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Stack(
         alignment: Alignment.center,
         children: [
-          Opacity(
-            opacity: isOwned ? 1 : 0.34,
-            child: Image.asset(
-              weapon.iconAssetPath,
-              width: 36,
-              height: 36,
-              fit: BoxFit.contain,
-              filterQuality: FilterQuality.none,
-            ),
+          Image.asset(
+            weapon.iconAssetPath,
+            width: imageSize,
+            height: imageSize,
+            fit: BoxFit.contain,
+            filterQuality: FilterQuality.none,
           ),
           if (!isOwned)
-            const Icon(
-              Icons.lock_rounded,
-              color: Color(0xFFE8FFF2),
-              size: 16,
+            Positioned(
+              right: 2,
+              bottom: 2,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: gameTheme.glass,
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: gameTheme.line),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(3),
+                  child: Icon(
+                    Icons.lock_rounded,
+                    color: gameTheme.foreground,
+                    size: lockSize,
+                  ),
+                ),
+              ),
             ),
         ],
       ),
@@ -1429,12 +1596,13 @@ class _ProgressBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final gameTheme = context.gameTheme;
     return ClipRRect(
       borderRadius: BorderRadius.circular(999),
       child: SizedBox(
         height: height,
         child: ColoredBox(
-          color: const Color(0x22FFFFFF),
+          color: gameTheme.line,
           child: Align(
             alignment: Alignment.centerLeft,
             child: FractionallySizedBox(
@@ -1460,9 +1628,13 @@ class _LoadoutStrings {
 
   String get appTitle => isZh ? 'ODT 生存' : 'ODT Run';
   String get character => isZh ? '角色' : 'Character';
+  String get skillGuide => isZh ? '技能图鉴' : 'Skill Guide';
+  String get skillGuideSubtitle =>
+      isZh ? '查看技能树、核心进化与终极大招' : 'Skill trees, evolutions, and ultimates';
   String get weaponLoadout => isZh ? '武器配置' : 'Weapon Loadout';
   String get weaponShop => isZh ? '武器商店' : 'Weapon Shop';
   String get startRun => isZh ? '开始作战' : 'Start Run';
+  String get deathmatch => isZh ? '死斗模式' : 'Deathmatch';
   String get lockedLabel => isZh ? '未拥有' : 'Locked';
   String get close => isZh ? '关闭' : 'Close';
   String get select => isZh ? '选择' : 'Select';

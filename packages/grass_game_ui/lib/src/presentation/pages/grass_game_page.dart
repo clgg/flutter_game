@@ -1,22 +1,30 @@
 import 'package:flame/game.dart';
+import 'package:app_core/app_core.dart';
 import 'package:flutter/material.dart';
 import 'package:grass_game_domain/grass_game_domain.dart';
 import 'package:grass_game_runtime/grass_game_runtime.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../application/progression/grass_game_progress_controller.dart';
+import '../widgets/animated_character_sprite.dart';
 import '../widgets/game_result_panel.dart';
-import '../widgets/grass_game_hud.dart';
 import '../widgets/level_up_panel.dart';
 
 class GrassGamePage extends StatefulWidget {
   const GrassGamePage({
     super.key,
     required this.progressController,
+    required this.soundVolume,
+    required this.vibrationIntensity,
     required this.onExit,
+    required this.onUpgradeWeapon,
   });
 
   final GrassGameProgressController progressController;
+  final double soundVolume;
+  final double vibrationIntensity;
   final VoidCallback onExit;
+  final VoidCallback onUpgradeWeapon;
 
   @override
   State<GrassGamePage> createState() => _GrassGamePageState();
@@ -27,17 +35,22 @@ class _GrassGamePageState extends State<GrassGamePage> {
   late GrassSurvivorGame _game;
   int _gameKey = 0;
   GameResult? _settledResult;
+  bool _showFirstRunGuide = false;
+
+  static const _firstRunGuideKey = 'grass_game.first_run_guide_seen';
 
   @override
   void initState() {
     super.initState();
     _createGame();
+    _loadFirstRunGuide();
   }
 
   @override
   void dispose() {
     _controller.setMoveDirection(0, 0);
     _controller.pause();
+    _game.releaseRuntimeResources();
     _controller.removeListener(_handleRuntimeChanged);
     _controller.dispose();
     super.dispose();
@@ -61,6 +74,11 @@ class _GrassGamePageState extends State<GrassGamePage> {
       weaponProjectileAssetPath: null,
       weaponMuzzleFlashAssetPath: null,
       weaponFireSoundAssetPath: loadout.weapon.fireSoundAssetPath,
+      soundVolume: widget.soundVolume,
+      vibrationIntensity: widget.vibrationIntensity,
+      stageName: loadout.stage.name,
+      stageChapter: loadout.stage.chapter,
+      stageIndex: loadout.stage.stage,
       bossTimeSeconds: loadout.stage.bossTimeSeconds,
       bossMaxHp: 320 + loadout.stage.difficulty * 8,
       stageRewardExp: loadout.stage.rewardExp,
@@ -68,6 +86,7 @@ class _GrassGamePageState extends State<GrassGamePage> {
       stageEnemyCount: loadout.stage.enemyCount,
       stageEnemyStrengthMultiplier: loadout.stage.enemyStrengthMultiplier,
       stageEnemyTypes: loadout.stage.enemyTypes,
+      isDeathmatch: loadout.stage.isDeathmatch,
       bossSpriteSheetAssetPath: loadout.stage.bossSpriteSheetAssetPath,
       bossDeathAssetPath: loadout.stage.bossDeathAssetPath,
     );
@@ -75,10 +94,37 @@ class _GrassGamePageState extends State<GrassGamePage> {
 
   void _restart() {
     _controller.removeListener(_handleRuntimeChanged);
+    _game.releaseRuntimeResources();
     _controller.dispose();
     setState(() {
       _gameKey++;
       _createGame();
+    });
+  }
+
+  void _nextStage() {
+    if (!widget.progressController.selectNextStage()) {
+      widget.onExit();
+      return;
+    }
+    _restart();
+  }
+
+  Future<void> _loadFirstRunGuide() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted || (prefs.getBool(_firstRunGuideKey) ?? false)) {
+      return;
+    }
+    setState(() {
+      _showFirstRunGuide = true;
+    });
+    await prefs.setBool(_firstRunGuideKey, true);
+    await Future<void>.delayed(const Duration(seconds: 7));
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _showFirstRunGuide = false;
     });
   }
 
@@ -93,6 +139,8 @@ class _GrassGamePageState extends State<GrassGamePage> {
 
   @override
   Widget build(BuildContext context) {
+    _game.languageCode = Localizations.localeOf(context).languageCode;
+    final strings = _GrassGamePageStrings.of(context);
     return PopScope(
       canPop: false,
       onPopInvoked: (didPop) {
@@ -116,63 +164,39 @@ class _GrassGamePageState extends State<GrassGamePage> {
               top: 12,
               left: 12,
               child: SafeArea(
+                child: _LeftRunControls(
+                  controller: _controller,
+                  spriteSheetAssetPath: widget.progressController
+                      .selectedCharacter.gameSpriteSheetAssetPath,
+                  onExit: _confirmExit,
+                  onLevelUp: _game.openLevelUpChoices,
+                  onUltimate: _game.triggerChargedUltimate,
+                ),
+              ),
+            ),
+            Positioned(
+              top: 12,
+              left: 86,
+              right: 86,
+              child: SafeArea(
                 child: AnimatedBuilder(
                   animation: _controller,
                   builder: (context, _) {
-                    return _LevelUpAvatarButton(
-                      avatarAssetPath: widget
-                          .progressController.selectedCharacter.avatarAssetPath,
-                      pendingCount: _controller.pendingLevelUpCount,
-                      onPressed: _game.openLevelUpChoices,
-                    );
+                    return _StageNamePill(snapshot: _controller.hud);
                   },
                 ),
               ),
             ),
             Positioned(
-              top: 12,
-              left: 68,
-              child: SafeArea(
-                child: IconButton.filledTonal(
-                  onPressed: _confirmExit,
-                  tooltip: 'Exit',
-                  icon: const Icon(Icons.close_rounded),
-                ),
-              ),
-            ),
-            Positioned(
-              top: 12,
-              left: 124,
-              right: 88,
+              top: 14,
+              right: 10,
               child: SafeArea(
                 child: AnimatedBuilder(
                   animation: _controller,
                   builder: (context, _) {
-                    return GrassGameHud(snapshot: _controller.hud);
-                  },
-                ),
-              ),
-            ),
-            Positioned(
-              top: 12,
-              right: 12,
-              child: SafeArea(
-                child: AnimatedBuilder(
-                  animation: _controller,
-                  builder: (context, _) {
-                    return FilledButton.tonal(
+                    return _SpeedToggleButton(
+                      isDoubleSpeed: _controller.isDoubleSpeed,
                       onPressed: _controller.toggleTimeScale,
-                      style: FilledButton.styleFrom(
-                        minimumSize: const Size(64, 42),
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
-                      ),
-                      child: Text(
-                        _controller.isDoubleSpeed ? '2x' : '1x',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0,
-                        ),
-                      ),
                     );
                   },
                 ),
@@ -186,6 +210,8 @@ class _GrassGamePageState extends State<GrassGamePage> {
                 }
                 return LevelUpPanel(
                   options: _controller.levelUpOptions,
+                  pendingCount: _controller.pendingLevelUpCount,
+                  onRefresh: _game.refreshLevelUpChoices,
                   onSelected: (option) => _game.applySkill(option.id),
                 );
               },
@@ -200,10 +226,20 @@ class _GrassGamePageState extends State<GrassGamePage> {
                 return GameResultPanel(
                   result: result,
                   onRestart: _restart,
+                  onNextStage: _nextStage,
                   onExit: widget.onExit,
+                  onUpgradeWeapon: widget.onUpgradeWeapon,
+                  hasNextStage: widget.progressController.hasNextStage,
                 );
               },
             ),
+            if (_showFirstRunGuide)
+              Positioned(
+                left: 16,
+                right: 16,
+                bottom: 28,
+                child: _FirstRunGuideCard(strings: strings),
+              ),
           ],
         ),
       ),
@@ -216,6 +252,7 @@ class _GrassGamePageState extends State<GrassGamePage> {
       return;
     }
 
+    final strings = _GrassGamePageStrings.of(context);
     final wasRunning = _controller.state.isRunning;
     if (wasRunning) {
       _controller.pause();
@@ -227,22 +264,22 @@ class _GrassGamePageState extends State<GrassGamePage> {
       builder: (context) {
         return AlertDialog(
           backgroundColor: const Color(0xFF102418),
-          title: const Text(
-            'Exit run?',
-            style: TextStyle(color: Color(0xFFE8FFF2)),
+          title: Text(
+            strings.exitTitle,
+            style: const TextStyle(color: Color(0xFFE8FFF2)),
           ),
-          content: const Text(
-            'Current coins will be settled. Hero EXP is only awarded after a successful clear.',
-            style: TextStyle(color: Color(0xBFE8FFF2)),
+          content: Text(
+            strings.exitMessage,
+            style: const TextStyle(color: Color(0xBFE8FFF2)),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Cancel'),
+              child: Text(strings.cancel),
             ),
             FilledButton(
               onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('Exit'),
+              child: Text(strings.exit),
             ),
           ],
         );
@@ -267,30 +304,378 @@ class _GrassGamePageState extends State<GrassGamePage> {
   void _settleAndExit() {
     _controller.setMoveDirection(0, 0);
     _game.finishEarly();
+    _game.releaseRuntimeResources();
     widget.onExit();
+  }
+}
+
+class _FirstRunGuideCard extends StatelessWidget {
+  const _FirstRunGuideCard({required this.strings});
+
+  final _GrassGamePageStrings strings;
+
+  @override
+  Widget build(BuildContext context) {
+    final gameTheme = context.gameTheme;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: gameTheme.glass,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: gameTheme.line),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _GuideLine(
+              icon: Icons.touch_app_rounded,
+              text: strings.moveGuide,
+              color: gameTheme.accent,
+            ),
+            const SizedBox(height: 8),
+            _GuideLine(
+              icon: Icons.auto_awesome_rounded,
+              text: strings.upgradeGuide,
+              color: gameTheme.accent2,
+            ),
+            const SizedBox(height: 8),
+            _GuideLine(
+              icon: Icons.flag_rounded,
+              text: strings.bossGuide,
+              color: gameTheme.hot,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _GrassGamePageStrings {
+  const _GrassGamePageStrings(this.isZh);
+
+  static _GrassGamePageStrings of(BuildContext context) {
+    return _GrassGamePageStrings(
+      Localizations.localeOf(context).languageCode == 'zh',
+    );
+  }
+
+  final bool isZh;
+
+  String get exitTitle => isZh ? '退出本次作战？' : 'Exit run?';
+  String get exitMessage => isZh
+      ? '当前金币会立即结算。英雄经验只会在通关成功后发放。'
+      : 'Current coins will be settled. Hero EXP is only awarded after a successful clear.';
+  String get cancel => isZh ? '取消' : 'Cancel';
+  String get exit => isZh ? '退出' : 'Exit';
+  String get moveGuide => isZh ? '在任意位置拖动来移动。' : 'Drag anywhere to move.';
+  String get upgradeGuide => isZh
+      ? '收集经验后，点击头像选择升级。'
+      : 'Collect EXP, then tap your avatar to choose an upgrade.';
+  String get bossGuide =>
+      isZh ? '击败 Boss 即可完成关卡。' : 'Defeat the Boss to clear the stage.';
+}
+
+class _GuideLine extends StatelessWidget {
+  const _GuideLine({
+    required this.icon,
+    required this.text,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String text;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final gameTheme = context.gameTheme;
+    return Row(
+      children: [
+        Icon(icon, size: 17, color: color),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(
+              color: gameTheme.foreground,
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SpeedToggleButton extends StatelessWidget {
+  const _SpeedToggleButton({
+    required this.isDoubleSpeed,
+    required this.onPressed,
+  });
+
+  final bool isDoubleSpeed;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final gameTheme = context.gameTheme;
+    return InkWell(
+      onTap: onPressed,
+      borderRadius: BorderRadius.circular(999),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: isDoubleSpeed ? gameTheme.accent : gameTheme.glass,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: isDoubleSpeed ? Colors.transparent : gameTheme.line,
+          ),
+          boxShadow: [
+            if (isDoubleSpeed)
+              BoxShadow(
+                color: gameTheme.accent.withOpacity(0.32),
+                blurRadius: 10,
+              ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.flash_on_rounded,
+                color: isDoubleSpeed ? gameTheme.ink : gameTheme.accent,
+                size: 14,
+              ),
+              const SizedBox(width: 2),
+              Text(
+                isDoubleSpeed ? '2x' : '1x',
+                style: TextStyle(
+                  color: isDoubleSpeed ? gameTheme.ink : gameTheme.foreground,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LeftRunControls extends StatelessWidget {
+  const _LeftRunControls({
+    required this.controller,
+    required this.spriteSheetAssetPath,
+    required this.onExit,
+    required this.onLevelUp,
+    required this.onUltimate,
+  });
+
+  final GrassGameRuntimeController controller;
+  final String spriteSheetAssetPath;
+  final VoidCallback onExit;
+  final VoidCallback onLevelUp;
+  final VoidCallback onUltimate;
+
+  @override
+  Widget build(BuildContext context) {
+    final isZh = Localizations.localeOf(context).languageCode == 'zh';
+    return AnimatedBuilder(
+      animation: controller,
+      builder: (context, _) {
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _RoundIconButton(
+              icon: Icons.close_rounded,
+              tooltip: isZh ? '退出' : 'Exit',
+              onPressed: onExit,
+            ),
+            const SizedBox(height: 10),
+            _BossCountdownBadge(snapshot: controller.hud),
+            const SizedBox(height: 10),
+            _LevelUpAvatarButton(
+              spriteSheetAssetPath: spriteSheetAssetPath,
+              pendingCount: controller.pendingLevelUpCount,
+              onPressed: onLevelUp,
+            ),
+            const SizedBox(height: 10),
+            _ChargedUltimateButton(
+              snapshot: controller.hud,
+              onPressed: onUltimate,
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _RoundIconButton extends StatelessWidget {
+  const _RoundIconButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final gameTheme = context.gameTheme;
+    return IconButton(
+      onPressed: onPressed,
+      tooltip: tooltip,
+      style: IconButton.styleFrom(
+        backgroundColor: gameTheme.glass,
+        foregroundColor: gameTheme.foreground,
+        side: BorderSide(color: gameTheme.line),
+        padding: EdgeInsets.zero,
+        fixedSize: const Size(48, 48),
+      ),
+      icon: Icon(icon),
+    );
+  }
+}
+
+class _BossCountdownBadge extends StatelessWidget {
+  const _BossCountdownBadge({required this.snapshot});
+
+  final HudSnapshot snapshot;
+
+  @override
+  Widget build(BuildContext context) {
+    final gameTheme = context.gameTheme;
+    final isBossFight = snapshot.isBossFight;
+    final color = isBossFight ? gameTheme.hot : gameTheme.accent2;
+    return Tooltip(
+      message: isBossFight ? 'Boss fight' : 'Boss countdown',
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: gameTheme.glass,
+          shape: BoxShape.circle,
+          border: Border.all(color: color, width: 1.5),
+        ),
+        child: SizedBox(
+          width: 48,
+          height: 48,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                isBossFight ? Icons.warning_rounded : Icons.flag_rounded,
+                color: color,
+                size: 16,
+              ),
+              const SizedBox(height: 2),
+              Text(
+                isBossFight
+                    ? 'BOSS'
+                    : _formatCompactTime(snapshot.bossSecondsRemaining),
+                style: TextStyle(
+                  color: gameTheme.foreground,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _formatCompactTime(int seconds) {
+    final minutes = seconds ~/ 60;
+    final rest = seconds % 60;
+    return '$minutes:${rest.toString().padLeft(2, '0')}';
+  }
+}
+
+class _StageNamePill extends StatelessWidget {
+  const _StageNamePill({required this.snapshot});
+
+  final HudSnapshot snapshot;
+
+  @override
+  Widget build(BuildContext context) {
+    final gameTheme = context.gameTheme;
+    final isZh = Localizations.localeOf(context).languageCode == 'zh';
+    final title = isZh
+        ? '第 ${snapshot.stageChapter}-${snapshot.stageIndex} 关'
+        : snapshot.stageName;
+    return Align(
+      alignment: Alignment.topCenter,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: gameTheme.glass,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: gameTheme.line),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.flag_rounded, color: gameTheme.accent2, size: 15),
+              const SizedBox(width: 6),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 150),
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: gameTheme.foreground,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
 class _LevelUpAvatarButton extends StatelessWidget {
   const _LevelUpAvatarButton({
-    required this.avatarAssetPath,
+    required this.spriteSheetAssetPath,
     required this.pendingCount,
     required this.onPressed,
   });
 
-  final String avatarAssetPath;
+  final String spriteSheetAssetPath;
   final int pendingCount;
   final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
     final hasPending = pendingCount > 0;
+    final gameTheme = context.gameTheme;
+    final isZh = Localizations.localeOf(context).languageCode == 'zh';
     return IconButton(
       onPressed: hasPending ? onPressed : null,
-      tooltip: 'Level up',
+      tooltip: isZh ? '升级' : 'Level up',
       style: IconButton.styleFrom(
-        backgroundColor: const Color(0xCC07130D),
-        disabledBackgroundColor: const Color(0x9907130D),
+        backgroundColor: hasPending
+            ? const Color(0x33FFC857)
+            : gameTheme.glass.withOpacity(0.42),
+        disabledBackgroundColor: gameTheme.glass.withOpacity(0.28),
         side: BorderSide(
           color: hasPending ? const Color(0xFFFFC857) : const Color(0x3349D17D),
           width: hasPending ? 2 : 1,
@@ -302,11 +687,11 @@ class _LevelUpAvatarButton extends StatelessWidget {
         clipBehavior: Clip.none,
         children: [
           ClipOval(
-            child: Image.asset(
-              avatarAssetPath,
-              width: 36,
-              height: 36,
-              fit: BoxFit.cover,
+            child: Center(
+              child: AnimatedCharacterSprite(
+                spriteSheetAssetPath: spriteSheetAssetPath,
+                size: 36,
+              ),
             ),
           ),
           if (hasPending)
@@ -337,6 +722,180 @@ class _LevelUpAvatarButton extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+class _ChargedUltimateButton extends StatefulWidget {
+  const _ChargedUltimateButton({
+    required this.snapshot,
+    required this.onPressed,
+  });
+
+  final HudSnapshot snapshot;
+  final VoidCallback onPressed;
+
+  @override
+  State<_ChargedUltimateButton> createState() => _ChargedUltimateButtonState();
+}
+
+class _ChargedUltimateButtonState extends State<_ChargedUltimateButton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _glowController;
+
+  @override
+  void initState() {
+    super.initState();
+    _glowController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 860),
+    );
+    _syncGlow();
+  }
+
+  @override
+  void didUpdateWidget(covariant _ChargedUltimateButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _syncGlow();
+  }
+
+  @override
+  void dispose() {
+    _glowController.dispose();
+    super.dispose();
+  }
+
+  void _syncGlow() {
+    if (widget.snapshot.isUltimateReady) {
+      if (!_glowController.isAnimating) {
+        _glowController.repeat(reverse: true);
+      }
+      return;
+    }
+    if (_glowController.isAnimating) {
+      _glowController.stop();
+    }
+    _glowController.value = 0;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final gameTheme = context.gameTheme;
+    final snapshot = widget.snapshot;
+    final isReady = snapshot.isUltimateReady;
+    final isZh = Localizations.localeOf(context).languageCode == 'zh';
+    final chargeText =
+        '${snapshot.ultimateCharge}/${snapshot.ultimateChargeRequired}';
+    return AnimatedBuilder(
+      animation: _glowController,
+      builder: (context, _) {
+        final glow = isReady ? _glowController.value : 0.0;
+        return Tooltip(
+          message: isZh ? '大招 $chargeText' : 'Ultimate $chargeText',
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              boxShadow: isReady
+                  ? [
+                      BoxShadow(
+                        color: const Color(0xFFFFF2A6)
+                            .withOpacity(0.28 + glow * 0.32),
+                        blurRadius: 10 + glow * 12,
+                        spreadRadius: 1 + glow * 3,
+                      ),
+                    ]
+                  : const [],
+            ),
+            child: IconButton(
+              onPressed: isReady ? widget.onPressed : null,
+              style: IconButton.styleFrom(
+                backgroundColor: isReady
+                    ? const Color(0x44FFD36E)
+                    : gameTheme.glass.withOpacity(0.30),
+                disabledBackgroundColor: gameTheme.glass.withOpacity(0.22),
+                side: BorderSide(
+                  color: isReady
+                      ? const Color(0xFFFFF2A6)
+                      : gameTheme.line.withOpacity(0.72),
+                  width: isReady ? 2 : 1,
+                ),
+                padding: EdgeInsets.zero,
+                fixedSize: const Size(48, 48),
+              ),
+              icon: CustomPaint(
+                foregroundPainter: _UltimateChargeRingPainter(
+                  progress: snapshot.ultimateChargeProgress,
+                  color: isReady ? const Color(0xFFFFF2A6) : gameTheme.accent2,
+                ),
+                child: SizedBox(
+                  width: 42,
+                  height: 42,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.offline_bolt_rounded,
+                        color: isReady
+                            ? const Color(0xFFFFF2A6)
+                            : gameTheme.foreground.withOpacity(0.55),
+                        size: 19,
+                      ),
+                      Text(
+                        chargeText,
+                        style: TextStyle(
+                          color: gameTheme.foreground,
+                          fontSize: 9,
+                          height: 1,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _UltimateChargeRingPainter extends CustomPainter {
+  const _UltimateChargeRingPainter({
+    required this.progress,
+    required this.color,
+  });
+
+  final double progress;
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    final trackPaint = Paint()
+      ..color = const Color(0x33000000)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3
+      ..strokeCap = StrokeCap.round;
+    final fillPaint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3
+      ..strokeCap = StrokeCap.round;
+    canvas.drawArc(rect.deflate(2), -1.5708, 6.2832, false, trackPaint);
+    canvas.drawArc(
+      rect.deflate(2),
+      -1.5708,
+      6.2832 * progress.clamp(0, 1),
+      false,
+      fillPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _UltimateChargeRingPainter oldDelegate) {
+    return oldDelegate.progress != progress || oldDelegate.color != color;
   }
 }
 

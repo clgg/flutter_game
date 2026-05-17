@@ -7,9 +7,13 @@ import '../game/grass_game_runtime_controller.dart';
 
 enum PlayerFacing {
   front,
-  back,
-  left,
+  frontRight,
   right,
+  backRight,
+  back,
+  backLeft,
+  left,
+  frontLeft,
 }
 
 class PlayerAnimationSet {
@@ -17,24 +21,38 @@ class PlayerAnimationSet {
     required ui.Image image,
     required this.displaySize,
   })  : _image = image,
-        _frameSize = Vector2(
-          image.width / _columns,
-          image.height / _rows,
-        );
+        _rowCount = (image.height / (image.width / _columns)).round(),
+        _frameSize = Vector2.all(image.width / _columns);
 
   static const int _columns = 6;
-  static const int _rows = 4;
 
   final ui.Image _image;
+  final int _rowCount;
   final Vector2 _frameSize;
   final Vector2 displaySize;
 
   Map<PlayerFacing, SpriteAnimation> createWalkAnimations() {
+    if (_rowCount >= 8) {
+      return {
+        PlayerFacing.front: _createWalkAnimation(0),
+        PlayerFacing.frontRight: _createWalkAnimation(1),
+        PlayerFacing.right: _createWalkAnimation(2),
+        PlayerFacing.backRight: _createWalkAnimation(3),
+        PlayerFacing.back: _createWalkAnimation(4),
+        PlayerFacing.backLeft: _createWalkAnimation(5),
+        PlayerFacing.left: _createWalkAnimation(6),
+        PlayerFacing.frontLeft: _createWalkAnimation(7),
+      };
+    }
     return {
       PlayerFacing.front: _createWalkAnimation(0),
       PlayerFacing.back: _createWalkAnimation(1),
       PlayerFacing.left: _createWalkAnimation(2),
       PlayerFacing.right: _createWalkAnimation(3),
+      PlayerFacing.frontRight: _createWalkAnimation(3),
+      PlayerFacing.backRight: _createWalkAnimation(3),
+      PlayerFacing.backLeft: _createWalkAnimation(2),
+      PlayerFacing.frontLeft: _createWalkAnimation(2),
     };
   }
 
@@ -79,6 +97,12 @@ class PlayerComponent extends SpriteAnimationComponent {
     ..color = const ui.Color(0xFFE8FFF2)
     ..style = ui.PaintingStyle.stroke
     ..strokeWidth = 3;
+  final ui.Paint _hpBackPaint = ui.Paint()..color = const ui.Color(0x99000000);
+  final ui.Paint _hpFillPaint = ui.Paint()..color = const ui.Color(0xFFFF5B6F);
+  final ui.Paint _hpBorderPaint = ui.Paint()
+    ..color = const ui.Color(0xDDE8FFF2)
+    ..style = ui.PaintingStyle.stroke
+    ..strokeWidth = 1;
   double _hitCooldown = 0;
   bool _hasInitialPosition = false;
   bool _isMoving = false;
@@ -119,13 +143,7 @@ class PlayerComponent extends SpriteAnimationComponent {
   }
 
   void _setFacing(Vector2 direction) {
-    final nextFacing = direction.x.abs() > direction.y.abs()
-        ? direction.x > 0
-            ? PlayerFacing.right
-            : PlayerFacing.left
-        : direction.y > 0
-            ? PlayerFacing.front
-            : PlayerFacing.back;
+    final nextFacing = _facingForDirection(direction);
     if (nextFacing == _facing) {
       return;
     }
@@ -134,6 +152,21 @@ class PlayerComponent extends SpriteAnimationComponent {
     if (nextAnimation != null) {
       animation = nextAnimation;
     }
+  }
+
+  PlayerFacing _facingForDirection(Vector2 direction) {
+    final angle = math.atan2(direction.y, direction.x);
+    final sector = ((angle + math.pi / 8) / (math.pi / 4)).floor() & 7;
+    return switch (sector) {
+      0 => PlayerFacing.right,
+      1 => PlayerFacing.frontRight,
+      2 => PlayerFacing.front,
+      3 => PlayerFacing.frontLeft,
+      4 => PlayerFacing.left,
+      5 => PlayerFacing.backLeft,
+      6 => PlayerFacing.back,
+      _ => PlayerFacing.backRight,
+    };
   }
 
   void faceToward(Vector2 target) {
@@ -165,8 +198,30 @@ class PlayerComponent extends SpriteAnimationComponent {
     if (animation == null) {
       canvas.drawCircle(ui.Offset.zero, collisionRadius, _fallbackPaint);
       canvas.drawCircle(ui.Offset.zero, collisionRadius, _outlinePaint);
+      _drawHealthBar(canvas);
       return;
     }
     super.render(canvas);
+    _drawHealthBar(canvas);
+  }
+
+  void _drawHealthBar(ui.Canvas canvas) {
+    final hpRatio = maxHp == 0 ? 0.0 : (hp / maxHp).clamp(0, 1).toDouble();
+    final barWidth = size.x * 0.72;
+    const barHeight = 5.0;
+    const top = -10.0;
+    final left = (size.x - barWidth) / 2;
+    final backRect = ui.RRect.fromRectAndRadius(
+      ui.Rect.fromLTWH(left, top, barWidth, barHeight),
+      const ui.Radius.circular(999),
+    );
+    final fillRect = ui.RRect.fromRectAndRadius(
+      ui.Rect.fromLTWH(left, top, barWidth * hpRatio, barHeight),
+      const ui.Radius.circular(999),
+    );
+    canvas
+      ..drawRRect(backRect, _hpBackPaint)
+      ..drawRRect(fillRect, _hpFillPaint)
+      ..drawRRect(backRect, _hpBorderPaint);
   }
 }

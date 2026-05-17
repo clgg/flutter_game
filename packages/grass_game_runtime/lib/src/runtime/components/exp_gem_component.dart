@@ -2,6 +2,12 @@ import 'dart:ui' as ui;
 
 import 'package:flame/components.dart';
 
+enum DropVisualTier {
+  normal,
+  high,
+  rare,
+}
+
 class DropIconSet {
   const DropIconSet({
     required this.expLow,
@@ -19,24 +25,20 @@ class DropIconSet {
   final ui.Image coinMedium;
   final ui.Image coinLarge;
 
-  ui.Image expIconFor(int exp) {
-    if (exp >= 5) {
-      return expHigh;
-    }
-    if (exp >= 3) {
-      return expMid;
-    }
-    return expLow;
+  ui.Image expIconFor(DropVisualTier tier) {
+    return switch (tier) {
+      DropVisualTier.normal => expLow,
+      DropVisualTier.high => expMid,
+      DropVisualTier.rare => expHigh,
+    };
   }
 
-  ui.Image coinIconFor(int coins) {
-    if (coins >= 8) {
-      return coinLarge;
-    }
-    if (coins >= 4) {
-      return coinMedium;
-    }
-    return coinSmall;
+  ui.Image coinIconFor(DropVisualTier tier) {
+    return switch (tier) {
+      DropVisualTier.normal => coinSmall,
+      DropVisualTier.high => coinMedium,
+      DropVisualTier.rare => coinLarge,
+    };
   }
 }
 
@@ -46,16 +48,62 @@ class ExpGemComponent extends CircleComponent {
     required this.coins,
     required this.icons,
     required Vector2 position,
-  }) : super(
-          radius: 10,
+    this.expTier = DropVisualTier.normal,
+    this.coinTier = DropVisualTier.normal,
+  })  : rareExpChargeUnits = exp > 0 && expTier == DropVisualTier.rare ? 1 : 0,
+        super(
+          radius: 8,
           anchor: Anchor.center,
           position: position,
         );
 
-  final int exp;
-  final int coins;
+  int exp;
+  int coins;
   final DropIconSet icons;
+  DropVisualTier expTier;
+  DropVisualTier coinTier;
+  int rareExpChargeUnits;
   bool isAttracted = false;
+  double _age = 0;
+
+  static final ui.Paint _expTrailPaint = ui.Paint()
+    ..color = const ui.Color(0x668FE388)
+    ..style = ui.PaintingStyle.stroke
+    ..strokeCap = ui.StrokeCap.round
+    ..strokeWidth = 3;
+  static final ui.Paint _coinTrailPaint = ui.Paint()
+    ..color = const ui.Color(0x66FFD36E)
+    ..style = ui.PaintingStyle.stroke
+    ..strokeCap = ui.StrokeCap.round
+    ..strokeWidth = 3;
+  static final ui.Paint _imagePaint = ui.Paint()
+    ..filterQuality = ui.FilterQuality.low;
+
+  double get age => _age;
+
+  bool get isRare {
+    return exp > 0
+        ? expTier == DropVisualTier.rare
+        : coinTier == DropVisualTier.rare;
+  }
+
+  bool get isExpDrop => exp > 0;
+
+  void absorb({
+    required int addedExp,
+    required int addedCoins,
+    required DropVisualTier addedExpTier,
+    required DropVisualTier addedCoinTier,
+  }) {
+    exp += addedExp;
+    coins += addedCoins;
+    if (addedExp > 0 && addedExpTier == DropVisualTier.rare) {
+      rareExpChargeUnits++;
+    }
+    expTier = _maxTier(expTier, addedExpTier);
+    coinTier = _maxTier(coinTier, addedCoinTier);
+    radius = _visualRadius;
+  }
 
   void moveToward(Vector2 target, double dt) {
     final direction = target - position;
@@ -67,20 +115,30 @@ class ExpGemComponent extends CircleComponent {
   }
 
   @override
+  void update(double dt) {
+    super.update(dt);
+    _age += dt;
+  }
+
+  @override
   void render(ui.Canvas canvas) {
-    final glowPaint = ui.Paint()
-      ..color =
-          exp > 0 ? const ui.Color(0x338FE388) : const ui.Color(0x33FFD36E);
-    canvas.drawCircle(
-      ui.Offset.zero,
-      radius + 5,
-      glowPaint,
-    );
-    const iconSize = 14.0;
+    final tier = exp > 0 ? expTier : coinTier;
+    final tierScale = switch (tier) {
+      DropVisualTier.normal => 1.0,
+      DropVisualTier.high => 1.16,
+      DropVisualTier.rare => 1.34,
+    };
+    canvas.save();
+    if (isAttracted) {
+      final trailPaint = exp > 0 ? _expTrailPaint : _coinTrailPaint;
+      canvas.drawLine(
+          const ui.Offset(0, 8), const ui.Offset(0, 18), trailPaint);
+    }
+    final iconSize = 10.0 * tierScale;
     if (exp > 0) {
       _drawImage(
         canvas,
-        icons.expIconFor(exp),
+        icons.expIconFor(expTier),
         ui.Rect.fromCenter(
           center: ui.Offset.zero,
           width: iconSize,
@@ -91,7 +149,7 @@ class ExpGemComponent extends CircleComponent {
     if (coins > 0) {
       _drawImage(
         canvas,
-        icons.coinIconFor(coins),
+        icons.coinIconFor(coinTier),
         ui.Rect.fromCenter(
           center: ui.Offset.zero,
           width: iconSize,
@@ -99,6 +157,7 @@ class ExpGemComponent extends CircleComponent {
         ),
       );
     }
+    canvas.restore();
   }
 
   void _drawImage(ui.Canvas canvas, ui.Image image, ui.Rect dst) {
@@ -111,7 +170,20 @@ class ExpGemComponent extends CircleComponent {
         image.height.toDouble(),
       ),
       dst,
-      ui.Paint()..filterQuality = ui.FilterQuality.medium,
+      _imagePaint,
     );
+  }
+
+  double get _visualRadius {
+    final tier = exp > 0 ? expTier : coinTier;
+    return switch (tier) {
+      DropVisualTier.normal => 8,
+      DropVisualTier.high => 10,
+      DropVisualTier.rare => 12,
+    };
+  }
+
+  DropVisualTier _maxTier(DropVisualTier first, DropVisualTier second) {
+    return first.index >= second.index ? first : second;
   }
 }

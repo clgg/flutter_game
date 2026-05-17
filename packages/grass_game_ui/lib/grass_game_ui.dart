@@ -6,6 +6,7 @@ export 'src/application/use_cases/submit_grass_game_result.dart';
 export 'src/presentation/controllers/grass_game_page_controller.dart';
 export 'src/presentation/pages/grass_game_loadout_page.dart';
 export 'src/presentation/pages/grass_game_page.dart';
+export 'src/presentation/pages/grass_game_skill_guide_page.dart';
 export 'src/presentation/pages/grass_game_stage_select_page.dart';
 export 'src/presentation/widgets/game_result_panel.dart';
 export 'src/presentation/widgets/grass_game_hud.dart';

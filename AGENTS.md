@@ -14,6 +14,10 @@
 - 技术设计：`doc/ideas/割草类小游戏_Flutter_Flame技术设计.md`
 - 阶段计划：`doc/ideas/割草类小游戏_Flutter_Flame逐步开发计划.md`
 - 素材规范：`doc/ideas/割草类小游戏_角色敌人武器素材设计规范.md`
+- 人物怪兽图片规范：`doc/ideas/割草类小游戏_人物怪兽图片接入规范.md`
+- 技能树与大招：`doc/ideas/割草类小游戏_技能树与大招设计.md`
+- 局内成长奖励：`doc/ideas/割草类小游戏_局内成长奖励与特效方案.md`
+- 上线体验差距：`doc/ideas/割草类小游戏_上线体验差距清单.md`
 - 大型架构：`doc/architecture/大型项目架构设计.md`
 - 多语言架构：`doc/architecture/多语言架构设计.md`
 - 海外登录设计：`doc/architecture/海外登录页面设计.md`

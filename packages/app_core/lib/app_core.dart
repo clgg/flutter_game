@@ -5,3 +5,4 @@ export 'src/logging/app_logger.dart';
 export 'src/network/http_client.dart';
 export 'src/result/result.dart';
 export 'src/storage/key_value_store.dart';
+export 'src/theme/app_game_theme.dart';

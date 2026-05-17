@@ -9,6 +9,7 @@ export 'src/domain/entities/skill_profile.dart';
 export 'src/domain/entities/weapon_profile.dart';
 export 'src/domain/repositories/game_config_repository.dart';
 export 'src/domain/repositories/game_record_repository.dart';
+export 'src/domain/services/battle_exp_curve.dart';
 export 'src/domain/services/reward_calculator.dart';
 export 'src/domain/services/skill_option_selector.dart';
 export 'src/domain/value_objects/cooldown.dart';

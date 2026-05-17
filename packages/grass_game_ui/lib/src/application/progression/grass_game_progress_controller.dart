@@ -27,6 +27,7 @@ class GameStageDefinition {
     required this.bossName,
     required this.bossSpriteSheetAssetPath,
     required this.bossDeathAssetPath,
+    this.isDeathmatch = false,
   });
 
   final String id;
@@ -45,6 +46,7 @@ class GameStageDefinition {
   final String bossName;
   final String bossSpriteSheetAssetPath;
   final String bossDeathAssetPath;
+  final bool isDeathmatch;
 }
 
 class CharacterDefinition {
@@ -119,10 +121,14 @@ class GameLoadoutSnapshot {
 
   String get playerSpriteSheetAssetPath => character.gameSpriteSheetAssetPath;
 
-  int get weaponDamage => weapon.damage + (weaponProgress.level - 1) * 2;
+  int get weaponDamage {
+    final multiplier = 1 + (weaponProgress.level - 1) * 0.05;
+    return math.max(1, (weapon.damage * multiplier).round());
+  }
 
   double get weaponCooldownMultiplier {
-    return math.max(0.55, 1 - (weaponProgress.level - 1) * 0.06);
+    final multiplier = 1 + (weaponProgress.level - 1) * 0.05;
+    return math.max(0.5, 1 / multiplier);
   }
 
   double get weaponFireIntervalSeconds {
@@ -131,6 +137,8 @@ class GameLoadoutSnapshot {
 }
 
 class GrassGameProgressController extends ChangeNotifier {
+  static const deathmatchStageId = 'deathmatch';
+
   GrassGameProgressController({
     required this.characters,
     required this.weapons,
@@ -146,19 +154,19 @@ class GrassGameProgressController extends ChangeNotifier {
         _completedStageIds = Set.of(completedStageIds);
 
   factory GrassGameProgressController.defaults() {
-    const weapons = grassGameWeaponCatalog;
+    final weapons = _limitWeaponsPerStar(grassGameWeaponCatalog, limit: 20);
 
     final controller = GrassGameProgressController(
       characters: const [
         CharacterDefinition(
           id: 'runner',
           name: 'Male',
-          role: 'Balanced',
+          role: 'HP 100 · SPD 8',
           baseHp: 100,
           baseSpeedMultiplier: 1,
           colorValue: 0xFF49D17D,
           avatarAssetPath:
-              'assets/game/grass_game/images/player/avatar_soldier.webp',
+              'assets/game/grass_game/images/player/avatar_soldier.png',
           walkPreviewAssetPath:
               'assets/game/grass_game/images/player/preview_male_walk.gif',
           gameSpriteSheetAssetPath:
@@ -168,12 +176,12 @@ class GrassGameProgressController extends ChangeNotifier {
         CharacterDefinition(
           id: 'guard',
           name: 'Female',
-          role: 'High HP',
-          baseHp: 124,
-          baseSpeedMultiplier: 0.92,
+          role: 'HP 90 · SPD 9',
+          baseHp: 90,
+          baseSpeedMultiplier: 1.125,
           colorValue: 0xFFFF6B6B,
           avatarAssetPath:
-              'assets/game/grass_game/images/player/avatar_female.webp',
+              'assets/game/grass_game/images/player/avatar_female.png',
           walkPreviewAssetPath:
               'assets/game/grass_game/images/player/preview_female_walk.gif',
           gameSpriteSheetAssetPath:
@@ -183,16 +191,91 @@ class GrassGameProgressController extends ChangeNotifier {
         CharacterDefinition(
           id: 'scout',
           name: 'Robot',
-          role: 'Fast',
-          baseHp: 84,
-          baseSpeedMultiplier: 1.16,
+          role: 'HP 120 · SPD 7',
+          baseHp: 120,
+          baseSpeedMultiplier: 0.875,
           colorValue: 0xFFFFC857,
           avatarAssetPath:
-              'assets/game/grass_game/images/player/avatar_robot.webp',
+              'assets/game/grass_game/images/player/avatar_robot.png',
           walkPreviewAssetPath:
               'assets/game/grass_game/images/player/preview_robot_walk.gif',
           gameSpriteSheetAssetPath:
               'assets/game/grass_game/images/player/player_robot_walk_sheet.png',
+          isOwned: true,
+        ),
+        CharacterDefinition(
+          id: 'aotuman',
+          name: '凹凸曼',
+          role: 'HP 200 · SPD 9',
+          baseHp: 200,
+          baseSpeedMultiplier: 1.125,
+          colorValue: 0xFFE63946,
+          avatarAssetPath:
+              'assets/game/grass_game/images/player/avatar_aotuman.png',
+          walkPreviewAssetPath:
+              'assets/game/grass_game/images/player/preview_aotuman_walk.gif',
+          gameSpriteSheetAssetPath:
+              'assets/game/grass_game/images/player/player_aotuman_walk_sheet.png',
+          isOwned: true,
+        ),
+        CharacterDefinition(
+          id: 'aomeijia',
+          name: '奥美家',
+          role: 'HP 160 · SPD 10',
+          baseHp: 160,
+          baseSpeedMultiplier: 1.25,
+          colorValue: 0xFF27D6FF,
+          avatarAssetPath:
+              'assets/game/grass_game/images/player/avatar_aomeijia.png',
+          walkPreviewAssetPath:
+              'assets/game/grass_game/images/player/preview_aomeijia_walk.gif',
+          gameSpriteSheetAssetPath:
+              'assets/game/grass_game/images/player/player_aomeijia_sword_walk_sheet.png',
+          isOwned: true,
+        ),
+        CharacterDefinition(
+          id: 'jingangman',
+          name: '金刚曼',
+          role: 'HP 300 · SPD 8',
+          baseHp: 300,
+          baseSpeedMultiplier: 1,
+          colorValue: 0xFFB65B4A,
+          avatarAssetPath:
+              'assets/game/grass_game/images/player/avatar_jingangman.png',
+          walkPreviewAssetPath:
+              'assets/game/grass_game/images/player/preview_jingangman_walk.gif',
+          gameSpriteSheetAssetPath:
+              'assets/game/grass_game/images/player/player_dark_cosmic_knight_walk_sheet.png',
+          isOwned: true,
+        ),
+        CharacterDefinition(
+          id: 'beliya',
+          name: '贝利牙',
+          role: 'HP 250 · SPD 9',
+          baseHp: 250,
+          baseSpeedMultiplier: 1.125,
+          colorValue: 0xFFFF3B4F,
+          avatarAssetPath:
+              'assets/game/grass_game/images/player/avatar_beliya.png',
+          walkPreviewAssetPath:
+              'assets/game/grass_game/images/player/preview_beliya_walk.gif',
+          gameSpriteSheetAssetPath:
+              'assets/game/grass_game/images/player/player_beliya_dark_cape_walk_sheet.png',
+          isOwned: true,
+        ),
+        CharacterDefinition(
+          id: 'sevengar',
+          name: '赛文加',
+          role: 'HP 400 · SPD 6',
+          baseHp: 400,
+          baseSpeedMultiplier: 0.75,
+          colorValue: 0xFFB8C2CC,
+          avatarAssetPath:
+              'assets/game/grass_game/images/player/avatar_sevengar.png',
+          walkPreviewAssetPath:
+              'assets/game/grass_game/images/player/preview_sevengar_walk.gif',
+          gameSpriteSheetAssetPath:
+              'assets/game/grass_game/images/player/player_round_robot_walk_sheet.png',
           isOwned: true,
         ),
       ],
@@ -205,7 +288,7 @@ class GrassGameProgressController extends ChangeNotifier {
             level: 1,
           ),
       },
-      coins: 10160,
+      coins: 320,
       profileLevel: 1,
       profileExp: 0,
       selectedCharacterId: 'runner',
@@ -215,6 +298,23 @@ class GrassGameProgressController extends ChangeNotifier {
     );
     unawaited(controller.restore());
     return controller;
+  }
+
+  static List<WeaponDefinition> _limitWeaponsPerStar(
+    List<WeaponDefinition> weapons, {
+    required int limit,
+  }) {
+    final countsByStar = <int, int>{};
+    final selected = <WeaponDefinition>[];
+    for (final weapon in weapons) {
+      final count = countsByStar[weapon.maxStars] ?? 0;
+      if (count >= limit) {
+        continue;
+      }
+      countsByStar[weapon.maxStars] = count + 1;
+      selected.add(weapon);
+    }
+    return selected;
   }
 
   static const _storagePrefix = 'grass_game_progress.';
@@ -232,9 +332,52 @@ class GrassGameProgressController extends ChangeNotifier {
     for (var chapter = 1; chapter <= 10; chapter++)
       for (var stage = 1; stage <= 5 + (chapter % 4); stage++)
         _createStage(chapter, stage),
+    _deathmatchStage,
   ];
 
+  static const List<String> _deathmatchEnemyTypes = [
+    'guaishou_black_armored_beetle',
+    'guaishou_black_white_armor',
+    'guaishou_blue_antenna_alien',
+    'guaishou_gold_snail_mouth',
+    'guaishou_gray_block_head',
+    'guaishou_horned_brute',
+    'guaishou_insect_claw',
+    'guaishou_red_gold_spear_alien',
+    'guaishou_shell_kaiju',
+    'guaishou_silver_mask_rifle',
+    'guaishou_spiked_mane_beast',
+    'guaishou_winged_dragon',
+  ];
+
+  static const GameStageDefinition _deathmatchStage = GameStageDefinition(
+    id: deathmatchStageId,
+    chapter: 11,
+    stage: 1,
+    name: '死斗模式',
+    description:
+        'Endless melee survival. Guaishou become stronger every minute.',
+    difficulty: 99,
+    enemyCount: 0,
+    enemyStrengthMultiplier: 1.25,
+    enemyTypes: _deathmatchEnemyTypes,
+    bossTimeSeconds: 600,
+    rewardExp: 0,
+    rewardCoins: 0,
+    bossId: 'deathmatch',
+    bossName: 'Endless',
+    bossSpriteSheetAssetPath:
+        'assets/game/grass_game/images/bosses/boss_tiger_walk.png',
+    bossDeathAssetPath:
+        'assets/game/grass_game/images/bosses/boss_tiger_dead.png',
+    isDeathmatch: true,
+  );
+
   static GameStageDefinition _createStage(int chapter, int stage) {
+    if (chapter == 1 && stage <= 5) {
+      return _createEarlyStage(stage);
+    }
+
     const bossIds = [
       'tiger',
       'crocodile',
@@ -254,7 +397,12 @@ class GrassGameProgressController extends ChangeNotifier {
     final bossIndex = (chapter + stage - 2) % bossIds.length;
     final enemyTypes = <String>[
       'basic',
+      'lamb',
+      'piglet',
+      if (chapter >= 2 || stage >= 2) 'calf',
       if (chapter >= 2 || stage >= 3) 'fast',
+      if (chapter >= 3 || stage >= 3) 'rooster',
+      if (chapter >= 4 || stage >= 4) 'turkey',
       if (chapter >= 4 || stage >= 5) 'tank',
     ];
     final bossTimeSeconds = 210 + chapter * 8 + stage * 10;
@@ -266,19 +414,66 @@ class GrassGameProgressController extends ChangeNotifier {
       description:
           'Clear wave ${chapter * 10 + stage} and defeat ${bossNames[bossIndex]}.',
       difficulty: chapter * 10 + stage,
-      enemyCount: 70 + chapter * 16 + stage * 7,
+      enemyCount: (70 + chapter * 16 + stage * 7) * 4,
       enemyStrengthMultiplier: double.parse(
           (1 + (chapter - 1) * 0.18 + (stage - 1) * 0.05).toStringAsFixed(2)),
       enemyTypes: enemyTypes,
       bossTimeSeconds: bossTimeSeconds,
-      rewardExp: 80 + chapter * 18 + stage * 6,
-      rewardCoins: 25 + chapter * 5 + stage * 2,
+      rewardExp: 110 + chapter * 20 + stage * 7,
+      rewardCoins: 45 + chapter * 9 + stage * 5,
       bossId: bossIds[bossIndex],
       bossName: bossNames[bossIndex],
       bossSpriteSheetAssetPath:
           'assets/game/grass_game/images/bosses/boss_${bossIds[bossIndex]}_walk.png',
       bossDeathAssetPath:
           'assets/game/grass_game/images/bosses/boss_${bossIds[bossIndex]}_dead.png',
+    );
+  }
+
+  static GameStageDefinition _createEarlyStage(int stage) {
+    const bossIds = ['tiger', 'crocodile', 'zombie', 'skeleton', 'trex'];
+    const bossNames = ['Tiger', 'Crocodile', 'Zombie', 'Skeleton', 'T-Rex'];
+    const enemyCounts = [180, 240, 300, 360, 440];
+    const bossTimes = [135, 165, 190, 220, 250];
+    const strength = [0.82, 0.92, 1.0, 1.12, 1.24];
+    const rewardExp = [70, 88, 108, 132, 160];
+    const rewardCoins = [35, 45, 60, 80, 110];
+    final index = stage - 1;
+    final enemyTypes = <String>[
+      'basic',
+      'lamb',
+      'piglet',
+      if (stage >= 2) 'calf',
+      if (stage >= 2) 'fast',
+      if (stage >= 3) 'rooster',
+      if (stage >= 4) 'turkey',
+      if (stage >= 4) 'tank',
+    ];
+    return GameStageDefinition(
+      id: 'c1_s$stage',
+      chapter: 1,
+      stage: stage,
+      name: 'Chapter 1-$stage',
+      description: switch (stage) {
+        1 => 'Learn movement, collect EXP, and defeat the first Tiger.',
+        2 => 'Fast enemies enter the field. Keep moving.',
+        3 => 'Weapon upgrades begin to matter against denser waves.',
+        4 => 'Tank enemies test your damage and spacing.',
+        _ => 'First real challenge before Chapter 2 unlocks.',
+      },
+      difficulty: 10 + stage,
+      enemyCount: enemyCounts[index],
+      enemyStrengthMultiplier: strength[index],
+      enemyTypes: enemyTypes,
+      bossTimeSeconds: bossTimes[index],
+      rewardExp: rewardExp[index],
+      rewardCoins: rewardCoins[index],
+      bossId: bossIds[index],
+      bossName: bossNames[index],
+      bossSpriteSheetAssetPath:
+          'assets/game/grass_game/images/bosses/boss_${bossIds[index]}_walk.png',
+      bossDeathAssetPath:
+          'assets/game/grass_game/images/bosses/boss_${bossIds[index]}_dead.png',
     );
   }
 
@@ -301,6 +496,27 @@ class GrassGameProgressController extends ChangeNotifier {
   }
 
   bool isStageCompleted(String stageId) => _completedStageIds.contains(stageId);
+
+  String? get nextStageId {
+    final index = _stages.indexWhere((item) => item.id == selectedStageId);
+    if (index < 0 || index >= _stages.length - 1) {
+      return null;
+    }
+    return _stages[index + 1].id;
+  }
+
+  bool get hasNextStage => nextStageId != null;
+
+  bool canSelectStage(String stageId) {
+    final index = _stages.indexWhere((item) => item.id == stageId);
+    if (index < 0) {
+      return false;
+    }
+    if (_stages[index].isDeathmatch || index == 0) {
+      return true;
+    }
+    return _completedStageIds.contains(_stages[index - 1].id);
+  }
 
   List<GameStageDefinition> stagesForChapter(int chapter) {
     return _stages.where((item) => item.chapter == chapter).toList();
@@ -359,15 +575,29 @@ class GrassGameProgressController extends ChangeNotifier {
     return true;
   }
 
-  void selectStage(String id) {
+  bool selectStage(String id) {
+    if (!canSelectStage(id)) {
+      return false;
+    }
     selectedStageId = id;
     unawaited(save());
     notifyListeners();
+    return true;
+  }
+
+  bool selectNextStage() {
+    final id = nextStageId;
+    if (id == null) {
+      return false;
+    }
+    return selectStage(id);
   }
 
   int upgradeCost(String weaponId) {
     final progress = progressFor(weaponId);
-    return 70 + progress.level * 45;
+    final weapon = weapons.firstWhere((item) => item.id == weaponId);
+    final baseCost = math.max(70, (weapon.buyCost * 0.15).round());
+    return (baseCost * math.pow(1.1, progress.level - 1)).ceil();
   }
 
   bool buyWeapon(String weaponId) {
@@ -426,10 +656,6 @@ class GrassGameProgressController extends ChangeNotifier {
     }
 
     final savedStageId = prefs.getString(_selectedStageKey);
-    if (savedStageId != null &&
-        _stages.any((item) => item.id == savedStageId)) {
-      selectedStageId = savedStageId;
-    }
 
     final ownedWeapons = prefs.getStringList(_ownedWeaponsKey) ?? const [];
     final weaponLevels = _decodeWeaponLevels(
@@ -453,6 +679,13 @@ class GrassGameProgressController extends ChangeNotifier {
           (id) => _stages.any((item) => item.id == id),
         ),
       );
+    if (savedStageId != null &&
+        _stages.any((item) => item.id == savedStageId) &&
+        canSelectStage(savedStageId)) {
+      selectedStageId = savedStageId;
+    } else if (!canSelectStage(selectedStageId)) {
+      selectedStageId = _stages.first.id;
+    }
     notifyListeners();
   }
 

@@ -11,6 +11,8 @@ class ProjectileComponent extends CircleComponent {
     required Vector2 position,
     required this.visualStyle,
     this.image,
+    this.skillTag,
+    this.pierceRemaining = 0,
   }) : super(
           radius: visualStyle.collisionRadius,
           anchor: Anchor.center,
@@ -20,6 +22,18 @@ class ProjectileComponent extends CircleComponent {
     _direction = velocity.length2 == 0 ? Vector2(1, 0) : velocity.normalized();
     _angle = math.atan2(_direction.y, _direction.x);
     _previousPosition = position.clone();
+    _imagePaint = ui.Paint()
+      ..filterQuality = ui.FilterQuality.none
+      ..colorFilter = visualStyle.tint == null
+          ? null
+          : ui.ColorFilter.mode(visualStyle.tint!, ui.BlendMode.srcATop);
+    _trailPaint = ui.Paint()
+      ..color = visualStyle.trailColor.withAlpha(130)
+      ..strokeWidth = visualStyle.trailWidth
+      ..strokeCap = ui.StrokeCap.round;
+    _glowPaint = ui.Paint()..color = visualStyle.glowColor;
+    _corePaint = ui.Paint()..color = visualStyle.coreColor;
+    _highlightPaint = ui.Paint()..color = const ui.Color(0xEFFFFFFF);
   }
 
   final int damage;
@@ -27,11 +41,18 @@ class ProjectileComponent extends CircleComponent {
   final double maxTravelDistance;
   final ProjectileVisualStyle visualStyle;
   final ui.Image? image;
+  final String? skillTag;
+  int pierceRemaining;
   double age = 0;
   double _travelDistance = 0;
   late final double _angle;
   late final Vector2 _direction;
   late Vector2 _previousPosition;
+  late final ui.Paint _imagePaint;
+  late final ui.Paint _trailPaint;
+  late final ui.Paint _glowPaint;
+  late final ui.Paint _corePaint;
+  late final ui.Paint _highlightPaint;
 
   bool get hasExceededRange => _travelDistance >= maxTravelDistance;
 
@@ -69,11 +90,7 @@ class ProjectileComponent extends CircleComponent {
         width: visualStyle.imageWidth,
         height: visualStyle.imageHeight,
       ),
-      ui.Paint()
-        ..filterQuality = ui.FilterQuality.none
-        ..colorFilter = visualStyle.tint == null
-            ? null
-            : ui.ColorFilter.mode(visualStyle.tint!, ui.BlendMode.srcATop),
+      _imagePaint,
     );
     canvas.restore();
   }
@@ -84,25 +101,8 @@ class ProjectileComponent extends CircleComponent {
     final localTrail = delta.length2 > 1 ? delta : fallbackTrail;
     final start = ui.Offset(localTrail.x, localTrail.y);
     final end = ui.Offset.zero;
-    final paint = ui.Paint()
-      ..strokeWidth = visualStyle.trailWidth
-      ..strokeCap = ui.StrokeCap.round
-      ..shader = ui.Gradient.linear(
-        start,
-        end,
-        [
-          visualStyle.trailColor.withAlpha(0),
-          visualStyle.trailColor.withAlpha(110),
-          visualStyle.coreColor.withAlpha(230),
-        ],
-        const [0, 0.58, 1],
-      );
-    canvas.drawLine(start, end, paint);
-
-    final glowPaint = ui.Paint()
-      ..color = visualStyle.glowColor
-      ..maskFilter = const ui.MaskFilter.blur(ui.BlurStyle.normal, 5);
-    canvas.drawCircle(ui.Offset.zero, visualStyle.glowRadius, glowPaint);
+    canvas.drawLine(start, end, _trailPaint);
+    canvas.drawCircle(ui.Offset.zero, visualStyle.glowRadius, _glowPaint);
   }
 
   void _drawFallbackProjectile(ui.Canvas canvas) {
@@ -113,7 +113,6 @@ class ProjectileComponent extends CircleComponent {
   }
 
   void _drawCore(ui.Canvas canvas) {
-    final paint = ui.Paint()..color = visualStyle.coreColor;
     canvas.drawRRect(
       ui.RRect.fromRectAndRadius(
         ui.Rect.fromCenter(
@@ -123,13 +122,12 @@ class ProjectileComponent extends CircleComponent {
         ),
         ui.Radius.circular(visualStyle.coreWidth),
       ),
-      paint,
+      _corePaint,
     );
-    final highlightPaint = ui.Paint()..color = const ui.Color(0xEFFFFFFF);
     canvas.drawCircle(
       ui.Offset(visualStyle.coreLength * 0.24, 0),
       visualStyle.coreWidth * 0.33,
-      highlightPaint,
+      _highlightPaint,
     );
   }
 }
@@ -152,6 +150,19 @@ class ProjectileVisualStyle {
 
   factory ProjectileVisualStyle.forKind(String kind) {
     return switch (kind) {
+      'star_projectile' => const ProjectileVisualStyle(
+          collisionRadius: 4,
+          imageWidth: 26,
+          imageHeight: 18,
+          coreLength: 20,
+          coreWidth: 5,
+          trailLength: 44,
+          trailWidth: 4,
+          glowRadius: 10,
+          coreColor: ui.Color(0xFFFFFFFF),
+          trailColor: ui.Color(0xFF8FD7FF),
+          glowColor: ui.Color(0x558FD7FF),
+        ),
       '霰弹枪' => const ProjectileVisualStyle(
           collisionRadius: 6,
           imageWidth: 34,
