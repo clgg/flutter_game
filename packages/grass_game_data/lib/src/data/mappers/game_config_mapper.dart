@@ -13,6 +13,8 @@ class GameConfigMapper {
             hp: enemy.hp,
             moveSpeed: enemy.moveSpeed,
             expDrop: enemy.expDrop,
+            meleeDamageMin: enemy.meleeDamageMin,
+            meleeDamageMax: enemy.meleeDamageMax,
           ),
         )
         .toList();

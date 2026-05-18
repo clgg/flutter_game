@@ -114,12 +114,14 @@ void main() {
       controller.profileLevel = 3;
       controller.coins = controller.upgradeCost(weapon.id);
 
+      expect(controller.upgradeCost(weapon.id), 70);
       expect(controller.upgradeWeapon(weapon.id), isTrue);
+      expect(controller.upgradeCost(weapon.id), 82);
 
       final loadout = controller.currentLoadout;
-      expect(loadout.playerMaxHp, controller.selectedCharacter.baseHp + 8);
-      expect(loadout.weaponDamage, (baseDamage * 1.05).round());
-      expect(loadout.weaponCooldownMultiplier, closeTo(1 / 1.05, 0.001));
+      expect(loadout.playerMaxHp, controller.selectedCharacter.baseHp + 16);
+      expect(loadout.weaponDamage, (baseDamage * 1.09 * 1.03).round());
+      expect(loadout.weaponCooldownMultiplier, closeTo(1 / 1.055, 0.001));
     });
 
     test('early stage rewards follow in-run growth economy targets', () async {
@@ -132,27 +134,32 @@ void main() {
           controller.stages.firstWhere((item) => item.id == 'c1_s$stage'),
       ];
 
-      expect(
-        earlyStages.map((stage) => stage.rewardCoins),
-        [35, 45, 60, 80, 110],
-      );
-      expect(
-        earlyStages.map((stage) => stage.rewardExp),
-        [70, 88, 108, 132, 160],
-      );
+      expect(earlyStages.map((stage) => stage.enemyCount),
+          [150, 210, 280, 350, 430]);
+      expect(earlyStages.map((stage) => stage.bossTimeSeconds),
+          [145, 170, 200, 230, 260]);
+      expect(earlyStages.map((stage) => stage.enemyStrengthMultiplier),
+          [0.78, 0.9, 1.02, 1.16, 1.3]);
+      expect(earlyStages.map((stage) => stage.rewardCoins),
+          [60, 85, 115, 155, 210]);
+      expect(earlyStages.map((stage) => stage.rewardExp),
+          [90, 115, 145, 180, 225]);
     });
 
-    test('new hero characters expose configured stats and assets', () async {
+    test('hero characters expose balance stats and assets', () async {
       SharedPreferences.setMockInitialValues({});
       final controller = GrassGameProgressController.defaults();
       await controller.loadSavedProgress();
 
-      final expected = <String, (String, int, double)>{
-        'aotuman': ('凹凸曼', 200, 1.125),
-        'aomeijia': ('奥美家', 160, 1.25),
-        'jingangman': ('金刚曼', 300, 1.0),
-        'beliya': ('贝利牙', 250, 1.125),
-        'sevengar': ('赛文加', 400, 0.75),
+      final expected = <String, (String, int, double, double)>{
+        'runner': ('Male', 130, 1.0, 1.0),
+        'guard': ('Female', 105, 1.125, 0.95),
+        'scout': ('Robot', 150, 0.875, 1.08),
+        'aotuman': ('凹凸曼', 220, 1.125, 1.05),
+        'aomeijia': ('奥美家', 170, 1.25, 0.96),
+        'jingangman': ('金刚曼', 320, 1.0, 1.18),
+        'beliya': ('贝利牙', 260, 1.125, 1.12),
+        'sevengar': ('赛文加', 430, 0.75, 1.28),
       };
 
       for (final entry in expected.entries) {
@@ -162,6 +169,7 @@ void main() {
         expect(character.name, entry.value.$1);
         expect(character.baseHp, entry.value.$2);
         expect(character.baseSpeedMultiplier, closeTo(entry.value.$3, 0.001));
+        expect(character.baseAttackMultiplier, closeTo(entry.value.$4, 0.001));
         expect(character.isOwned, isTrue);
         expect(File(character.avatarAssetPath).existsSync(), isTrue);
         expect(File(character.walkPreviewAssetPath).existsSync(), isTrue);

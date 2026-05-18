@@ -125,11 +125,35 @@ class GrassSurvivorGame extends FlameGame {
     ..strokeWidth = 2;
   static const double _attackRange = 260 * 0.8;
   static const double _enemyGridCellSize = 96;
+  static const double _waveRuntimeIntervalMultiplier = 0.35;
+  static const double _enemySpeedBaseMultiplier = 0.9;
+  static const double _enemySpeedStrengthScale = 0.07;
+  static const double _enemySpeedGrowthCap = 1.35;
   static const double _spawnZoneInitialRadius = 86;
   static const double _spawnZoneShrinkStartSeconds = 3;
   static const double _spawnZoneDisappearSeconds = 5;
   static const int _deathmatchInitialLevelUps = 5;
   static const int _chargedUltimateRequiredCharge = 10;
+  static const double _expHighDropChance = 0.14;
+  static const double _expRareDropChance = 0.04;
+  static const double _basicCoinDropChance = 0.18;
+  static const double _fastCoinDropChance = 0.24;
+  static const double _tankCoinDropChance = 0.40;
+  static const int _bossCoinDropMin = 40;
+  static const int _bossCoinDropMax = 80;
+  static const double _deathmatchRareCoinDropChance = 0.18;
+  static const double _deathmatchHighCoinDropChance = 0.44;
+  static const double _starProjectileDamageMultiplier = 0.42;
+  static const double _starBarrageDamageMultiplier = 0.62;
+  static const double _orbitBladeDamageMultiplier = 0.36;
+  static const double _orbitBladeLevel5DamageMultiplier = 0.48;
+  static const double _thunderMainDamageMultiplier = 1.50;
+  static const double _thunderChainDamageMultiplier = 0.62;
+  static const double _voidPickupDamageMultiplier = 0.35;
+  static const double _blackHoleDamageMultiplier = 0.50;
+  static const double _blackHoleExplosionDamageMultiplier = 1.70;
+  static const double _blackMoonDamageMultiplier = 0.70;
+  static const double _blackMoonExplosionDamageMultiplier = 3.40;
 
   double _elapsed = 0;
   double _spawnTimer = 0;
@@ -828,7 +852,10 @@ class GrassSurvivorGame extends FlameGame {
     if (wave == null) {
       return;
     }
-    final spawnInterval = math.max(0.12, wave.spawnIntervalSeconds * 0.35);
+    final spawnInterval = math.max(
+      0.12,
+      wave.spawnIntervalSeconds * _waveRuntimeIntervalMultiplier,
+    );
     if (_spawnTimer < spawnInterval) {
       return;
     }
@@ -847,10 +874,22 @@ class GrassSurvivorGame extends FlameGame {
           (enemyConfig.hp * stageEnemyStrengthMultiplier).round(),
         ),
         moveSpeed: enemyConfig.moveSpeed *
-            math.min(1.35, 0.9 + stageEnemyStrengthMultiplier * 0.07),
+            math.min(
+              _enemySpeedGrowthCap,
+              _enemySpeedBaseMultiplier +
+                  stageEnemyStrengthMultiplier * _enemySpeedStrengthScale,
+            ),
         expDrop: enemyConfig.expDrop,
         position: _randomSpawnPosition(),
         animationSet: _enemyAnimations[enemyConfig.id],
+        meleeDamageMin: math.max(
+          1,
+          (enemyConfig.meleeDamageMin * stageEnemyStrengthMultiplier).round(),
+        ),
+        meleeDamageMax: math.max(
+          1,
+          (enemyConfig.meleeDamageMax * stageEnemyStrengthMultiplier).round(),
+        ),
       );
       _enemies.add(enemy);
       add(enemy);
@@ -1083,7 +1122,10 @@ class GrassSurvivorGame extends FlameGame {
     }
 
     final extraCount = 1 + (level >= 3 ? 2 : 0) + (level >= 5 ? 1 : 0);
-    final damage = math.max(1, (_weaponDamage * 0.35).ceil());
+    final damage = math.max(
+      1,
+      (_weaponDamage * _starProjectileDamageMultiplier).ceil(),
+    );
     for (var i = 0; i < extraCount; i++) {
       final angle = extraCount == 1
           ? 0.0
@@ -1114,7 +1156,10 @@ class GrassSurvivorGame extends FlameGame {
       _spawnProjectile(
         direction: direction,
         position: player.position + direction * 36,
-        damage: math.max(1, (_weaponDamage * 0.55).ceil()),
+        damage: math.max(
+          1,
+          (_weaponDamage * _starBarrageDamageMultiplier).ceil(),
+        ),
         speed: 470,
         range: _attackRange * 1.15,
         style: ProjectileVisualStyle.forKind('star_projectile'),
@@ -1556,8 +1601,14 @@ class GrassSurvivorGame extends FlameGame {
     final radius = stormPhase
         ? 70 + 80 * math.sin((_moonWheelTimer / 2.4) * math.pi)
         : 70 * (level >= 5 ? 1.22 : 1.0);
-    final damage =
-        math.max(1, (_weaponDamage * (level >= 5 ? 0.42 : 0.32)).ceil());
+    final damage = math.max(
+      1,
+      (_weaponDamage *
+              (level >= 5
+                  ? _orbitBladeLevel5DamageMultiplier
+                  : _orbitBladeDamageMultiplier))
+          .ceil(),
+    );
 
     for (var i = 0; i < bladeCount; i++) {
       final angle = _orbitAngle + math.pi * 2 * i / bladeCount;
@@ -1638,7 +1689,10 @@ class GrassSurvivorGame extends FlameGame {
     if (enemy.isDead) {
       return;
     }
-    final damage = math.max(2, (_weaponDamage * 1.35).ceil());
+    final damage = math.max(
+      2,
+      (_weaponDamage * _thunderMainDamageMultiplier).ceil(),
+    );
     enemy.takeDamage(enemy.enemyId == 'boss' ? (damage * 0.6).ceil() : damage);
     _thunderStrikes.add(
       _ThunderStrike(
@@ -1675,7 +1729,9 @@ class GrassSurvivorGame extends FlameGame {
           target.position.distanceToSquared(origin) > radiusSquared) {
         continue;
       }
-      target.takeDamage(math.max(1, (_weaponDamage * 0.55).ceil()));
+      target.takeDamage(
+        math.max(1, (_weaponDamage * _thunderChainDamageMultiplier).ceil()),
+      );
       _thunderStrikes.add(
         _ThunderStrike(position: target.position.clone(), radius: 26),
       );
@@ -1858,8 +1914,12 @@ class GrassSurvivorGame extends FlameGame {
         center: player.position.clone(),
         radius: 190,
         duration: 3,
-        damage: math.max(2, (_weaponDamage * 0.7).ceil()),
-        explosionDamage: math.max(8, (_weaponDamage * 3).ceil()),
+        damage:
+            math.max(2, (_weaponDamage * _blackMoonDamageMultiplier).ceil()),
+        explosionDamage: math.max(
+          8,
+          (_weaponDamage * _blackMoonExplosionDamageMultiplier).ceil(),
+        ),
         pull: 130,
         color: const Color(0xFFB68CFF),
       ),
@@ -2947,10 +3007,10 @@ class GrassSurvivorGame extends FlameGame {
     }
 
     final roll = _random.nextDouble();
-    if (roll < 0.04) {
+    if (roll < _expRareDropChance) {
       return _DropRoll(enemy.expDrop * 4, DropVisualTier.rare);
     }
-    if (roll < 0.18) {
+    if (roll < _expRareDropChance + _expHighDropChance) {
       return _DropRoll(enemy.expDrop * 2, DropVisualTier.high);
     }
     return _DropRoll(enemy.expDrop, DropVisualTier.normal);
@@ -2959,32 +3019,37 @@ class GrassSurvivorGame extends FlameGame {
   _DropRoll _rollCoinDrop(EnemyComponent enemy) {
     if (isDeathmatch && enemy.enemyId.startsWith('guaishou_')) {
       final roll = _random.nextDouble();
-      if (roll < 0.18) {
+      if (roll < _deathmatchRareCoinDropChance) {
         return _DropRoll(10 + _random.nextInt(8), DropVisualTier.rare);
       }
-      if (roll < 0.62) {
+      if (roll <
+          _deathmatchRareCoinDropChance + _deathmatchHighCoinDropChance) {
         return _DropRoll(5 + _random.nextInt(5), DropVisualTier.high);
       }
       return const _DropRoll(0, DropVisualTier.high);
     }
     if (enemy.enemyId == 'boss') {
-      return _DropRoll(40 + _random.nextInt(41), DropVisualTier.rare);
+      return _DropRoll(
+        _bossCoinDropMin +
+            _random.nextInt(_bossCoinDropMax - _bossCoinDropMin + 1),
+        DropVisualTier.rare,
+      );
     }
     return switch (_enemyWaveGroup(enemy.enemyId)) {
       'tank' => _rollCoinByChance(
-          chance: 0.40,
+          chance: _tankCoinDropChance,
           min: 5,
           max: 8,
           tier: DropVisualTier.high,
         ),
       'fast' => _rollCoinByChance(
-          chance: 0.24,
+          chance: _fastCoinDropChance,
           min: 2,
           max: 4,
           tier: DropVisualTier.normal,
         ),
       _ => _rollCoinByChance(
-          chance: 0.18,
+          chance: _basicCoinDropChance,
           min: 1,
           max: 2,
           tier: DropVisualTier.normal,
@@ -3093,7 +3158,10 @@ class GrassSurvivorGame extends FlameGame {
         _damageEnemiesInRadius(
           origin: gem.position,
           radius: 48,
-          damage: math.max(1, (_weaponDamage * 0.35).ceil()),
+          damage: math.max(
+            1,
+            (_weaponDamage * _voidPickupDamageMultiplier).ceil(),
+          ),
           color: const Color(0xFF8FE388),
         );
       }
@@ -3106,8 +3174,14 @@ class GrassSurvivorGame extends FlameGame {
               center: gem.position.clone(),
               radius: 130,
               duration: 2,
-              damage: math.max(1, (_weaponDamage * 0.5).ceil()),
-              explosionDamage: math.max(4, (_weaponDamage * 1.7).ceil()),
+              damage: math.max(
+                1,
+                (_weaponDamage * _blackHoleDamageMultiplier).ceil(),
+              ),
+              explosionDamage: math.max(
+                4,
+                (_weaponDamage * _blackHoleExplosionDamageMultiplier).ceil(),
+              ),
               pull: 95,
               color: const Color(0xFF8FE388),
             ),

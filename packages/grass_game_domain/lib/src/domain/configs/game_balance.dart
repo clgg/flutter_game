@@ -10,8 +10,8 @@ class GameBalance {
   final int maxBattleSeconds;
 
   static const defaults = GameBalance(
-    playerMoveSpeed: 160,
-    baseExpToLevelUp: 6,
+    playerMoveSpeed: 165,
+    baseExpToLevelUp: 7,
     maxBattleSeconds: 300,
   );
 }

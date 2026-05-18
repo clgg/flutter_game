@@ -56,6 +56,7 @@ class CharacterDefinition {
     required this.role,
     required this.baseHp,
     required this.baseSpeedMultiplier,
+    required this.baseAttackMultiplier,
     required this.colorValue,
     required this.avatarAssetPath,
     required this.walkPreviewAssetPath,
@@ -68,6 +69,7 @@ class CharacterDefinition {
   final String role;
   final int baseHp;
   final double baseSpeedMultiplier;
+  final double baseAttackMultiplier;
   final int colorValue;
   final String avatarAssetPath;
   final String walkPreviewAssetPath;
@@ -113,22 +115,42 @@ class GameLoadoutSnapshot {
   final int profileLevel;
   final GameStageDefinition stage;
 
-  int get playerMaxHp => character.baseHp + (profileLevel - 1) * 4;
+  static const int _profileHpGainPerLevel = 8;
+  static const double _profileSpeedGainPerLevel = 0.006;
+  static const double _profileSpeedGainCap = 0.18;
+  static const double _profileAttackGainPerLevel = 0.015;
+  static const double _weaponDamageGainPerLevel = 0.09;
+  static const double _weaponCooldownGainPerLevel = 0.055;
+  static const double _weaponCooldownMinMultiplier = 0.42;
+
+  int get playerMaxHp {
+    return character.baseHp + (profileLevel - 1) * _profileHpGainPerLevel;
+  }
 
   double get playerMoveSpeedMultiplier {
-    return character.baseSpeedMultiplier + (profileLevel - 1) * 0.01;
+    return character.baseSpeedMultiplier +
+        math.min(
+          _profileSpeedGainCap,
+          (profileLevel - 1) * _profileSpeedGainPerLevel,
+        );
   }
 
   String get playerSpriteSheetAssetPath => character.gameSpriteSheetAssetPath;
 
   int get weaponDamage {
-    final multiplier = 1 + (weaponProgress.level - 1) * 0.05;
+    final weaponMultiplier =
+        1 + (weaponProgress.level - 1) * _weaponDamageGainPerLevel;
+    final profileMultiplier =
+        1 + (profileLevel - 1) * _profileAttackGainPerLevel;
+    final multiplier =
+        character.baseAttackMultiplier * weaponMultiplier * profileMultiplier;
     return math.max(1, (weapon.damage * multiplier).round());
   }
 
   double get weaponCooldownMultiplier {
-    final multiplier = 1 + (weaponProgress.level - 1) * 0.05;
-    return math.max(0.5, 1 / multiplier);
+    final multiplier =
+        1 + (weaponProgress.level - 1) * _weaponCooldownGainPerLevel;
+    return math.max(_weaponCooldownMinMultiplier, 1 / multiplier);
   }
 
   double get weaponFireIntervalSeconds {
@@ -161,9 +183,10 @@ class GrassGameProgressController extends ChangeNotifier {
         CharacterDefinition(
           id: 'runner',
           name: 'Male',
-          role: 'HP 100 · SPD 8',
-          baseHp: 100,
+          role: 'HP 130 · SPD 8 · ATK 1.00',
+          baseHp: 130,
           baseSpeedMultiplier: 1,
+          baseAttackMultiplier: 1,
           colorValue: 0xFF49D17D,
           avatarAssetPath:
               'assets/game/grass_game/images/player/avatar_soldier.png',
@@ -176,9 +199,10 @@ class GrassGameProgressController extends ChangeNotifier {
         CharacterDefinition(
           id: 'guard',
           name: 'Female',
-          role: 'HP 90 · SPD 9',
-          baseHp: 90,
+          role: 'HP 105 · SPD 9 · ATK 0.95',
+          baseHp: 105,
           baseSpeedMultiplier: 1.125,
+          baseAttackMultiplier: 0.95,
           colorValue: 0xFFFF6B6B,
           avatarAssetPath:
               'assets/game/grass_game/images/player/avatar_female.png',
@@ -191,9 +215,10 @@ class GrassGameProgressController extends ChangeNotifier {
         CharacterDefinition(
           id: 'scout',
           name: 'Robot',
-          role: 'HP 120 · SPD 7',
-          baseHp: 120,
+          role: 'HP 150 · SPD 7 · ATK 1.08',
+          baseHp: 150,
           baseSpeedMultiplier: 0.875,
+          baseAttackMultiplier: 1.08,
           colorValue: 0xFFFFC857,
           avatarAssetPath:
               'assets/game/grass_game/images/player/avatar_robot.png',
@@ -206,9 +231,10 @@ class GrassGameProgressController extends ChangeNotifier {
         CharacterDefinition(
           id: 'aotuman',
           name: '凹凸曼',
-          role: 'HP 200 · SPD 9',
-          baseHp: 200,
+          role: 'HP 220 · SPD 9 · ATK 1.05',
+          baseHp: 220,
           baseSpeedMultiplier: 1.125,
+          baseAttackMultiplier: 1.05,
           colorValue: 0xFFE63946,
           avatarAssetPath:
               'assets/game/grass_game/images/player/avatar_aotuman.png',
@@ -221,9 +247,10 @@ class GrassGameProgressController extends ChangeNotifier {
         CharacterDefinition(
           id: 'aomeijia',
           name: '奥美家',
-          role: 'HP 160 · SPD 10',
-          baseHp: 160,
+          role: 'HP 170 · SPD 10 · ATK 0.96',
+          baseHp: 170,
           baseSpeedMultiplier: 1.25,
+          baseAttackMultiplier: 0.96,
           colorValue: 0xFF27D6FF,
           avatarAssetPath:
               'assets/game/grass_game/images/player/avatar_aomeijia.png',
@@ -236,9 +263,10 @@ class GrassGameProgressController extends ChangeNotifier {
         CharacterDefinition(
           id: 'jingangman',
           name: '金刚曼',
-          role: 'HP 300 · SPD 8',
-          baseHp: 300,
+          role: 'HP 320 · SPD 8 · ATK 1.18',
+          baseHp: 320,
           baseSpeedMultiplier: 1,
+          baseAttackMultiplier: 1.18,
           colorValue: 0xFFB65B4A,
           avatarAssetPath:
               'assets/game/grass_game/images/player/avatar_jingangman.png',
@@ -251,9 +279,10 @@ class GrassGameProgressController extends ChangeNotifier {
         CharacterDefinition(
           id: 'beliya',
           name: '贝利牙',
-          role: 'HP 250 · SPD 9',
-          baseHp: 250,
+          role: 'HP 260 · SPD 9 · ATK 1.12',
+          baseHp: 260,
           baseSpeedMultiplier: 1.125,
+          baseAttackMultiplier: 1.12,
           colorValue: 0xFFFF3B4F,
           avatarAssetPath:
               'assets/game/grass_game/images/player/avatar_beliya.png',
@@ -266,9 +295,10 @@ class GrassGameProgressController extends ChangeNotifier {
         CharacterDefinition(
           id: 'sevengar',
           name: '赛文加',
-          role: 'HP 400 · SPD 6',
-          baseHp: 400,
+          role: 'HP 430 · SPD 6 · ATK 1.28',
+          baseHp: 430,
           baseSpeedMultiplier: 0.75,
+          baseAttackMultiplier: 1.28,
           colorValue: 0xFFB8C2CC,
           avatarAssetPath:
               'assets/game/grass_game/images/player/avatar_sevengar.png',
@@ -327,6 +357,9 @@ class GrassGameProgressController extends ChangeNotifier {
   static const _ownedWeaponsKey = '${_storagePrefix}owned_weapons';
   static const _weaponLevelsKey = '${_storagePrefix}weapon_levels';
   static const _completedStagesKey = '${_storagePrefix}completed_stages';
+  static const _weaponUpgradeMinBaseCost = 70;
+  static const _weaponUpgradeBuyCostRatio = 0.12;
+  static const _weaponUpgradeCostGrowth = 1.16;
 
   static final List<GameStageDefinition> _stages = [
     for (var chapter = 1; chapter <= 10; chapter++)
@@ -405,7 +438,7 @@ class GrassGameProgressController extends ChangeNotifier {
       if (chapter >= 4 || stage >= 4) 'turkey',
       if (chapter >= 4 || stage >= 5) 'tank',
     ];
-    final bossTimeSeconds = 210 + chapter * 8 + stage * 10;
+    final bossTimeSeconds = 220 + chapter * 9 + stage * 11;
     return GameStageDefinition(
       id: 'c${chapter}_s$stage',
       chapter: chapter,
@@ -414,13 +447,14 @@ class GrassGameProgressController extends ChangeNotifier {
       description:
           'Clear wave ${chapter * 10 + stage} and defeat ${bossNames[bossIndex]}.',
       difficulty: chapter * 10 + stage,
-      enemyCount: (70 + chapter * 16 + stage * 7) * 4,
+      enemyCount: (56 + chapter * 13 + stage * 6) * 4,
       enemyStrengthMultiplier: double.parse(
-          (1 + (chapter - 1) * 0.18 + (stage - 1) * 0.05).toStringAsFixed(2)),
+        (0.96 + (chapter - 1) * 0.16 + (stage - 1) * 0.055).toStringAsFixed(2),
+      ),
       enemyTypes: enemyTypes,
       bossTimeSeconds: bossTimeSeconds,
-      rewardExp: 110 + chapter * 20 + stage * 7,
-      rewardCoins: 45 + chapter * 9 + stage * 5,
+      rewardExp: 135 + chapter * 26 + stage * 10,
+      rewardCoins: 65 + chapter * 13 + stage * 8,
       bossId: bossIds[bossIndex],
       bossName: bossNames[bossIndex],
       bossSpriteSheetAssetPath:
@@ -433,11 +467,11 @@ class GrassGameProgressController extends ChangeNotifier {
   static GameStageDefinition _createEarlyStage(int stage) {
     const bossIds = ['tiger', 'crocodile', 'zombie', 'skeleton', 'trex'];
     const bossNames = ['Tiger', 'Crocodile', 'Zombie', 'Skeleton', 'T-Rex'];
-    const enemyCounts = [180, 240, 300, 360, 440];
-    const bossTimes = [135, 165, 190, 220, 250];
-    const strength = [0.82, 0.92, 1.0, 1.12, 1.24];
-    const rewardExp = [70, 88, 108, 132, 160];
-    const rewardCoins = [35, 45, 60, 80, 110];
+    const enemyCounts = [150, 210, 280, 350, 430];
+    const bossTimes = [145, 170, 200, 230, 260];
+    const strength = [0.78, 0.9, 1.02, 1.16, 1.3];
+    const rewardExp = [90, 115, 145, 180, 225];
+    const rewardCoins = [60, 85, 115, 155, 210];
     final index = stage - 1;
     final enemyTypes = <String>[
       'basic',
@@ -596,8 +630,12 @@ class GrassGameProgressController extends ChangeNotifier {
   int upgradeCost(String weaponId) {
     final progress = progressFor(weaponId);
     final weapon = weapons.firstWhere((item) => item.id == weaponId);
-    final baseCost = math.max(70, (weapon.buyCost * 0.15).round());
-    return (baseCost * math.pow(1.1, progress.level - 1)).ceil();
+    final baseCost = math.max(
+      _weaponUpgradeMinBaseCost,
+      (weapon.buyCost * _weaponUpgradeBuyCostRatio).round(),
+    );
+    return (baseCost * math.pow(_weaponUpgradeCostGrowth, progress.level - 1))
+        .ceil();
   }
 
   bool buyWeapon(String weaponId) {

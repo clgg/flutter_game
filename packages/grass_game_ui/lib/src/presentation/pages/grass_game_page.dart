@@ -80,7 +80,7 @@ class _GrassGamePageState extends State<GrassGamePage> {
       stageChapter: loadout.stage.chapter,
       stageIndex: loadout.stage.stage,
       bossTimeSeconds: loadout.stage.bossTimeSeconds,
-      bossMaxHp: 320 + loadout.stage.difficulty * 8,
+      bossMaxHp: 420 + loadout.stage.difficulty * 13,
       stageRewardExp: loadout.stage.rewardExp,
       stageRewardCoins: loadout.stage.rewardCoins,
       stageEnemyCount: loadout.stage.enemyCount,
