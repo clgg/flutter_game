@@ -79,15 +79,12 @@ flutter:
 
   assets:
     - assets/game/grass_game/images/effects/
-    - assets/game/grass_game/images/animals/PNG/Without_shadow/
+    - assets/game/grass_game/images/skills/
     - assets/game/grass_game/images/coins/
     - assets/game/grass_game/images/exp/
     - assets/game/grass_game/images/player/
     - assets/game/grass_game/images/bosses/
-    - assets/game/grass_game/images/weapons/
     - assets/game/grass_game/images/guaishou/
-    - assets/game/grass_game/images/background/other/PNG/Objects_separately/
-    - assets/game/grass_game/images/background/trees/PNG/
     - assets/game/grass_game/audio/
 
   # To add assets to your application, add an assets section, like this:

@@ -165,5 +165,17 @@ void main() {
         isNot(firstOptions.map((skill) => skill.id).toList()),
       );
     });
+
+    test('random seed changes the offered skill set', () {
+      final firstOptions = selector.selectOptions(skills, randomSeed: 7);
+      final nextOptions = selector.selectOptions(skills, randomSeed: 19);
+
+      expect(firstOptions, hasLength(3));
+      expect(nextOptions, hasLength(3));
+      expect(
+        nextOptions.map((skill) => skill.id).toList(),
+        isNot(firstOptions.map((skill) => skill.id).toList()),
+      );
+    });
   });
 }

@@ -1,12 +1,17 @@
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flame/components.dart';
 
 enum EnemyFacing {
   front,
-  back,
-  left,
+  frontRight,
   right,
+  backRight,
+  back,
+  backLeft,
+  left,
+  frontLeft,
 }
 
 class EnemyAnimationSet {
@@ -14,26 +19,39 @@ class EnemyAnimationSet {
     required ui.Image image,
     required this.displaySize,
   })  : _image = image,
-        _frameSize = Vector2(
-          image.width / _columns,
-          image.height / _rows,
-        );
+        _rowCount = (image.height / (image.width / _columns)).round(),
+        _frameSize = Vector2.all(image.width / _columns);
 
   static const int _columns = 6;
   static const int _walkFrames = 4;
-  static const int _rows = 8;
-  static const int _walkRowOffset = 4;
 
   final ui.Image _image;
+  final int _rowCount;
   final Vector2 _frameSize;
   final Vector2 displaySize;
 
   Map<EnemyFacing, SpriteAnimation> createWalkAnimations() {
+    if (_rowCount >= 8) {
+      return {
+        EnemyFacing.front: _createWalkAnimation(0),
+        EnemyFacing.frontRight: _createWalkAnimation(1),
+        EnemyFacing.right: _createWalkAnimation(2),
+        EnemyFacing.backRight: _createWalkAnimation(3),
+        EnemyFacing.back: _createWalkAnimation(4),
+        EnemyFacing.backLeft: _createWalkAnimation(5),
+        EnemyFacing.left: _createWalkAnimation(6),
+        EnemyFacing.frontLeft: _createWalkAnimation(7),
+      };
+    }
     return {
       EnemyFacing.front: _createWalkAnimation(0),
       EnemyFacing.back: _createWalkAnimation(1),
       EnemyFacing.left: _createWalkAnimation(2),
       EnemyFacing.right: _createWalkAnimation(3),
+      EnemyFacing.frontRight: _createWalkAnimation(3),
+      EnemyFacing.backRight: _createWalkAnimation(3),
+      EnemyFacing.backLeft: _createWalkAnimation(2),
+      EnemyFacing.frontLeft: _createWalkAnimation(2),
     };
   }
 
@@ -44,8 +62,7 @@ class EnemyAnimationSet {
         amount: _walkFrames,
         stepTime: 0.12,
         textureSize: _frameSize,
-        texturePosition:
-            Vector2(0, _frameSize.y * (_walkRowOffset + directionRow)),
+        texturePosition: Vector2(0, _frameSize.y * directionRow),
       ),
     );
   }
@@ -133,20 +150,7 @@ class EnemyComponent extends SpriteAnimationComponent {
       return;
     }
 
-    final absX = direction.x.abs();
-    final absY = direction.y.abs();
-    final axisDelta = (absX - absY).abs();
-    if (axisDelta < 8) {
-      return;
-    }
-
-    final nextFacing = absX > absY
-        ? direction.x > 0
-            ? EnemyFacing.right
-            : EnemyFacing.left
-        : direction.y > 0
-            ? EnemyFacing.front
-            : EnemyFacing.back;
+    final nextFacing = _facingForDirection(direction);
     if (nextFacing == _facing) {
       return;
     }
@@ -156,6 +160,21 @@ class EnemyComponent extends SpriteAnimationComponent {
     if (nextAnimation != null) {
       animation = nextAnimation;
     }
+  }
+
+  EnemyFacing _facingForDirection(Vector2 direction) {
+    final angle = math.atan2(direction.y, direction.x);
+    final sector = ((angle + math.pi / 8) / (math.pi / 4)).floor() & 7;
+    return switch (sector) {
+      0 => EnemyFacing.right,
+      1 => EnemyFacing.frontRight,
+      2 => EnemyFacing.front,
+      3 => EnemyFacing.frontLeft,
+      4 => EnemyFacing.left,
+      5 => EnemyFacing.backLeft,
+      6 => EnemyFacing.back,
+      _ => EnemyFacing.backRight,
+    };
   }
 
   void takeDamage(int value) {

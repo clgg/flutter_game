@@ -197,7 +197,7 @@ void main() {
 
       for (final id in deathmatch.enemyTypes) {
         final runtimeSheet = File(
-          'assets/game/grass_game/images/guaishou/${id}_walk_sheet_runtime.png',
+          'assets/game/grass_game/images/guaishou/${id}_walk_sheet_runtime_128.png',
         );
         final previewGif = File(
           'assets/game/grass_game/images/guaishou/${id}_walk_sheet_preview.gif',

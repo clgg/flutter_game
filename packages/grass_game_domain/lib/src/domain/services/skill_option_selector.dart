@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import '../configs/skill_config.dart';
 
 class SkillOptionSelector {
@@ -7,6 +9,7 @@ class SkillOptionSelector {
     List<SkillConfig> skills, {
     int count = 3,
     int rerollOffset = 0,
+    int? randomSeed,
     Map<String, int> skillLevels = const {},
     Set<String> evolvedSkills = const {},
     String? ultimateSkillId,
@@ -40,6 +43,15 @@ class SkillOptionSelector {
       return List.unmodifiable(candidates);
     }
 
+    if (randomSeed != null) {
+      return _pickWeightedRandom(
+        candidates,
+        skillLevels,
+        count,
+        randomSeed + rerollOffset * 9973,
+      );
+    }
+
     final rotatedCandidates = _rotateByProgress(
       candidates,
       skillLevels,
@@ -65,6 +77,55 @@ class SkillOptionSelector {
     }
 
     return List.unmodifiable(picked);
+  }
+
+  List<SkillConfig> _pickWeightedRandom(
+    List<SkillConfig> candidates,
+    Map<String, int> skillLevels,
+    int count,
+    int randomSeed,
+  ) {
+    final random = math.Random(randomSeed);
+    final picked = <SkillConfig>[];
+    final existingRoute = candidates.where((skill) {
+      final treeId = skill.treeId;
+      return treeId != null && (skillLevels[treeId] ?? 0) > 0;
+    }).toList();
+
+    if (existingRoute.isNotEmpty) {
+      picked.add(_pickOneWeighted(existingRoute, skillLevels, random));
+    }
+
+    final remaining = candidates.toList();
+    while (picked.length < count && remaining.isNotEmpty) {
+      remaining.removeWhere((skill) {
+        return picked.any((pickedSkill) => pickedSkill.id == skill.id);
+      });
+      if (remaining.isEmpty) {
+        break;
+      }
+      picked.add(_pickOneWeighted(remaining, skillLevels, random));
+    }
+
+    return List.unmodifiable(picked);
+  }
+
+  SkillConfig _pickOneWeighted(
+    List<SkillConfig> candidates,
+    Map<String, int> skillLevels,
+    math.Random random,
+  ) {
+    final totalWeight = candidates.fold<int>(0, (sum, skill) {
+      return sum + _effectiveWeight(skill, skillLevels).clamp(1, 1 << 30);
+    });
+    var roll = random.nextInt(totalWeight);
+    for (final skill in candidates) {
+      roll -= _effectiveWeight(skill, skillLevels).clamp(1, 1 << 30);
+      if (roll < 0) {
+        return skill;
+      }
+    }
+    return candidates.last;
   }
 
   bool _canSelectNormal(SkillConfig skill, Map<String, int> skillLevels) {

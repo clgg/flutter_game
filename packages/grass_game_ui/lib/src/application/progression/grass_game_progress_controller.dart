@@ -26,7 +26,6 @@ class GameStageDefinition {
     required this.bossId,
     required this.bossName,
     required this.bossSpriteSheetAssetPath,
-    required this.bossDeathAssetPath,
     this.isDeathmatch = false,
   });
 
@@ -45,7 +44,6 @@ class GameStageDefinition {
   final String bossId;
   final String bossName;
   final String bossSpriteSheetAssetPath;
-  final String bossDeathAssetPath;
   final bool isDeathmatch;
 }
 
@@ -193,7 +191,7 @@ class GrassGameProgressController extends ChangeNotifier {
           walkPreviewAssetPath:
               'assets/game/grass_game/images/player/preview_male_walk.gif',
           gameSpriteSheetAssetPath:
-              'assets/game/grass_game/images/player/player_soldier_walk_sheet.png',
+              'assets/game/grass_game/images/player/player_soldier_walk_8dir_sheet.png',
           isOwned: true,
         ),
         CharacterDefinition(
@@ -209,7 +207,7 @@ class GrassGameProgressController extends ChangeNotifier {
           walkPreviewAssetPath:
               'assets/game/grass_game/images/player/preview_female_walk.gif',
           gameSpriteSheetAssetPath:
-              'assets/game/grass_game/images/player/player_female_walk_sheet.png',
+              'assets/game/grass_game/images/player/player_female_walk_8dir_sheet.png',
           isOwned: true,
         ),
         CharacterDefinition(
@@ -225,7 +223,7 @@ class GrassGameProgressController extends ChangeNotifier {
           walkPreviewAssetPath:
               'assets/game/grass_game/images/player/preview_robot_walk.gif',
           gameSpriteSheetAssetPath:
-              'assets/game/grass_game/images/player/player_robot_walk_sheet.png',
+              'assets/game/grass_game/images/player/player_robot_walk_8dir_sheet.png',
           isOwned: true,
         ),
         CharacterDefinition(
@@ -241,7 +239,7 @@ class GrassGameProgressController extends ChangeNotifier {
           walkPreviewAssetPath:
               'assets/game/grass_game/images/player/preview_aotuman_walk.gif',
           gameSpriteSheetAssetPath:
-              'assets/game/grass_game/images/player/player_aotuman_walk_sheet.png',
+              'assets/game/grass_game/images/player/player_aotuman_walk_8dir_sheet.png',
           isOwned: true,
         ),
         CharacterDefinition(
@@ -257,7 +255,7 @@ class GrassGameProgressController extends ChangeNotifier {
           walkPreviewAssetPath:
               'assets/game/grass_game/images/player/preview_aomeijia_walk.gif',
           gameSpriteSheetAssetPath:
-              'assets/game/grass_game/images/player/player_aomeijia_sword_walk_sheet.png',
+              'assets/game/grass_game/images/player/player_aomeijia_sword_walk_8dir_sheet.png',
           isOwned: true,
         ),
         CharacterDefinition(
@@ -273,7 +271,7 @@ class GrassGameProgressController extends ChangeNotifier {
           walkPreviewAssetPath:
               'assets/game/grass_game/images/player/preview_jingangman_walk.gif',
           gameSpriteSheetAssetPath:
-              'assets/game/grass_game/images/player/player_dark_cosmic_knight_walk_sheet.png',
+              'assets/game/grass_game/images/player/player_dark_cosmic_knight_walk_8dir_sheet.png',
           isOwned: true,
         ),
         CharacterDefinition(
@@ -289,7 +287,7 @@ class GrassGameProgressController extends ChangeNotifier {
           walkPreviewAssetPath:
               'assets/game/grass_game/images/player/preview_beliya_walk.gif',
           gameSpriteSheetAssetPath:
-              'assets/game/grass_game/images/player/player_beliya_dark_cape_walk_sheet.png',
+              'assets/game/grass_game/images/player/player_beliya_dark_cape_walk_8dir_sheet.png',
           isOwned: true,
         ),
         CharacterDefinition(
@@ -305,7 +303,7 @@ class GrassGameProgressController extends ChangeNotifier {
           walkPreviewAssetPath:
               'assets/game/grass_game/images/player/preview_sevengar_walk.gif',
           gameSpriteSheetAssetPath:
-              'assets/game/grass_game/images/player/player_round_robot_walk_sheet.png',
+              'assets/game/grass_game/images/player/player_round_robot_walk_8dir_sheet.png',
           isOwned: true,
         ),
       ],
@@ -400,9 +398,7 @@ class GrassGameProgressController extends ChangeNotifier {
     bossId: 'deathmatch',
     bossName: 'Endless',
     bossSpriteSheetAssetPath:
-        'assets/game/grass_game/images/bosses/boss_tiger_walk.png',
-    bossDeathAssetPath:
-        'assets/game/grass_game/images/bosses/boss_tiger_dead.png',
+        'assets/game/grass_game/images/bosses/boss_tiger_walk_runtime.png',
     isDeathmatch: true,
   );
 
@@ -458,9 +454,7 @@ class GrassGameProgressController extends ChangeNotifier {
       bossId: bossIds[bossIndex],
       bossName: bossNames[bossIndex],
       bossSpriteSheetAssetPath:
-          'assets/game/grass_game/images/bosses/boss_${bossIds[bossIndex]}_walk.png',
-      bossDeathAssetPath:
-          'assets/game/grass_game/images/bosses/boss_${bossIds[bossIndex]}_dead.png',
+          'assets/game/grass_game/images/bosses/boss_${bossIds[bossIndex]}_walk_runtime.png',
     );
   }
 
@@ -505,9 +499,7 @@ class GrassGameProgressController extends ChangeNotifier {
       bossId: bossIds[index],
       bossName: bossNames[index],
       bossSpriteSheetAssetPath:
-          'assets/game/grass_game/images/bosses/boss_${bossIds[index]}_walk.png',
-      bossDeathAssetPath:
-          'assets/game/grass_game/images/bosses/boss_${bossIds[index]}_dead.png',
+          'assets/game/grass_game/images/bosses/boss_${bossIds[index]}_walk_runtime.png',
     );
   }
 

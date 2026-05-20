@@ -7,7 +7,7 @@ class AnimatedCharacterSprite extends StatefulWidget {
     required this.size,
     this.row = 0,
     this.frameCount = 6,
-    this.rowCount = 4,
+    this.rowCount = 8,
     this.frameDuration = const Duration(milliseconds: 120),
     this.animate = true,
   });

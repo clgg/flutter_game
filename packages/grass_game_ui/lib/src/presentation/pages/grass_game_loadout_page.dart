@@ -39,136 +39,119 @@ class _GrassGameLoadoutPageState extends State<GrassGameLoadoutPage> {
           builder: (context, _) {
             final progressController = widget.progressController;
             final previewWeapon = _previewWeapon(progressController);
-            return CustomScrollView(
-              slivers: [
-                SliverToBoxAdapter(
-                  child: _Header(
-                    coins: progressController.coins,
-                    level: progressController.profileLevel,
-                    exp: progressController.profileExp,
-                    requiredExp: progressController.requiredProfileExp,
-                    expProgress: progressController.profileExpProgress,
-                    title: strings.appTitle,
-                    heroLevelLabel: strings.heroLevel(
-                      progressController.profileLevel,
-                    ),
-                    onSettings: widget.onSettings,
-                  ),
-                ),
-                SliverToBoxAdapter(
-                  child: _SectionTitle(
-                    title: strings.character,
-                    action: progressController.selectedCharacter.name,
-                  ),
-                ),
-                SliverToBoxAdapter(
-                  child: SizedBox(
-                    height: 170,
-                    child: ListView.separated(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      scrollDirection: Axis.horizontal,
-                      itemBuilder: (context, index) {
-                        final character = progressController.characters[index];
-                        return _CharacterCard(
-                          character: character,
-                          isSelected: character.id ==
-                              progressController.selectedCharacterId,
-                          onTap: () {
-                            final selected = progressController
-                                .selectCharacter(character.id);
-                            if (!selected) {
-                              _showMessage(
-                                  context, strings.locked(character.name));
-                            }
-                          },
-                        );
-                      },
-                      separatorBuilder: (_, __) => const SizedBox(width: 12),
-                      itemCount: progressController.characters.length,
-                    ),
-                  ),
-                ),
-                SliverToBoxAdapter(
-                  child: _SkillGuideEntry(
-                    title: strings.skillGuide,
-                    subtitle: strings.skillGuideSubtitle,
-                    onOpen: widget.onSkillGuide,
-                  ),
-                ),
-                SliverToBoxAdapter(
-                  child: _SectionTitle(
-                    title: strings.weaponLoadout,
-                    action: progressController.selectedWeapon.name,
-                  ),
-                ),
-                SliverToBoxAdapter(
-                  child: _WeaponChooser(
-                    progressController: progressController,
-                    onPreview: _setPreviewWeapon,
-                    onLocked: (weaponName) =>
-                        _showMessage(context, strings.notOwned(weaponName)),
-                  ),
-                ),
-                SliverToBoxAdapter(
-                  child: _WeaponDetailPanel(
-                    weapon: previewWeapon,
-                    progress: progressController.progressFor(previewWeapon.id),
-                  ),
-                ),
-                SliverToBoxAdapter(
-                  child: _WeaponShopEntry(
-                    title: strings.weaponShop,
-                    subtitle: strings.weaponsCount(
-                      progressController.weapons.length,
-                    ),
-                    weaponCount: progressController.weapons.length,
-                    onOpen: _openWeaponShop,
-                  ),
-                ),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 18, 16, 22),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        FilledButton(
-                          onPressed: widget.onStart,
-                          style: FilledButton.styleFrom(
-                            minimumSize: const Size.fromHeight(54),
-                            backgroundColor: gameTheme.accent,
-                            foregroundColor: gameTheme.ink,
-                            textStyle: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
+            return Stack(
+              children: [
+                Positioned.fill(
+                  child: CustomScrollView(
+                    slivers: [
+                      SliverToBoxAdapter(
+                        child: _Header(
+                          coins: progressController.coins,
+                          level: progressController.profileLevel,
+                          exp: progressController.profileExp,
+                          requiredExp: progressController.requiredProfileExp,
+                          expProgress: progressController.profileExpProgress,
+                          title: strings.appTitle,
+                          heroLevelLabel: strings.heroLevel(
+                            progressController.profileLevel,
                           ),
-                          child: Text(strings.startRun),
+                          onSettings: widget.onSettings,
                         ),
-                        const SizedBox(height: 10),
-                        OutlinedButton.icon(
-                          onPressed: widget.onDeathmatchStart,
-                          icon: const Icon(Icons.local_fire_department_rounded),
-                          label: Text(strings.deathmatch),
-                          style: OutlinedButton.styleFrom(
-                            minimumSize: const Size.fromHeight(48),
-                            foregroundColor: gameTheme.hot,
-                            side: BorderSide(color: gameTheme.hot),
-                            textStyle: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 0,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
+                      ),
+                      SliverToBoxAdapter(
+                        child: _SectionTitle(
+                          title: strings.character,
+                          action: progressController.selectedCharacter.name,
+                        ),
+                      ),
+                      SliverToBoxAdapter(
+                        child: SizedBox(
+                          height: 190,
+                          child: ListView.separated(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            scrollDirection: Axis.horizontal,
+                            itemBuilder: (context, index) {
+                              final character =
+                                  progressController.characters[index];
+                              return _CharacterCard(
+                                character: character,
+                                isSelected: character.id ==
+                                    progressController.selectedCharacterId,
+                                onTap: () {
+                                  final selected = progressController
+                                      .selectCharacter(character.id);
+                                  if (!selected) {
+                                    _showMessage(
+                                      context,
+                                      strings.locked(character.name),
+                                    );
+                                  }
+                                },
+                              );
+                            },
+                            separatorBuilder: (_, __) =>
+                                const SizedBox(width: 12),
+                            itemCount: progressController.characters.length,
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                      SliverToBoxAdapter(
+                        child: _SkillGuideEntry(
+                          title: strings.skillGuide,
+                          subtitle: strings.skillGuideSubtitle,
+                          onOpen: widget.onSkillGuide,
+                        ),
+                      ),
+                      SliverToBoxAdapter(
+                        child: _WeaponShopEntry(
+                          title: strings.weaponShop,
+                          subtitle: strings.weaponsCount(
+                            progressController.weapons.length,
+                          ),
+                          weaponCount: progressController.weapons.length,
+                          onOpen: _openWeaponShop,
+                        ),
+                      ),
+                      SliverToBoxAdapter(
+                        child: _SectionTitle(
+                          title: strings.weaponLoadout,
+                          action: progressController.selectedWeapon.name,
+                        ),
+                      ),
+                      SliverToBoxAdapter(
+                        child: _WeaponChooser(
+                          progressController: progressController,
+                          onPreview: _setPreviewWeapon,
+                          onLocked: (weaponName) => _showMessage(
+                            context,
+                            strings.notOwned(weaponName),
+                          ),
+                        ),
+                      ),
+                      SliverToBoxAdapter(
+                        child: _WeaponDetailPanel(
+                          weapon: previewWeapon,
+                          progress:
+                              progressController.progressFor(previewWeapon.id),
+                          isSelected: previewWeapon.id ==
+                              progressController.selectedWeaponId,
+                          upgradeCost:
+                              progressController.upgradeCost(previewWeapon.id),
+                          onSelect: () => _selectPreviewWeapon(previewWeapon),
+                          onUpgrade: () => _upgradePreviewWeapon(previewWeapon),
+                        ),
+                      ),
+                      const SliverToBoxAdapter(child: SizedBox(height: 98)),
+                    ],
+                  ),
+                ),
+                Align(
+                  alignment: Alignment.bottomCenter,
+                  child: _BattleActionBar(
+                    startLabel: strings.startRun,
+                    deathmatchLabel: strings.deathmatch,
+                    onStart: widget.onStart,
+                    onDeathmatchStart: widget.onDeathmatchStart,
                   ),
                 ),
               ],
@@ -197,6 +180,22 @@ class _GrassGameLoadoutPageState extends State<GrassGameLoadoutPage> {
     setState(() {
       _previewWeaponId = weapon.id;
     });
+  }
+
+  void _selectPreviewWeapon(WeaponDefinition weapon) {
+    final strings = _LoadoutStrings.of(context);
+    final ok = widget.progressController.selectWeapon(weapon.id);
+    if (!ok) {
+      _showMessage(context, strings.notOwned(weapon.name));
+    }
+  }
+
+  void _upgradePreviewWeapon(WeaponDefinition weapon) {
+    final strings = _LoadoutStrings.of(context);
+    final ok = widget.progressController.upgradeWeapon(weapon.id);
+    if (!ok) {
+      _showMessage(context, strings.notEnoughCoins);
+    }
   }
 
   Future<void> _openWeaponShop() async {
@@ -240,70 +239,98 @@ class _Header extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final gameTheme = context.gameTheme;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Text(
-                title,
-                style: TextStyle(
-                  color: gameTheme.foreground,
-                  fontSize: 28,
-                  height: 1,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0,
+    final expPercent = (expProgress.clamp(0, 1) * 100).round();
+    return SizedBox(
+      width: MediaQuery.sizeOf(context).width,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: gameTheme.foreground,
+                      fontSize: 28,
+                      height: 1,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0,
+                    ),
+                  ),
                 ),
-              ),
-              const Spacer(),
-              _CoinPill(coins: coins),
-              const SizedBox(width: 10),
-              IconButton.filledTonal(
-                onPressed: onSettings,
-                icon: const Icon(Icons.settings_rounded),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          DecoratedBox(
-            decoration: BoxDecoration(
-              color: gameTheme.deep,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: gameTheme.line),
+                const SizedBox(width: 12),
+                _CoinPill(coins: coins),
+                const SizedBox(width: 10),
+                Transform.translate(
+                  offset: const Offset(-28, 0),
+                  child: IconButton.filledTonal(
+                    onPressed: onSettings,
+                    icon: const Icon(Icons.settings_rounded),
+                  ),
+                ),
+              ],
             ),
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        heroLevelLabel,
-                        style: TextStyle(
-                          color: gameTheme.foreground,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0,
+            const SizedBox(height: 14),
+            DecoratedBox(
+              decoration: BoxDecoration(
+                color: gameTheme.deep,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: gameTheme.line),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          heroLevelLabel,
+                          style: TextStyle(
+                            color: gameTheme.foreground,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0,
+                          ),
                         ),
-                      ),
-                      const Spacer(),
-                      Text(
-                        '$exp / $requiredExp EXP',
+                        const Spacer(),
+                        Text(
+                          '$exp / $requiredExp EXP · $expPercent%',
+                          style: TextStyle(
+                            color: gameTheme.muted,
+                            fontSize: 12,
+                            letterSpacing: 0,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    _ProgressBar(
+                      value: expProgress,
+                      color: gameTheme.accent,
+                      height: 11,
+                    ),
+                    const SizedBox(height: 6),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'Next Lv ${level + 1}',
                         style: TextStyle(
                           color: gameTheme.muted,
-                          fontSize: 12,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
                           letterSpacing: 0,
                         ),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  _ProgressBar(value: expProgress, color: gameTheme.accent),
-                ],
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -325,6 +352,7 @@ class _CoinPill extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Image.asset(
               'assets/game/grass_game/images/coins/coin_small.webp',
@@ -383,6 +411,78 @@ class _CoinAmount extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _BattleActionBar extends StatelessWidget {
+  const _BattleActionBar({
+    required this.startLabel,
+    required this.deathmatchLabel,
+    required this.onStart,
+    required this.onDeathmatchStart,
+  });
+
+  final String startLabel;
+  final String deathmatchLabel;
+  final VoidCallback onStart;
+  final VoidCallback onDeathmatchStart;
+
+  @override
+  Widget build(BuildContext context) {
+    final gameTheme = context.gameTheme;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: gameTheme.background.withValues(alpha: 0.94),
+        border: Border(top: BorderSide(color: gameTheme.line)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+        child: Row(
+          children: [
+            Expanded(
+              child: FilledButton(
+                onPressed: onStart,
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(52),
+                  backgroundColor: gameTheme.accent,
+                  foregroundColor: gameTheme.ink,
+                  textStyle: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: FittedBox(child: Text(startLabel)),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: onDeathmatchStart,
+                icon: const Icon(Icons.local_fire_department_rounded),
+                label: FittedBox(child: Text(deathmatchLabel)),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(52),
+                  foregroundColor: gameTheme.hot,
+                  side: BorderSide(color: gameTheme.hot),
+                  textStyle: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -530,10 +630,37 @@ class _CharacterCard extends StatelessWidget {
               text: '$speed',
               value: speed / 10,
             ),
+            const SizedBox(height: 5),
+            Text(
+              _introText,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: gameTheme.foreground.withValues(alpha: 0.78),
+                fontSize: 10,
+                height: 1.18,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0,
+              ),
+            ),
           ],
         ),
       ),
     );
+  }
+
+  String get _introText {
+    return switch (character.id) {
+      'runner' => '稳定突进，适合第一把开荒。',
+      'guard' => '轻装机动，靠走位拉开距离。',
+      'scout' => '厚实可靠，适合稳扎稳打。',
+      'aotuman' => '高血量冲锋，正面压制怪群。',
+      'aomeijia' => '高速游走，适合绕圈铺场。',
+      'jingangman' => '重装火力，越打越硬。',
+      'beliya' => '暗能爆发，清怪节奏快。',
+      'sevengar' => '重型守卫，专门抗压守线。',
+      _ => '均衡成长，适合通用战斗。',
+    };
   }
 }
 
@@ -780,10 +907,18 @@ class _WeaponDetailPanel extends StatelessWidget {
   const _WeaponDetailPanel({
     required this.weapon,
     required this.progress,
+    this.isSelected = false,
+    this.upgradeCost = 0,
+    this.onSelect,
+    this.onUpgrade,
   });
 
   final WeaponDefinition weapon;
   final WeaponProgress progress;
+  final bool isSelected;
+  final int upgradeCost;
+  final VoidCallback? onSelect;
+  final VoidCallback? onUpgrade;
 
   @override
   Widget build(BuildContext context) {
@@ -871,6 +1006,49 @@ class _WeaponDetailPanel extends StatelessWidget {
                 _WeaponMetaPill(text: weapon.unlockMethod),
               ],
             ),
+            if (progress.isOwned && (onSelect != null || onUpgrade != null))
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Row(
+                  children: [
+                    if (onSelect != null)
+                      Expanded(
+                        child: FilledButton(
+                          onPressed: isSelected ? null : onSelect,
+                          style: FilledButton.styleFrom(
+                            minimumSize: const Size.fromHeight(44),
+                            backgroundColor: gameTheme.accent,
+                            foregroundColor: gameTheme.ink,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          child: Text(
+                            isSelected ? strings.selected : strings.select,
+                          ),
+                        ),
+                      ),
+                    if (onSelect != null && onUpgrade != null)
+                      const SizedBox(width: 10),
+                    if (onUpgrade != null)
+                      Expanded(
+                        child: FilledButton.tonal(
+                          onPressed: onUpgrade,
+                          style: FilledButton.styleFrom(
+                            minimumSize: const Size.fromHeight(44),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          child: _CostButtonLabel(
+                            label: strings.upgrade,
+                            cost: upgradeCost,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
           ],
         ),
       ),
@@ -885,14 +1063,17 @@ class _WeaponImageFallback extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final iconAssetPath = weapon.iconAssetPath;
     return Center(
-      child: Image.asset(
-        weapon.iconAssetPath,
-        width: 96,
-        height: 96,
-        fit: BoxFit.contain,
-        filterQuality: FilterQuality.none,
-      ),
+      child: iconAssetPath == null
+          ? _GeneratedWeaponIcon(weapon: weapon, size: 96)
+          : Image.asset(
+              iconAssetPath,
+              width: 96,
+              height: 96,
+              fit: BoxFit.contain,
+              filterQuality: FilterQuality.none,
+            ),
     );
   }
 }
@@ -1538,6 +1719,7 @@ class _WeaponIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final gameTheme = context.gameTheme;
+    final iconAssetPath = weapon.iconAssetPath;
     return Container(
       width: size,
       height: size,
@@ -1550,13 +1732,16 @@ class _WeaponIcon extends StatelessWidget {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          Image.asset(
-            weapon.iconAssetPath,
-            width: imageSize,
-            height: imageSize,
-            fit: BoxFit.contain,
-            filterQuality: FilterQuality.none,
-          ),
+          if (iconAssetPath == null)
+            _GeneratedWeaponIcon(weapon: weapon, size: imageSize)
+          else
+            Image.asset(
+              iconAssetPath,
+              width: imageSize,
+              height: imageSize,
+              fit: BoxFit.contain,
+              filterQuality: FilterQuality.none,
+            ),
           if (!isOwned)
             Positioned(
               right: 2,
@@ -1580,6 +1765,208 @@ class _WeaponIcon extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+class _GeneratedWeaponIcon extends StatelessWidget {
+  const _GeneratedWeaponIcon({
+    required this.weapon,
+    required this.size,
+  });
+
+  final WeaponDefinition weapon;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox.square(
+      dimension: size,
+      child: CustomPaint(
+        painter: _WeaponGlyphPainter(
+          baseColor: Color(weapon.baseColorValue),
+          kind: weapon.kind,
+        ),
+      ),
+    );
+  }
+}
+
+class _WeaponGlyphPainter extends CustomPainter {
+  const _WeaponGlyphPainter({
+    required this.baseColor,
+    required this.kind,
+  });
+
+  final Color baseColor;
+  final String kind;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final scale = size.shortestSide / 96;
+    canvas
+      ..save()
+      ..translate(size.width / 2, size.height / 2)
+      ..rotate(-0.22)
+      ..translate(-size.width / 2, -size.height / 2);
+
+    final bodyPaint = Paint()
+      ..color = _mix(baseColor, Colors.white, 0.18)
+      ..style = PaintingStyle.fill;
+    final darkPaint = Paint()
+      ..color = _mix(baseColor, Colors.black, 0.34)
+      ..style = PaintingStyle.fill;
+    final accentPaint = Paint()
+      ..color = _mix(baseColor, Colors.white, 0.5)
+      ..style = PaintingStyle.fill;
+
+    if (kind.contains('迫击')) {
+      _drawMortar(canvas, scale, bodyPaint, darkPaint, accentPaint);
+    } else if (kind.contains('喷射') || kind.contains('火焰')) {
+      _drawFlamethrower(canvas, scale, bodyPaint, darkPaint, accentPaint);
+    } else if (kind.contains('榴弹') || kind.contains('发射')) {
+      _drawLauncher(canvas, scale, bodyPaint, darkPaint, accentPaint);
+    } else if (kind.contains('机枪')) {
+      _drawMachineGun(canvas, scale, bodyPaint, darkPaint, accentPaint);
+    } else {
+      _drawRifle(canvas, scale, bodyPaint, darkPaint, accentPaint);
+    }
+
+    canvas.restore();
+  }
+
+  void _drawRifle(
+    Canvas canvas,
+    double scale,
+    Paint bodyPaint,
+    Paint darkPaint,
+    Paint accentPaint,
+  ) {
+    final barrel = RRect.fromRectAndRadius(
+      Rect.fromLTWH(32 * scale, 41 * scale, 46 * scale, 8 * scale),
+      Radius.circular(4 * scale),
+    );
+    canvas
+      ..drawRRect(barrel, bodyPaint)
+      ..drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(18 * scale, 37 * scale, 24 * scale, 16 * scale),
+          Radius.circular(5 * scale),
+        ),
+        darkPaint,
+      )
+      ..drawPath(
+        Path()
+          ..moveTo(18 * scale, 48 * scale)
+          ..lineTo(8 * scale, 61 * scale)
+          ..lineTo(24 * scale, 60 * scale)
+          ..lineTo(34 * scale, 50 * scale)
+          ..close(),
+        darkPaint,
+      )
+      ..drawRect(Rect.fromLTWH(43 * scale, 51 * scale, 9 * scale, 18 * scale),
+          accentPaint)
+      ..drawRect(Rect.fromLTWH(77 * scale, 43 * scale, 9 * scale, 4 * scale),
+          accentPaint);
+  }
+
+  void _drawMachineGun(
+    Canvas canvas,
+    double scale,
+    Paint bodyPaint,
+    Paint darkPaint,
+    Paint accentPaint,
+  ) {
+    _drawRifle(canvas, scale, bodyPaint, darkPaint, accentPaint);
+    canvas
+      ..drawOval(Rect.fromLTWH(47 * scale, 50 * scale, 18 * scale, 18 * scale),
+          darkPaint)
+      ..drawRect(Rect.fromLTWH(55 * scale, 34 * scale, 19 * scale, 5 * scale),
+          accentPaint);
+  }
+
+  void _drawLauncher(
+    Canvas canvas,
+    double scale,
+    Paint bodyPaint,
+    Paint darkPaint,
+    Paint accentPaint,
+  ) {
+    canvas
+      ..drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(18 * scale, 35 * scale, 58 * scale, 16 * scale),
+          Radius.circular(8 * scale),
+        ),
+        bodyPaint,
+      )
+      ..drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(74 * scale, 32 * scale, 12 * scale, 22 * scale),
+          Radius.circular(5 * scale),
+        ),
+        accentPaint,
+      )
+      ..drawPath(
+        Path()
+          ..moveTo(32 * scale, 50 * scale)
+          ..lineTo(21 * scale, 66 * scale)
+          ..lineTo(34 * scale, 66 * scale)
+          ..lineTo(46 * scale, 51 * scale)
+          ..close(),
+        darkPaint,
+      );
+  }
+
+  void _drawMortar(
+    Canvas canvas,
+    double scale,
+    Paint bodyPaint,
+    Paint darkPaint,
+    Paint accentPaint,
+  ) {
+    canvas
+      ..drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(35 * scale, 18 * scale, 16 * scale, 54 * scale),
+          Radius.circular(8 * scale),
+        ),
+        bodyPaint,
+      )
+      ..drawOval(Rect.fromLTWH(28 * scale, 15 * scale, 30 * scale, 14 * scale),
+          accentPaint)
+      ..drawRect(Rect.fromLTWH(40 * scale, 68 * scale, 8 * scale, 18 * scale),
+          darkPaint)
+      ..drawRect(Rect.fromLTWH(22 * scale, 82 * scale, 44 * scale, 5 * scale),
+          darkPaint);
+  }
+
+  void _drawFlamethrower(
+    Canvas canvas,
+    double scale,
+    Paint bodyPaint,
+    Paint darkPaint,
+    Paint accentPaint,
+  ) {
+    _drawRifle(canvas, scale, bodyPaint, darkPaint, accentPaint);
+    canvas.drawPath(
+      Path()
+        ..moveTo(82 * scale, 45 * scale)
+        ..cubicTo(92 * scale, 30 * scale, 95 * scale, 49 * scale, 88 * scale,
+            56 * scale)
+        ..cubicTo(97 * scale, 56 * scale, 90 * scale, 68 * scale, 80 * scale,
+            53 * scale)
+        ..close(),
+      accentPaint,
+    );
+  }
+
+  Color _mix(Color a, Color b, double amount) {
+    return Color.lerp(a, b, amount) ?? a;
+  }
+
+  @override
+  bool shouldRepaint(covariant _WeaponGlyphPainter oldDelegate) {
+    return oldDelegate.baseColor != baseColor || oldDelegate.kind != kind;
   }
 }
 
@@ -1638,6 +2025,7 @@ class _LoadoutStrings {
   String get lockedLabel => isZh ? '未拥有' : 'Locked';
   String get close => isZh ? '关闭' : 'Close';
   String get select => isZh ? '选择' : 'Select';
+  String get selected => isZh ? '已选择' : 'Selected';
   String get buy => isZh ? '购买' : 'Buy';
   String get upgrade => isZh ? '升级' : 'Upgrade';
   String get cost => isZh ? '价格' : 'Cost';

@@ -667,7 +667,6 @@ my_flutter_module/assets/game/grass_game/
   images/
     player/
     enemies/
-    weapons/
     effects/
     ui/
     icons/

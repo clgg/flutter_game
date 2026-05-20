@@ -12,9 +12,9 @@ class WeaponDefinition {
     required this.fireRateRoundsPerMinute,
     required this.damage,
     required this.wikiImageUrl,
-    required this.iconAssetPath,
-    required this.muzzleFlashAssetPath,
-    required this.projectileAssetPath,
+    this.iconAssetPath,
+    this.muzzleFlashAssetPath,
+    this.projectileAssetPath,
     required this.fireSoundAssetPath,
   });
 
@@ -30,8 +30,8 @@ class WeaponDefinition {
   final int fireRateRoundsPerMinute;
   final int damage;
   final String wikiImageUrl;
-  final String iconAssetPath;
-  final String muzzleFlashAssetPath;
-  final String projectileAssetPath;
+  final String? iconAssetPath;
+  final String? muzzleFlashAssetPath;
+  final String? projectileAssetPath;
   final String fireSoundAssetPath;
 }

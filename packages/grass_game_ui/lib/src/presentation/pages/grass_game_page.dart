@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flame/game.dart';
 import 'package:app_core/app_core.dart';
 import 'package:flutter/material.dart';
@@ -36,8 +38,12 @@ class _GrassGamePageState extends State<GrassGamePage> {
   int _gameKey = 0;
   GameResult? _settledResult;
   bool _showFirstRunGuide = false;
+  bool _showDeathmatchLoading = false;
+  bool _deathmatchMinimumDelayDone = true;
+  Timer? _deathmatchLoadingTimer;
 
   static const _firstRunGuideKey = 'grass_game.first_run_guide_seen';
+  static const _deathmatchLoadingMinDuration = Duration(milliseconds: 1200);
 
   @override
   void initState() {
@@ -48,6 +54,7 @@ class _GrassGamePageState extends State<GrassGamePage> {
 
   @override
   void dispose() {
+    _deathmatchLoadingTimer?.cancel();
     _controller.setMoveDirection(0, 0);
     _controller.pause();
     _game.releaseRuntimeResources();
@@ -59,6 +66,15 @@ class _GrassGamePageState extends State<GrassGamePage> {
   void _createGame() {
     final loadout = widget.progressController.currentLoadout;
     _settledResult = null;
+    _deathmatchLoadingTimer?.cancel();
+    _showDeathmatchLoading = loadout.stage.isDeathmatch;
+    _deathmatchMinimumDelayDone = !loadout.stage.isDeathmatch;
+    if (loadout.stage.isDeathmatch) {
+      _deathmatchLoadingTimer = Timer(_deathmatchLoadingMinDuration, () {
+        _deathmatchMinimumDelayDone = true;
+        _hideDeathmatchLoadingIfReady();
+      });
+    }
     _controller = GrassGameRuntimeController();
     _controller.addListener(_handleRuntimeChanged);
     _game = GrassSurvivorGame(
@@ -88,7 +104,6 @@ class _GrassGamePageState extends State<GrassGamePage> {
       stageEnemyTypes: loadout.stage.enemyTypes,
       isDeathmatch: loadout.stage.isDeathmatch,
       bossSpriteSheetAssetPath: loadout.stage.bossSpriteSheetAssetPath,
-      bossDeathAssetPath: loadout.stage.bossDeathAssetPath,
     );
   }
 
@@ -129,12 +144,28 @@ class _GrassGamePageState extends State<GrassGamePage> {
   }
 
   void _handleRuntimeChanged() {
+    _hideDeathmatchLoadingIfReady();
     final result = _controller.result;
     if (result == null || identical(result, _settledResult)) {
       return;
     }
     _settledResult = result;
     widget.progressController.applyBattleResult(result);
+  }
+
+  void _hideDeathmatchLoadingIfReady() {
+    if (!_showDeathmatchLoading ||
+        !_deathmatchMinimumDelayDone ||
+        !_controller.state.isRunning) {
+      return;
+    }
+    if (!mounted) {
+      _showDeathmatchLoading = false;
+      return;
+    }
+    setState(() {
+      _showDeathmatchLoading = false;
+    });
   }
 
   @override
@@ -239,6 +270,13 @@ class _GrassGamePageState extends State<GrassGamePage> {
                 right: 16,
                 bottom: 28,
                 child: _FirstRunGuideCard(strings: strings),
+              ),
+            if (_showDeathmatchLoading)
+              _DeathmatchLoadingPage(
+                strings: strings,
+                characterSpriteSheetAssetPath: widget.progressController
+                    .selectedCharacter.gameSpriteSheetAssetPath,
+                weaponName: widget.progressController.selectedWeapon.name,
               ),
           ],
         ),
@@ -353,6 +391,166 @@ class _FirstRunGuideCard extends StatelessWidget {
   }
 }
 
+class _DeathmatchLoadingPage extends StatelessWidget {
+  const _DeathmatchLoadingPage({
+    required this.strings,
+    required this.characterSpriteSheetAssetPath,
+    required this.weaponName,
+  });
+
+  final _GrassGamePageStrings strings;
+  final String characterSpriteSheetAssetPath;
+  final String weaponName;
+
+  @override
+  Widget build(BuildContext context) {
+    final gameTheme = context.gameTheme;
+    return Positioned.fill(
+      child: ColoredBox(
+        color: gameTheme.background,
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 36, 24, 28),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.local_fire_department_rounded,
+                      color: gameTheme.hot,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      strings.deathmatchLoadingMode,
+                      style: TextStyle(
+                        color: gameTheme.hot,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0,
+                      ),
+                    ),
+                  ],
+                ),
+                const Spacer(),
+                Container(
+                  width: 148,
+                  height: 148,
+                  decoration: BoxDecoration(
+                    color: gameTheme.deep,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: gameTheme.accent, width: 2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: gameTheme.accent.withValues(alpha: 0.22),
+                        blurRadius: 28,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                  child: Center(
+                    child: AnimatedCharacterSprite(
+                      spriteSheetAssetPath: characterSpriteSheetAssetPath,
+                      size: 118,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 26),
+                Text(
+                  strings.deathmatchLoadingTitle,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: gameTheme.foreground,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  strings.deathmatchLoadingSubtitle(weaponName),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: gameTheme.muted,
+                    fontSize: 13,
+                    height: 1.35,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: 220,
+                  child: LinearProgressIndicator(
+                    minHeight: 7,
+                    borderRadius: BorderRadius.circular(999),
+                    backgroundColor: gameTheme.line,
+                    color: gameTheme.hot,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _LoadingPill(
+                      text: strings.deathmatchLoadingWeapons,
+                      color: gameTheme.accent,
+                    ),
+                    _LoadingPill(
+                      text: strings.deathmatchLoadingEnemies,
+                      color: gameTheme.hot,
+                    ),
+                    _LoadingPill(
+                      text: strings.deathmatchLoadingArena,
+                      color: gameTheme.accent2,
+                    ),
+                  ],
+                ),
+                const Spacer(),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LoadingPill extends StatelessWidget {
+  const _LoadingPill({
+    required this.text,
+    required this.color,
+  });
+
+  final String text;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final gameTheme = context.gameTheme;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.5)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        child: Text(
+          text,
+          style: TextStyle(
+            color: gameTheme.foreground,
+            fontSize: 11,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _GrassGamePageStrings {
   const _GrassGamePageStrings(this.isZh);
 
@@ -376,6 +574,17 @@ class _GrassGamePageStrings {
       : 'Collect EXP, then tap your avatar to choose an upgrade.';
   String get bossGuide =>
       isZh ? '击败 Boss 即可完成关卡。' : 'Defeat the Boss to clear the stage.';
+  String get deathmatchLoadingMode => isZh ? '死斗模式' : 'Deathmatch';
+  String get deathmatchLoadingTitle => isZh ? '正在集结战场' : 'Preparing the arena';
+  String deathmatchLoadingSubtitle(String weaponName) {
+    return isZh
+        ? '装配 $weaponName，生成怪物群和初始升级选项。'
+        : 'Equipping $weaponName, spawning enemy waves, and preparing upgrades.';
+  }
+
+  String get deathmatchLoadingWeapons => isZh ? '装配武器' : 'Weapon ready';
+  String get deathmatchLoadingEnemies => isZh ? '生成怪物' : 'Enemies spawning';
+  String get deathmatchLoadingArena => isZh ? '加载战场' : 'Arena loading';
 }
 
 class _GuideLine extends StatelessWidget {

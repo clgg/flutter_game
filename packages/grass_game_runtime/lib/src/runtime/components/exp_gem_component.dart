@@ -52,7 +52,7 @@ class ExpGemComponent extends CircleComponent {
     this.coinTier = DropVisualTier.normal,
   })  : rareExpChargeUnits = exp > 0 && expTier == DropVisualTier.rare ? 1 : 0,
         super(
-          radius: 8,
+          radius: 6,
           anchor: Anchor.center,
           position: position,
         );
@@ -134,7 +134,7 @@ class ExpGemComponent extends CircleComponent {
       canvas.drawLine(
           const ui.Offset(0, 8), const ui.Offset(0, 18), trailPaint);
     }
-    final iconSize = 10.0 * tierScale;
+    final iconSize = 7.5 * tierScale;
     if (exp > 0) {
       _drawImage(
         canvas,
@@ -177,9 +177,9 @@ class ExpGemComponent extends CircleComponent {
   double get _visualRadius {
     final tier = exp > 0 ? expTier : coinTier;
     return switch (tier) {
-      DropVisualTier.normal => 8,
-      DropVisualTier.high => 10,
-      DropVisualTier.rare => 12,
+      DropVisualTier.normal => 6,
+      DropVisualTier.high => 7.5,
+      DropVisualTier.rare => 9,
     };
   }
 

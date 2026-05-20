@@ -23,7 +23,7 @@ class GrassSurvivorGame extends FlameGame {
     this.playerMaxHp = 100,
     this.playerMoveSpeedMultiplier = 1,
     this.playerSpriteSheetAssetPath =
-        'assets/game/grass_game/images/player/player_soldier_walk_sheet.png',
+        'assets/game/grass_game/images/player/player_soldier_walk_8dir_sheet.png',
     this.weaponDamage = 1,
     this.weaponCooldownMultiplier = 1,
     this.weaponFireIntervalSeconds = 0.8,
@@ -45,8 +45,7 @@ class GrassSurvivorGame extends FlameGame {
     this.stageEnemyTypes = const ['basic', 'fast', 'tank'],
     this.isDeathmatch = false,
     this.bossSpriteSheetAssetPath =
-        'assets/game/grass_game/images/bosses/boss_tiger_walk.png',
-    this.bossDeathAssetPath,
+        'assets/game/grass_game/images/bosses/boss_tiger_walk_runtime.png',
   }) : state = GrassGameRuntimeState.initial(
           configVersion: config.version,
         );
@@ -77,7 +76,6 @@ class GrassSurvivorGame extends FlameGame {
   final List<String> stageEnemyTypes;
   final bool isDeathmatch;
   final String bossSpriteSheetAssetPath;
-  final String? bossDeathAssetPath;
   GrassGameRuntimeState state;
   String languageCode = 'en';
 
@@ -105,7 +103,6 @@ class GrassSurvivorGame extends FlameGame {
   String? _fireSoundFileName;
   AudioPool? _fireAudioPool;
   final List<StopFunction> _activeFireSoundStops = [];
-  final List<_DecorationSprite> _decorationSprites = [];
 
   final Paint _backgroundPaint = Paint()..color = const Color(0xFF183622);
   final Paint _groundPaint = Paint()..color = const Color(0xFF1F472D);
@@ -113,9 +110,6 @@ class GrassSurvivorGame extends FlameGame {
   final Paint _fieldLinePaint = Paint()
     ..color = const Color(0x183B7A4D)
     ..strokeWidth = 1;
-  final Paint _decorationShadowPaint = Paint()..color = const Color(0x33000000);
-  final Paint _decorationImagePaint = Paint()
-    ..filterQuality = FilterQuality.medium;
   final Paint _spawnZonePaint = Paint()
     ..color = const Color(0x1AFFD36E)
     ..style = PaintingStyle.fill;
@@ -218,29 +212,29 @@ class GrassSurvivorGame extends FlameGame {
   static const double _gemMaxAgeSeconds = 14;
   static const Map<String, String> _guaishouSpriteSheets = {
     'guaishou_black_armored_beetle':
-        'assets/game/grass_game/images/guaishou/guaishou_black_armored_beetle_walk_sheet_runtime.png',
+        'assets/game/grass_game/images/guaishou/guaishou_black_armored_beetle_walk_sheet_runtime_128.png',
     'guaishou_black_white_armor':
-        'assets/game/grass_game/images/guaishou/guaishou_black_white_armor_walk_sheet_runtime.png',
+        'assets/game/grass_game/images/guaishou/guaishou_black_white_armor_walk_sheet_runtime_128.png',
     'guaishou_blue_antenna_alien':
-        'assets/game/grass_game/images/guaishou/guaishou_blue_antenna_alien_walk_sheet_runtime.png',
+        'assets/game/grass_game/images/guaishou/guaishou_blue_antenna_alien_walk_sheet_runtime_128.png',
     'guaishou_gold_snail_mouth':
-        'assets/game/grass_game/images/guaishou/guaishou_gold_snail_mouth_walk_sheet_runtime.png',
+        'assets/game/grass_game/images/guaishou/guaishou_gold_snail_mouth_walk_sheet_runtime_128.png',
     'guaishou_gray_block_head':
-        'assets/game/grass_game/images/guaishou/guaishou_gray_block_head_walk_sheet_runtime.png',
+        'assets/game/grass_game/images/guaishou/guaishou_gray_block_head_walk_sheet_runtime_128.png',
     'guaishou_horned_brute':
-        'assets/game/grass_game/images/guaishou/guaishou_horned_brute_walk_sheet_runtime.png',
+        'assets/game/grass_game/images/guaishou/guaishou_horned_brute_walk_sheet_runtime_128.png',
     'guaishou_insect_claw':
-        'assets/game/grass_game/images/guaishou/guaishou_insect_claw_walk_sheet_runtime.png',
+        'assets/game/grass_game/images/guaishou/guaishou_insect_claw_walk_sheet_runtime_128.png',
     'guaishou_red_gold_spear_alien':
-        'assets/game/grass_game/images/guaishou/guaishou_red_gold_spear_alien_walk_sheet_runtime.png',
+        'assets/game/grass_game/images/guaishou/guaishou_red_gold_spear_alien_walk_sheet_runtime_128.png',
     'guaishou_shell_kaiju':
-        'assets/game/grass_game/images/guaishou/guaishou_shell_kaiju_walk_sheet_runtime.png',
+        'assets/game/grass_game/images/guaishou/guaishou_shell_kaiju_walk_sheet_runtime_128.png',
     'guaishou_silver_mask_rifle':
-        'assets/game/grass_game/images/guaishou/guaishou_silver_mask_rifle_walk_sheet_runtime.png',
+        'assets/game/grass_game/images/guaishou/guaishou_silver_mask_rifle_walk_sheet_runtime_128.png',
     'guaishou_spiked_mane_beast':
-        'assets/game/grass_game/images/guaishou/guaishou_spiked_mane_beast_walk_sheet_runtime.png',
+        'assets/game/grass_game/images/guaishou/guaishou_spiked_mane_beast_walk_sheet_runtime_128.png',
     'guaishou_winged_dragon':
-        'assets/game/grass_game/images/guaishou/guaishou_winged_dragon_walk_sheet_runtime.png',
+        'assets/game/grass_game/images/guaishou/guaishou_winged_dragon_walk_sheet_runtime_128.png',
   };
 
   @override
@@ -282,7 +276,6 @@ class GrassSurvivorGame extends FlameGame {
     await _loadDropIcons();
     await _loadSkillEffectImages();
     await _loadWeaponEffects();
-    await _loadDecorationSprites();
     controller.start();
     if (isDeathmatch) {
       _pendingLevelUps = _deathmatchInitialLevelUps;
@@ -346,49 +339,49 @@ class GrassSurvivorGame extends FlameGame {
       ..addAll({
         'basic': EnemyAnimationSet(
           image: await _loadImage(
-            'assets/game/grass_game/images/animals/PNG/Without_shadow/Sheep_animation_without_shadow.png',
+            _guaishouSpriteSheets['guaishou_black_white_armor']!,
           ),
           displaySize: Vector2.all(42),
         ),
         'lamb': EnemyAnimationSet(
           image: await _loadImage(
-            'assets/game/grass_game/images/animals/PNG/Without_shadow/Lamb_animation_without_shadow.png',
+            _guaishouSpriteSheets['guaishou_gray_block_head']!,
           ),
           displaySize: Vector2.all(34),
         ),
         'piglet': EnemyAnimationSet(
           image: await _loadImage(
-            'assets/game/grass_game/images/animals/PNG/Without_shadow/Piglet_animation_without_shadow.png',
+            _guaishouSpriteSheets['guaishou_blue_antenna_alien']!,
           ),
           displaySize: Vector2.all(38),
         ),
         'calf': EnemyAnimationSet(
           image: await _loadImage(
-            'assets/game/grass_game/images/animals/PNG/Without_shadow/Calf_animation_without_shadow.png',
+            _guaishouSpriteSheets['guaishou_horned_brute']!,
           ),
           displaySize: Vector2.all(52),
         ),
         'fast': EnemyAnimationSet(
           image: await _loadImage(
-            'assets/game/grass_game/images/animals/PNG/Without_shadow/Chick_animation_without_shadow.png',
+            _guaishouSpriteSheets['guaishou_insect_claw']!,
           ),
           displaySize: Vector2.all(32),
         ),
         'rooster': EnemyAnimationSet(
           image: await _loadImage(
-            'assets/game/grass_game/images/animals/PNG/Without_shadow/Rooster_animation_without_shadow.png',
+            _guaishouSpriteSheets['guaishou_red_gold_spear_alien']!,
           ),
           displaySize: Vector2.all(42),
         ),
         'turkey': EnemyAnimationSet(
           image: await _loadImage(
-            'assets/game/grass_game/images/animals/PNG/Without_shadow/Turkey_animation_without_shadow.png',
+            _guaishouSpriteSheets['guaishou_winged_dragon']!,
           ),
           displaySize: Vector2.all(48),
         ),
         'tank': EnemyAnimationSet(
           image: await _loadImage(
-            'assets/game/grass_game/images/animals/PNG/Without_shadow/Bull_animation_without_shadow.png',
+            _guaishouSpriteSheets['guaishou_spiked_mane_beast']!,
           ),
           displaySize: Vector2.all(66),
         ),
@@ -410,22 +403,22 @@ class GrassSurvivorGame extends FlameGame {
   Future<void> _loadDropIcons() async {
     _dropIcons = DropIconSet(
       expLow: await _loadImage(
-        'assets/game/grass_game/images/exp/exp_low.webp',
+        'assets/game/grass_game/images/exp/exp_drop_low.png',
       ),
       expMid: await _loadImage(
-        'assets/game/grass_game/images/exp/exp_mid.webp',
+        'assets/game/grass_game/images/exp/exp_drop_mid.png',
       ),
       expHigh: await _loadImage(
-        'assets/game/grass_game/images/exp/exp_high.webp',
+        'assets/game/grass_game/images/exp/exp_drop_high.png',
       ),
       coinSmall: await _loadImage(
-        'assets/game/grass_game/images/coins/coin_small.webp',
+        'assets/game/grass_game/images/coins/coin_drop_small.png',
       ),
       coinMedium: await _loadImage(
-        'assets/game/grass_game/images/coins/coin_medium.webp',
+        'assets/game/grass_game/images/coins/coin_drop_medium.png',
       ),
       coinLarge: await _loadImage(
-        'assets/game/grass_game/images/coins/coin_large.webp',
+        'assets/game/grass_game/images/coins/coin_drop_large.png',
       ),
     );
   }
@@ -447,79 +440,6 @@ class GrassSurvivorGame extends FlameGame {
     final codec = await instantiateImageCodec(bytes.buffer.asUint8List());
     final frame = await codec.getNextFrame();
     return frame.image;
-  }
-
-  Future<void> _loadDecorationSprites() async {
-    final supplies = await _loadImage(
-      'assets/game/grass_game/images/background/trees/PNG/Supplies.png',
-    );
-    _decorationSprites
-      ..clear()
-      ..addAll([
-        _DecorationSprite(
-          image: await _loadImage(
-            'assets/game/grass_game/images/background/other/PNG/Objects_separately/Fern_tree1.png',
-          ),
-          displaySize: const Size(90, 90),
-        ),
-        _DecorationSprite(
-          image: await _loadImage(
-            'assets/game/grass_game/images/background/other/PNG/Objects_separately/Fern_tree2.png',
-          ),
-          displaySize: const Size(84, 84),
-        ),
-        _DecorationSprite(
-          image: await _loadImage(
-            'assets/game/grass_game/images/background/other/PNG/Objects_separately/Oval_leaf_tree1.png',
-          ),
-          displaySize: const Size(58, 58),
-        ),
-        _DecorationSprite(
-          image: await _loadImage(
-            'assets/game/grass_game/images/background/other/PNG/Objects_separately/Oval_leaf_tree2.png',
-          ),
-          displaySize: const Size(58, 58),
-        ),
-        _DecorationSprite(
-          image: await _loadImage(
-            'assets/game/grass_game/images/background/other/PNG/Objects_separately/Dragon_bones_full_grass_shadow.png',
-          ),
-          displaySize: const Size(118, 118),
-        ),
-        _DecorationSprite(
-          image: await _loadImage(
-            'assets/game/grass_game/images/background/other/PNG/Objects_separately/Dragon_bones_tail_grass_shadow.png',
-          ),
-          displaySize: const Size(96, 96),
-        ),
-        _DecorationSprite(
-          image: await _loadImage(
-            'assets/game/grass_game/images/background/other/PNG/Objects_separately/Orange_mushrooms1_grass_shadow.png',
-          ),
-          displaySize: const Size(42, 42),
-        ),
-        _DecorationSprite(
-          image: await _loadImage(
-            'assets/game/grass_game/images/background/other/PNG/Objects_separately/Black_mushrooms1_grass_shadow.png',
-          ),
-          displaySize: const Size(42, 42),
-        ),
-        _DecorationSprite(
-          image: supplies,
-          source: const Rect.fromLTWH(0, 162, 30, 34),
-          displaySize: const Size(30, 34),
-        ),
-        _DecorationSprite(
-          image: supplies,
-          source: const Rect.fromLTWH(32, 164, 38, 32),
-          displaySize: const Size(38, 32),
-        ),
-        _DecorationSprite(
-          image: supplies,
-          source: const Rect.fromLTWH(192, 150, 42, 28),
-          displaySize: const Size(42, 28),
-        ),
-      ]);
   }
 
   Future<void> _loadWeaponEffects() async {
@@ -615,7 +535,6 @@ class GrassSurvivorGame extends FlameGame {
           (cellX + cellY).isEven ? _groundPaint : _groundAltPaint,
         );
         canvas.drawRect(rect, _fieldLinePaint);
-        _drawDecoration(canvas, cellX, cellY, rect);
       }
     }
 
@@ -643,66 +562,6 @@ class GrassSurvivorGame extends FlameGame {
         const Color(0x66FFD36E).withOpacity(0.40 * opacity);
     canvas.drawCircle(Offset.zero, radius, _spawnZonePaint);
     canvas.drawCircle(Offset.zero, radius, _spawnZoneStrokePaint);
-  }
-
-  void _drawDecoration(Canvas canvas, int cellX, int cellY, Rect rect) {
-    if (_decorationSprites.isEmpty) {
-      return;
-    }
-
-    final hash = _cellHash(
-      cellX + stageChapter * 97,
-      cellY + stageIndex * 131,
-    );
-    if (hash % 13 != 0) {
-      return;
-    }
-
-    final center = Offset(
-      rect.left + 12 + (hash % 41),
-      rect.top + 10 + ((hash >> 4) % 43),
-    );
-
-    if (center.dx * center.dx + center.dy * center.dy < 130 * 130) {
-      return;
-    }
-
-    final decoration = _decorationSprites[hash % _decorationSprites.length];
-    final scale = 0.72 + ((hash >> 8) % 25) / 100;
-    final width = decoration.displaySize.width * scale;
-    final height = decoration.displaySize.height * scale;
-    final dst = Rect.fromCenter(
-      center: center,
-      width: width,
-      height: height,
-    );
-
-    canvas.drawOval(
-      Rect.fromCenter(
-        center: Offset(center.dx, dst.bottom - 8),
-        width: width * 0.68,
-        height: math.max(8, height * 0.16),
-      ),
-      _decorationShadowPaint,
-    );
-    canvas.drawImageRect(
-      decoration.image,
-      decoration.source ??
-          Rect.fromLTWH(
-            0,
-            0,
-            decoration.image.width.toDouble(),
-            decoration.image.height.toDouble(),
-          ),
-      dst,
-      _decorationImagePaint,
-    );
-  }
-
-  int _cellHash(int x, int y) {
-    var value = x * 73856093 ^ y * 19349663;
-    value ^= value >> 13;
-    return value.abs();
   }
 
   Vector2 get _cameraOffset {
@@ -3287,6 +3146,7 @@ class GrassSurvivorGame extends FlameGame {
     final options = selector.selectOptions(
       config.skills,
       rerollOffset: _levelUpRerollOffset,
+      randomSeed: _random.nextInt(1 << 31),
       skillLevels: _skillLevels,
       evolvedSkills: _evolvedSkills,
       ultimateSkillId: _ultimateSkillId,
@@ -3742,18 +3602,6 @@ class _ExpandingRing {
   double get progress => (age / _duration).clamp(0, 1).toDouble();
 
   bool get isDone => age >= _duration;
-}
-
-class _DecorationSprite {
-  const _DecorationSprite({
-    required this.image,
-    required this.displaySize,
-    this.source,
-  });
-
-  final Image image;
-  final Size displaySize;
-  final Rect? source;
 }
 
 class _DropRoll {
