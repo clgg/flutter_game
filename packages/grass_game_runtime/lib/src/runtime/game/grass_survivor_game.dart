@@ -2355,7 +2355,7 @@ class GrassSurvivorGame extends FlameGame {
     const rows = 6;
     final frameCount = columns * rows;
     final frame =
-        ((_elapsed * (isEvolved ? 18 : 13) + seed) * 1.7).floor() % frameCount;
+        (_elapsed * (isEvolved ? 15 : 10) + seed).floor() % frameCount;
     final frameWidth = image.width / columns;
     final frameHeight = image.height / rows;
     final source = Rect.fromLTWH(
@@ -2375,21 +2375,6 @@ class GrassSurvivorGame extends FlameGame {
       ..blendMode = BlendMode.screen
       ..color = Color.fromRGBO(255, 255, 255, opacity);
     canvas.drawImageRect(image, source, destination, paint);
-
-    final coreSide = side * 0.62;
-    final coreFrame = (frame + 7) % frameCount;
-    final coreSource = Rect.fromLTWH(
-      (coreFrame % columns) * frameWidth,
-      (coreFrame ~/ columns) * frameHeight,
-      frameWidth,
-      frameHeight,
-    );
-    canvas.drawImageRect(
-      image,
-      coreSource,
-      Rect.fromCenter(center: center, width: coreSide, height: coreSide),
-      paint..color = Color.fromRGBO(255, 255, 255, opacity * 0.82),
-    );
   }
 
   void _drawPoisonField(Canvas canvas, _GroundEffectField field) {
