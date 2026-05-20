@@ -3,6 +3,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:grass_game_domain/grass_game_domain.dart';
+import 'package:grass_game_runtime/grass_game_runtime.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'weapon_catalog.dart';
@@ -82,22 +83,44 @@ class WeaponProgress {
     required this.weaponId,
     required this.isOwned,
     required this.level,
+    this.isCrafted = false,
+    this.maxLevel = 10,
   });
 
   final String weaponId;
   final bool isOwned;
   final int level;
+  final bool isCrafted;
+  final int maxLevel;
 
   WeaponProgress copyWith({
     bool? isOwned,
     int? level,
+    bool? isCrafted,
+    int? maxLevel,
   }) {
     return WeaponProgress(
       weaponId: weaponId,
       isOwned: isOwned ?? this.isOwned,
       level: level ?? this.level,
+      isCrafted: isCrafted ?? this.isCrafted,
+      maxLevel: maxLevel ?? this.maxLevel,
     );
   }
+}
+
+class WeaponDisplayStats {
+  const WeaponDisplayStats({
+    required this.level,
+    required this.damage,
+    required this.attacksPerSecond,
+    required this.range,
+  });
+
+  final int level;
+  final int damage;
+  final double attacksPerSecond;
+  final double range;
 }
 
 class GameLoadoutSnapshot {
@@ -119,9 +142,6 @@ class GameLoadoutSnapshot {
   static const double _profileSpeedGainPerLevel = 0.006;
   static const double _profileSpeedGainCap = 0.18;
   static const double _profileAttackGainPerLevel = 0.015;
-  static const double _weaponDamageGainPerLevel = 0.09;
-  static const double _weaponCooldownGainPerLevel = 0.055;
-  static const double _weaponCooldownMinMultiplier = 0.42;
 
   int get playerMaxHp {
     return character.baseHp + (profileLevel - 1) * _profileHpGainPerLevel;
@@ -137,24 +157,60 @@ class GameLoadoutSnapshot {
 
   String get playerSpriteSheetAssetPath => character.gameSpriteSheetAssetPath;
 
-  int get weaponDamage {
+  static WeaponDisplayStats weaponStatsFor({
+    required WeaponDefinition weapon,
+    required WeaponProgress progress,
+    required CharacterDefinition character,
+    required int profileLevel,
+    int? level,
+  }) {
+    final effectiveLevel = (level ?? progress.level).clamp(1, weapon.maxLevel);
     final weaponMultiplier =
-        1 + (weaponProgress.level - 1) * _weaponDamageGainPerLevel;
+        1 + (effectiveLevel - 1) * weapon.upgradeCurve.damageGrowth;
     final profileMultiplier =
         1 + (profileLevel - 1) * _profileAttackGainPerLevel;
     final multiplier =
         character.baseAttackMultiplier * weaponMultiplier * profileMultiplier;
-    return math.max(1, (weapon.damage * multiplier).round());
+    final speedMultiplier =
+        1 + (effectiveLevel - 1) * weapon.upgradeCurve.speedGrowth;
+    final rangeMultiplier =
+        1 + (effectiveLevel - 1) * weapon.upgradeCurve.rangeGrowth;
+    return WeaponDisplayStats(
+      level: effectiveLevel,
+      damage: math.max(1, (weapon.baseDamage * multiplier).round()),
+      attacksPerSecond: weapon.attacksPerSecond * speedMultiplier,
+      range: weapon.range * rangeMultiplier,
+    );
   }
 
-  double get weaponCooldownMultiplier {
-    final multiplier =
-        1 + (weaponProgress.level - 1) * _weaponCooldownGainPerLevel;
-    return math.max(_weaponCooldownMinMultiplier, 1 / multiplier);
-  }
+  WeaponDisplayStats get weaponDisplayStats => weaponStatsFor(
+        weapon: weapon,
+        progress: weaponProgress,
+        character: character,
+        profileLevel: profileLevel,
+      );
+
+  int get weaponDamage => weaponDisplayStats.damage;
+
+  double get weaponAttacksPerSecond => weaponDisplayStats.attacksPerSecond;
 
   double get weaponFireIntervalSeconds {
-    return 60 / weapon.fireRateRoundsPerMinute;
+    return 1 / weaponAttacksPerSecond;
+  }
+
+  double get weaponRange => weaponDisplayStats.range;
+
+  WeaponRuntimeStats get weaponRuntimeStats {
+    return WeaponRuntimeStats(
+      attackPattern: weapon.attackPattern.name,
+      damage: weaponDamage,
+      attacksPerSecond: weaponAttacksPerSecond,
+      range: weaponRange,
+      areaRadius: weapon.areaRadius,
+      pierce: weapon.pierce,
+      knockback: weapon.knockback,
+      effectId: weapon.effectId,
+    );
   }
 }
 
@@ -176,7 +232,7 @@ class GrassGameProgressController extends ChangeNotifier {
         _completedStageIds = Set.of(completedStageIds);
 
   factory GrassGameProgressController.defaults() {
-    final weapons = _limitWeaponsPerStar(grassGameWeaponCatalog, limit: 20);
+    const weapons = grassGameWeaponCatalog;
 
     final controller = GrassGameProgressController(
       characters: const [
@@ -316,6 +372,7 @@ class GrassGameProgressController extends ChangeNotifier {
             weaponId: weapon.id,
             isOwned: weapon.buyCost == 0,
             level: 1,
+            maxLevel: weapon.maxLevel,
           ),
       },
       coins: 320,
@@ -330,23 +387,6 @@ class GrassGameProgressController extends ChangeNotifier {
     return controller;
   }
 
-  static List<WeaponDefinition> _limitWeaponsPerStar(
-    List<WeaponDefinition> weapons, {
-    required int limit,
-  }) {
-    final countsByStar = <int, int>{};
-    final selected = <WeaponDefinition>[];
-    for (final weapon in weapons) {
-      final count = countsByStar[weapon.maxStars] ?? 0;
-      if (count >= limit) {
-        continue;
-      }
-      countsByStar[weapon.maxStars] = count + 1;
-      selected.add(weapon);
-    }
-    return selected;
-  }
-
   static const _storagePrefix = 'grass_game_progress.';
   static const _coinsKey = '${_storagePrefix}coins';
   static const _profileLevelKey = '${_storagePrefix}profile_level';
@@ -355,6 +395,7 @@ class GrassGameProgressController extends ChangeNotifier {
   static const _selectedWeaponKey = '${_storagePrefix}selected_weapon';
   static const _selectedStageKey = '${_storagePrefix}selected_stage';
   static const _ownedWeaponsKey = '${_storagePrefix}owned_weapons';
+  static const _craftedWeaponsKey = '${_storagePrefix}crafted_weapons';
   static const _weaponLevelsKey = '${_storagePrefix}weapon_levels';
   static const _completedStagesKey = '${_storagePrefix}completed_stages';
   static const _weaponUpgradeMinBaseCost = 70;
@@ -372,10 +413,16 @@ class GrassGameProgressController extends ChangeNotifier {
     'guaishou_black_armored_beetle',
     'guaishou_black_white_armor',
     'guaishou_blue_antenna_alien',
+    'guaishou_feral_hound',
+    'guaishou_feral_rooster',
     'guaishou_gold_snail_mouth',
     'guaishou_gray_block_head',
     'guaishou_horned_brute',
+    'guaishou_horned_goat',
     'guaishou_insect_claw',
+    'guaishou_iron_boar',
+    'guaishou_mad_bull',
+    'guaishou_marsh_duck',
     'guaishou_red_gold_spear_alien',
     'guaishou_shell_kaiju',
     'guaishou_silver_mask_rifle',
@@ -525,6 +572,10 @@ class GrassGameProgressController extends ChangeNotifier {
 
   List<GameStageDefinition> get stages => List.unmodifiable(_stages);
 
+  List<GameStageDefinition> get _campaignStages {
+    return _stages.where((item) => !item.isDeathmatch).toList();
+  }
+
   GameStageDefinition get selectedStage {
     return _stages.firstWhere((item) => item.id == selectedStageId);
   }
@@ -532,24 +583,33 @@ class GrassGameProgressController extends ChangeNotifier {
   bool isStageCompleted(String stageId) => _completedStageIds.contains(stageId);
 
   String? get nextStageId {
-    final index = _stages.indexWhere((item) => item.id == selectedStageId);
-    if (index < 0 || index >= _stages.length - 1) {
+    if (selectedStage.isDeathmatch) {
       return null;
     }
-    return _stages[index + 1].id;
+    final stages = _campaignStages;
+    final index = stages.indexWhere((item) => item.id == selectedStageId);
+    if (index < 0 || index >= stages.length - 1) {
+      return null;
+    }
+    return stages[index + 1].id;
   }
 
   bool get hasNextStage => nextStageId != null;
 
   bool canSelectStage(String stageId) {
-    final index = _stages.indexWhere((item) => item.id == stageId);
-    if (index < 0) {
+    final stage = _stages.where((item) => item.id == stageId).firstOrNull;
+    if (stage == null) {
       return false;
     }
-    if (_stages[index].isDeathmatch || index == 0) {
+    if (stage.isDeathmatch) {
       return true;
     }
-    return _completedStageIds.contains(_stages[index - 1].id);
+    final stages = _campaignStages;
+    final index = stages.indexWhere((item) => item.id == stageId);
+    if (index == 0) {
+      return true;
+    }
+    return index > 0 && _completedStageIds.contains(stages[index - 1].id);
   }
 
   List<GameStageDefinition> stagesForChapter(int chapter) {
@@ -572,9 +632,32 @@ class GrassGameProgressController extends ChangeNotifier {
     return weapons.firstWhere((item) => item.id == selectedWeaponId);
   }
 
+  WeaponDisplayStats weaponStatsFor(String weaponId, {int? level}) {
+    final weapon = weapons.firstWhere((item) => item.id == weaponId);
+    return GameLoadoutSnapshot.weaponStatsFor(
+      weapon: weapon,
+      progress: progressFor(weaponId),
+      character: selectedCharacter,
+      profileLevel: profileLevel,
+      level: level,
+    );
+  }
+
   WeaponProgress progressFor(String weaponId) {
+    WeaponDefinition? weapon;
+    for (final item in weapons) {
+      if (item.id == weaponId) {
+        weapon = item;
+        break;
+      }
+    }
     return _weaponProgress[weaponId] ??
-        WeaponProgress(weaponId: weaponId, isOwned: false, level: 1);
+        WeaponProgress(
+          weaponId: weaponId,
+          isOwned: false,
+          level: 1,
+          maxLevel: weapon?.maxLevel ?? 10,
+        );
   }
 
   GameLoadoutSnapshot get currentLoadout {
@@ -630,17 +713,26 @@ class GrassGameProgressController extends ChangeNotifier {
   int upgradeCost(String weaponId) {
     final progress = progressFor(weaponId);
     final weapon = weapons.firstWhere((item) => item.id == weaponId);
+    if (progress.level >= weapon.maxLevel) {
+      return 0;
+    }
+    final costSeed = weapon.recipe?.craftCost ?? weapon.buyCost;
     final baseCost = math.max(
       _weaponUpgradeMinBaseCost,
-      (weapon.buyCost * _weaponUpgradeBuyCostRatio).round(),
+      (costSeed * _weaponUpgradeBuyCostRatio).round(),
     );
-    return (baseCost * math.pow(_weaponUpgradeCostGrowth, progress.level - 1))
+    return (baseCost *
+            weapon.upgradeCurve.costMultiplier *
+            math.pow(_weaponUpgradeCostGrowth, progress.level - 1))
         .ceil();
   }
 
   bool buyWeapon(String weaponId) {
     final weapon = weapons.firstWhere((item) => item.id == weaponId);
     final progress = progressFor(weaponId);
+    if (weapon.isCraftWeapon) {
+      return false;
+    }
     if (progress.isOwned || coins < weapon.buyCost) {
       return false;
     }
@@ -652,14 +744,71 @@ class GrassGameProgressController extends ChangeNotifier {
     return true;
   }
 
+  bool canCraftWeapon(String weaponId) {
+    final weapon = weapons.firstWhere((item) => item.id == weaponId);
+    final recipe = weapon.recipe;
+    if (recipe == null || progressFor(weaponId).isOwned) {
+      return false;
+    }
+    if (coins < recipe.craftCost) {
+      return false;
+    }
+    return recipe.materialWeaponIds.every((id) => progressFor(id).isOwned);
+  }
+
+  List<String> missingCraftMaterialIds(String weaponId) {
+    final weapon = weapons.firstWhere((item) => item.id == weaponId);
+    final recipe = weapon.recipe;
+    if (recipe == null) {
+      return const [];
+    }
+    return [
+      for (final id in recipe.materialWeaponIds)
+        if (!progressFor(id).isOwned) id,
+    ];
+  }
+
+  int craftCost(String weaponId) {
+    final weapon = weapons.firstWhere((item) => item.id == weaponId);
+    return weapon.recipe?.craftCost ?? weapon.buyCost;
+  }
+
+  bool craftWeapon(String weaponId) {
+    final weapon = weapons.firstWhere((item) => item.id == weaponId);
+    final recipe = weapon.recipe;
+    final progress = progressFor(weaponId);
+    if (recipe == null ||
+        progress.isOwned ||
+        coins < recipe.craftCost ||
+        !recipe.materialWeaponIds.every((id) => progressFor(id).isOwned)) {
+      return false;
+    }
+    coins -= recipe.craftCost;
+    _weaponProgress[weaponId] = progress.copyWith(
+      isOwned: true,
+      isCrafted: true,
+      maxLevel: weapon.maxLevel,
+    );
+    selectedWeaponId = weaponId;
+    unawaited(save());
+    notifyListeners();
+    return true;
+  }
+
   bool upgradeWeapon(String weaponId) {
     final progress = progressFor(weaponId);
     final cost = upgradeCost(weaponId);
-    if (!progress.isOwned || coins < cost) {
+    final weapon = weapons.firstWhere((item) => item.id == weaponId);
+    if (!progress.isOwned ||
+        progress.level >= weapon.maxLevel ||
+        coins < cost) {
       return false;
     }
     coins -= cost;
-    _weaponProgress[weaponId] = progress.copyWith(level: progress.level + 1);
+    _weaponProgress[weaponId] = progress.copyWith(
+      level: progress.level + 1,
+      maxLevel: weapon.maxLevel,
+    );
     unawaited(save());
     notifyListeners();
     return true;
@@ -696,6 +845,7 @@ class GrassGameProgressController extends ChangeNotifier {
     final savedStageId = prefs.getString(_selectedStageKey);
 
     final ownedWeapons = prefs.getStringList(_ownedWeaponsKey) ?? const [];
+    final craftedWeapons = prefs.getStringList(_craftedWeaponsKey) ?? const [];
     final weaponLevels = _decodeWeaponLevels(
       prefs.getStringList(_weaponLevelsKey) ?? const [],
     );
@@ -703,7 +853,10 @@ class GrassGameProgressController extends ChangeNotifier {
       final progress = progressFor(weapon.id);
       _weaponProgress[weapon.id] = progress.copyWith(
         isOwned: progress.isOwned || ownedWeapons.contains(weapon.id),
+        isCrafted: craftedWeapons.contains(weapon.id) ||
+            (ownedWeapons.contains(weapon.id) && weapon.isCraftWeapon),
         level: math.max(1, weaponLevels[weapon.id] ?? progress.level),
+        maxLevel: weapon.maxLevel,
       );
     }
     final savedWeaponId = prefs.getString(_selectedWeaponKey);
@@ -742,6 +895,13 @@ class GrassGameProgressController extends ChangeNotifier {
       [
         for (final entry in _weaponProgress.entries)
           if (entry.value.isOwned) entry.key,
+      ]..sort(),
+    );
+    await prefs.setStringList(
+      _craftedWeaponsKey,
+      [
+        for (final entry in _weaponProgress.entries)
+          if (entry.value.isCrafted) entry.key,
       ]..sort(),
     );
     await prefs.setStringList(

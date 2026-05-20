@@ -113,6 +113,7 @@ class _GrassGameLoadoutPageState extends State<GrassGameLoadoutPage> {
                   child: _WeaponDetailPanel(
                     weapon: previewWeapon,
                     progress: progressController.progressFor(previewWeapon.id),
+                    progressController: progressController,
                   ),
                 ),
                 SliverToBoxAdapter(
@@ -590,6 +591,7 @@ class _WeaponChooser extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strings = _LoadoutStrings.of(context);
     final ownedWeapons = progressController.weapons
         .where((weapon) => progressController.progressFor(weapon.id).isOwned)
         .toList(growable: false);
@@ -610,7 +612,7 @@ class _WeaponChooser extends StatelessWidget {
               onPreview(weapon);
               final ok = progressController.selectWeapon(weapon.id);
               if (!ok) {
-                onLocked(weapon.name);
+                onLocked(strings.weaponName(weapon));
               }
             },
           );
@@ -780,15 +782,24 @@ class _WeaponDetailPanel extends StatelessWidget {
   const _WeaponDetailPanel({
     required this.weapon,
     required this.progress,
+    required this.progressController,
   });
 
   final WeaponDefinition weapon;
   final WeaponProgress progress;
+  final GrassGameProgressController progressController;
 
   @override
   Widget build(BuildContext context) {
     final strings = _LoadoutStrings.of(context);
     final gameTheme = context.gameTheme;
+    final currentStats = progressController.weaponStatsFor(weapon.id);
+    final nextStats = progress.isOwned && progress.level < weapon.maxLevel
+        ? progressController.weaponStatsFor(
+            weapon.id,
+            level: progress.level + 1,
+          )
+        : null;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
       child: Container(
@@ -826,7 +837,7 @@ class _WeaponDetailPanel extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    weapon.name,
+                    strings.weaponName(weapon),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -862,17 +873,181 @@ class _WeaponDetailPanel extends StatelessWidget {
                   freeLabel: strings.free,
                   cost: weapon.buyCost,
                 ),
-                _WeaponMetaPill(text: weapon.country),
-                _WeaponMetaPill(text: weapon.kind),
-                _WeaponMetaPill(text: weapon.fireMode),
-                _WeaponMetaPill(text: '${strings.damage} ${weapon.damage}'),
-                _WeaponMetaPill(text: '${weapon.fireRateRoundsPerMinute} RPM'),
-                _WeaponMetaPill(text: '${weapon.maxStars} Stars'),
-                _WeaponMetaPill(text: weapon.unlockMethod),
+                _WeaponMetaPill(
+                    text: strings.weaponObtainType(weapon.obtainType)),
+                _WeaponMetaPill(text: strings.weaponFamily(weapon.family)),
+                _WeaponMetaPill(
+                  text: strings.weaponAttackPattern(weapon.attackPattern),
+                ),
+                _WeaponMetaPill(
+                    text: '${strings.damage} ${currentStats.damage}'),
+                _WeaponMetaPill(
+                  text: '${currentStats.attacksPerSecond.toStringAsFixed(2)}/s',
+                ),
+                _WeaponMetaPill(text: 'R ${currentStats.range.round()}'),
+                _WeaponMetaPill(text: strings.weaponStars(weapon.maxStars)),
+                _WeaponMetaPill(text: strings.weaponUnlockMethod(weapon)),
               ],
             ),
+            const SizedBox(height: 10),
+            _WeaponUpgradeStats(
+              current: currentStats,
+              next: nextStats,
+              strings: strings,
+            ),
+            if (strings.weaponDescription(weapon).isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                strings.weaponDescription(weapon),
+                style: TextStyle(
+                  color: gameTheme.muted,
+                  fontSize: 12,
+                  height: 1.35,
+                  letterSpacing: 0,
+                ),
+              ),
+            ],
+            if (weapon.recipe != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                '${strings.recipe}: ${weapon.recipe!.materialWeaponIds.map((id) {
+                  final material = progressController.weapons
+                      .firstWhere((item) => item.id == id);
+                  return strings.weaponName(material);
+                }).join(' + ')}',
+                style: TextStyle(
+                  color: gameTheme.accent2,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0,
+                ),
+              ),
+            ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _WeaponUpgradeStats extends StatelessWidget {
+  const _WeaponUpgradeStats({
+    required this.current,
+    required this.next,
+    required this.strings,
+  });
+
+  final WeaponDisplayStats current;
+  final WeaponDisplayStats? next;
+  final _LoadoutStrings strings;
+
+  @override
+  Widget build(BuildContext context) {
+    final gameTheme = context.gameTheme;
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: gameTheme.glass,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: gameTheme.line),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            next == null
+                ? strings.currentStatsTitle(current.level)
+                : strings.nextUpgradeTitle(current.level, next!.level),
+            style: TextStyle(
+              color: gameTheme.foreground,
+              fontSize: 12,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0,
+            ),
+          ),
+          const SizedBox(height: 8),
+          _WeaponUpgradeStatRow(
+            label: strings.damage,
+            currentValue: current.damage.toString(),
+            nextValue: next?.damage.toString(),
+          ),
+          _WeaponUpgradeStatRow(
+            label: strings.attackSpeed,
+            currentValue: strings.perSecond(current.attacksPerSecond),
+            nextValue:
+                next == null ? null : strings.perSecond(next!.attacksPerSecond),
+          ),
+          _WeaponUpgradeStatRow(
+            label: strings.range,
+            currentValue: current.range.round().toString(),
+            nextValue: next?.range.round().toString(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _WeaponUpgradeStatRow extends StatelessWidget {
+  const _WeaponUpgradeStatRow({
+    required this.label,
+    required this.currentValue,
+    required this.nextValue,
+  });
+
+  final String label;
+  final String currentValue;
+  final String? nextValue;
+
+  @override
+  Widget build(BuildContext context) {
+    final gameTheme = context.gameTheme;
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: gameTheme.muted,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0,
+              ),
+            ),
+          ),
+          Text(
+            currentValue,
+            style: TextStyle(
+              color: gameTheme.foreground,
+              fontSize: 12,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0,
+            ),
+          ),
+          if (nextValue != null) ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              child: Icon(
+                Icons.arrow_forward_rounded,
+                size: 14,
+                color: gameTheme.accent2,
+              ),
+            ),
+            Text(
+              nextValue!,
+              style: TextStyle(
+                color: gameTheme.accent,
+                fontSize: 12,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0,
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -1025,7 +1200,7 @@ class _WeaponChip extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    weapon.name,
+                    strings.weaponName(weapon),
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: gameTheme.foreground,
@@ -1194,6 +1369,12 @@ class _WeaponShopPageState extends State<_WeaponShopPage> {
             final progress = widget.progressController.progressFor(weapon.id);
             final upgradeCost =
                 widget.progressController.upgradeCost(weapon.id);
+            final canUpgrade =
+                progress.isOwned && progress.level < weapon.maxLevel;
+            final isCraftWeapon = weapon.recipe != null;
+            final actionCost = isCraftWeapon
+                ? widget.progressController.craftCost(weapon.id)
+                : weapon.buyCost;
             final gameTheme = context.gameTheme;
             return Dialog(
               backgroundColor: gameTheme.deep,
@@ -1212,7 +1393,11 @@ class _WeaponShopPageState extends State<_WeaponShopPage> {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _WeaponDetailPanel(weapon: weapon, progress: progress),
+                      _WeaponDetailPanel(
+                        weapon: weapon,
+                        progress: progress,
+                        progressController: widget.progressController,
+                      ),
                       const SizedBox(height: 12),
                       Row(
                         children: [
@@ -1233,14 +1418,25 @@ class _WeaponShopPageState extends State<_WeaponShopPage> {
                                   Navigator.of(dialogContext).pop();
                                   return;
                                 }
-                                final ok = widget.progressController
-                                    .buyWeapon(weapon.id);
+                                final ok = isCraftWeapon
+                                    ? widget.progressController
+                                        .craftWeapon(weapon.id)
+                                    : widget.progressController
+                                        .buyWeapon(weapon.id);
                                 if (!ok) {
+                                  final missing = isCraftWeapon
+                                      ? widget.progressController
+                                          .missingCraftMaterialIds(weapon.id)
+                                      : const <String>[];
                                   ScaffoldMessenger.of(context)
                                     ..hideCurrentSnackBar()
                                     ..showSnackBar(
                                       SnackBar(
-                                        content: Text(strings.notEnoughCoins),
+                                        content: Text(
+                                          missing.isEmpty
+                                              ? strings.notEnoughCoins
+                                              : strings.missingMaterials,
+                                        ),
                                       ),
                                     );
                                 }
@@ -1248,8 +1444,10 @@ class _WeaponShopPageState extends State<_WeaponShopPage> {
                               child: progress.isOwned
                                   ? Text(strings.select)
                                   : _CostButtonLabel(
-                                      label: strings.buy,
-                                      cost: weapon.buyCost,
+                                      label: isCraftWeapon
+                                          ? strings.craft
+                                          : strings.buy,
+                                      cost: actionCost,
                                     ),
                             ),
                           ),
@@ -1257,21 +1455,43 @@ class _WeaponShopPageState extends State<_WeaponShopPage> {
                             const SizedBox(width: 10),
                             Expanded(
                               child: FilledButton.tonal(
-                                onPressed: () {
-                                  final ok = widget.progressController
-                                      .upgradeWeapon(weapon.id);
-                                  if (!ok) {
-                                    ScaffoldMessenger.of(context)
-                                      ..hideCurrentSnackBar()
-                                      ..showSnackBar(
-                                        SnackBar(
-                                          content: Text(strings.notEnoughCoins),
-                                        ),
-                                      );
-                                  }
-                                },
+                                onPressed: canUpgrade
+                                    ? () {
+                                        final before = widget.progressController
+                                            .weaponStatsFor(weapon.id);
+                                        final ok = widget.progressController
+                                            .upgradeWeapon(weapon.id);
+                                        if (!ok) {
+                                          ScaffoldMessenger.of(context)
+                                            ..hideCurrentSnackBar()
+                                            ..showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                    strings.notEnoughCoins),
+                                              ),
+                                            );
+                                          return;
+                                        }
+                                        final after = widget.progressController
+                                            .weaponStatsFor(weapon.id);
+                                        ScaffoldMessenger.of(context)
+                                          ..hideCurrentSnackBar()
+                                          ..showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                strings.upgradeResult(
+                                                  before: before,
+                                                  after: after,
+                                                ),
+                                              ),
+                                            ),
+                                          );
+                                      }
+                                    : null,
                                 child: _CostButtonLabel(
-                                  label: strings.upgrade,
+                                  label: canUpgrade
+                                      ? strings.upgrade
+                                      : strings.maxLevel,
                                   cost: upgradeCost,
                                 ),
                               ),
@@ -1410,7 +1630,7 @@ class _WeaponGridTile extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              weapon.name,
+              strings.weaponName(weapon),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
@@ -1508,12 +1728,14 @@ class _CostButtonLabel extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(label),
-          const SizedBox(width: 5),
-          _CoinAmount(
-            amount: cost,
-            iconSize: 14,
-            textColor: textColor,
-          ),
+          if (cost > 0) ...[
+            const SizedBox(width: 5),
+            _CoinAmount(
+              amount: cost,
+              iconSize: 14,
+              textColor: textColor,
+            ),
+          ],
         ],
       ),
     );
@@ -1639,11 +1861,17 @@ class _LoadoutStrings {
   String get close => isZh ? '关闭' : 'Close';
   String get select => isZh ? '选择' : 'Select';
   String get buy => isZh ? '购买' : 'Buy';
+  String get craft => isZh ? '合成' : 'Craft';
   String get upgrade => isZh ? '升级' : 'Upgrade';
+  String get maxLevel => isZh ? '已满级' : 'Max Lv';
   String get cost => isZh ? '价格' : 'Cost';
   String get damage => isZh ? '伤害' : 'Damage';
+  String get attackSpeed => isZh ? '射速' : 'Fire Rate';
+  String get range => isZh ? '范围' : 'Range';
+  String get recipe => isZh ? '配方' : 'Recipe';
   String get free => isZh ? '免费' : 'Free';
   String get notEnoughCoins => isZh ? '金币不足' : 'Not enough coins';
+  String get missingMaterials => isZh ? '配方武器未拥有' : 'Missing recipe weapons';
 
   String heroLevel(int level) => isZh ? '英雄等级 $level' : 'Hero Lv $level';
 
@@ -1654,4 +1882,138 @@ class _LoadoutStrings {
   String locked(String name) => isZh ? '$name 尚未解锁' : '$name is locked';
 
   String notOwned(String name) => isZh ? '$name 尚未拥有' : '$name is not owned';
+
+  String weaponName(WeaponDefinition weapon) {
+    if (isZh) {
+      return weapon.name;
+    }
+    return switch (weapon.id) {
+      'wooden_stick' => 'Wooden Stick',
+      'bounce_ball' => 'Bounce Ball',
+      'star_dart' => 'Star Dart',
+      'magnet_bow' => 'Magnet Bow',
+      'return_sickle' => 'Return Sickle',
+      'spark_pistol' => 'Spark Pistol',
+      'frost_staff' => 'Frost Staff',
+      'scatter_blunder' => 'Scatter Blunder',
+      'thunder_needle' => 'Thunder Needle',
+      'flame_sprayer' => 'Flame Sprayer',
+      'mini_grenade' => 'Mini Grenade',
+      'ball_hammer' => 'Ball Hammer',
+      'moon_sickle' => 'Moon Sickle',
+      'storm_ball' => 'Storm Ball',
+      'flame_scatter' => 'Flame Scatter',
+      'ice_moon' => 'Ice Moon',
+      'storm_hammer' => 'Storm Hammer',
+      'star_core_cannon' => 'Star Core Cannon',
+      _ => weapon.name,
+    };
+  }
+
+  String weaponDescription(WeaponDefinition weapon) {
+    if (isZh) {
+      return weapon.description;
+    }
+    return switch (weapon.id) {
+      'wooden_stick' => 'A reliable starter sweep for close-range control.',
+      'bounce_ball' => 'Bounces through side lanes while kiting enemies.',
+      'star_dart' => 'Fast piercing shots for stable line clearing.',
+      'magnet_bow' => 'Long-range steady damage for slower heroes.',
+      'return_sickle' =>
+        'Two-pass cutting damage on the outbound and return path.',
+      'spark_pistol' => 'High fire rate and low recoil for early waves.',
+      'frost_staff' => 'Slows enemies and creates safer spacing.',
+      'scatter_blunder' => 'Wide burst damage against dense front lines.',
+      'thunder_needle' => 'Chains damage into nearby packed enemies.',
+      'flame_sprayer' => 'Short-range flame pressure for continuous clearing.',
+      'mini_grenade' => 'Lobs explosive shots into grouped enemies.',
+      'ball_hammer' => 'Crafted heavy impact with strong knockback.',
+      'moon_sickle' => 'Crafted sweeping blade with broad close control.',
+      'storm_ball' => 'Crafted bouncing energy for sustained pressure.',
+      'flame_scatter' => 'Crafted fire burst for wide-area clearing.',
+      'ice_moon' => 'Orbiting ice blade that slows and cuts nearby enemies.',
+      'storm_hammer' => 'Heavy storm impact with chained pressure.',
+      'star_core_cannon' => 'Endgame explosive core cannon.',
+      _ => weapon.description,
+    };
+  }
+
+  String weaponFamily(WeaponFamily family) {
+    if (isZh) {
+      return family.label;
+    }
+    return switch (family) {
+      WeaponFamily.melee => 'Melee',
+      WeaponFamily.projectile => 'Projectile',
+      WeaponFamily.firearm => 'Firearm',
+      WeaponFamily.energy => 'Energy',
+      WeaponFamily.explosive => 'Explosive',
+      WeaponFamily.control => 'Control',
+    };
+  }
+
+  String weaponAttackPattern(WeaponAttackPattern pattern) {
+    if (isZh) {
+      return pattern.label;
+    }
+    return switch (pattern) {
+      WeaponAttackPattern.meleeSweep => 'Sweep',
+      WeaponAttackPattern.projectile => 'Straight Shot',
+      WeaponAttackPattern.bouncingProjectile => 'Bounce',
+      WeaponAttackPattern.boomerang => 'Boomerang',
+      WeaponAttackPattern.coneShot => 'Cone Shot',
+      WeaponAttackPattern.beam => 'Beam',
+      WeaponAttackPattern.lobbedExplosion => 'Lobbed Blast',
+      WeaponAttackPattern.chainLightning => 'Chain Lightning',
+      WeaponAttackPattern.flameStream => 'Flame Stream',
+      WeaponAttackPattern.orbitSlash => 'Orbit Slash',
+    };
+  }
+
+  String weaponObtainType(WeaponObtainType obtainType) {
+    if (isZh) {
+      return obtainType.label;
+    }
+    return switch (obtainType) {
+      WeaponObtainType.free => 'Free',
+      WeaponObtainType.shop => 'Shop',
+      WeaponObtainType.craft => 'Craft',
+      WeaponObtainType.ultimateCraft => 'Ultimate Craft',
+    };
+  }
+
+  String weaponUnlockMethod(WeaponDefinition weapon) {
+    if (weapon.recipe == null) {
+      return weaponObtainType(weapon.obtainType);
+    }
+    return isZh ? '配方合成' : 'Recipe Craft';
+  }
+
+  String weaponStars(int count) {
+    return isZh ? '$count 星' : '$count Stars';
+  }
+
+  String currentStatsTitle(int level) {
+    return isZh ? '当前数值 · Lv $level' : 'Current Stats · Lv $level';
+  }
+
+  String nextUpgradeTitle(int currentLevel, int nextLevel) {
+    return isZh
+        ? '下次升级 · Lv $currentLevel -> Lv $nextLevel'
+        : 'Next Upgrade · Lv $currentLevel -> Lv $nextLevel';
+  }
+
+  String perSecond(double value) => '${value.toStringAsFixed(2)}/s';
+
+  String upgradeResult({
+    required WeaponDisplayStats before,
+    required WeaponDisplayStats after,
+  }) {
+    final base = isZh
+        ? '升级成功 Lv ${before.level} -> ${after.level}'
+        : 'Upgraded Lv ${before.level} -> ${after.level}';
+    return '$base · ${isZh ? '伤害' : 'DMG'} ${before.damage}->${after.damage} · '
+        '${isZh ? '射速' : 'SPD'} ${perSecond(before.attacksPerSecond)}->${perSecond(after.attacksPerSecond)} · '
+        '${isZh ? '范围' : 'RNG'} ${before.range.round()}->${after.range.round()}';
+  }
 }
