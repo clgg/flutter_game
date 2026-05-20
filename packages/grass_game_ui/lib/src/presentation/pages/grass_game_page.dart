@@ -105,7 +105,6 @@ class _GrassGamePageState extends State<GrassGamePage> {
       stageEnemyStrengthMultiplier: loadout.stage.enemyStrengthMultiplier,
       stageEnemyTypes: loadout.stage.enemyTypes,
       isDeathmatch: loadout.stage.isDeathmatch,
-      bossSpriteSheetAssetPath: loadout.stage.bossSpriteSheetAssetPath,
     );
   }
 
@@ -245,6 +244,7 @@ class _GrassGamePageState extends State<GrassGamePage> {
                   options: _controller.levelUpOptions,
                   pendingCount: _controller.pendingLevelUpCount,
                   onRefresh: _game.refreshLevelUpChoices,
+                  onClose: _game.closeLevelUpChoices,
                   onSelected: (option) => _game.applySkill(option.id),
                 );
               },

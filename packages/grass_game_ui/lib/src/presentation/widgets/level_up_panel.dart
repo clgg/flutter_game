@@ -8,12 +8,14 @@ class LevelUpPanel extends StatelessWidget {
     required this.onSelected,
     this.pendingCount = 1,
     this.onRefresh,
+    this.onClose,
   });
 
   final List<SkillConfig> options;
   final ValueChanged<SkillConfig> onSelected;
   final int pendingCount;
   final VoidCallback? onRefresh;
+  final VoidCallback? onClose;
 
   @override
   Widget build(BuildContext context) {
@@ -80,11 +82,25 @@ class LevelUpPanel extends StatelessWidget {
                             ),
                           ),
                         ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          onPressed: onClose,
+                          tooltip: strings.close,
+                          visualDensity: VisualDensity.compact,
+                          style: IconButton.styleFrom(
+                            foregroundColor: const Color(0xFFE8FFF2),
+                            backgroundColor: const Color(0x14102418),
+                            side: const BorderSide(color: Color(0x5549D17D)),
+                            minimumSize: const Size(32, 32),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          icon: const Icon(Icons.close_rounded, size: 18),
+                        ),
                       ],
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 10),
                     SizedBox(
-                      height: 158,
+                      height: 136,
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
@@ -101,7 +117,7 @@ class LevelUpPanel extends StatelessWidget {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 10),
                     Row(
                       children: [
                         Expanded(
@@ -160,7 +176,7 @@ class _SkillCard extends StatelessWidget {
       style: FilledButton.styleFrom(
         backgroundColor: const Color(0xFF17321F),
         foregroundColor: const Color(0xFFE8FFF2),
-        padding: const EdgeInsets.all(10),
+        padding: const EdgeInsets.all(8),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
           side: BorderSide(color: skillColor.withOpacity(0.72)),
@@ -172,17 +188,23 @@ class _SkillCard extends StatelessWidget {
           Row(
             children: [
               Container(
-                width: 28,
-                height: 28,
+                width: 34,
+                height: 34,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: skillColor,
+                  color: const Color(0xFF07130D),
+                  border: Border.all(color: skillColor, width: 1.2),
                   boxShadow: [
                     BoxShadow(
                       color: skillColor.withOpacity(0.35),
                       blurRadius: 10,
                     ),
                   ],
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: _SkillIcon(
+                  assetPath: option.iconAssetPath,
+                  fallbackColor: skillColor,
                 ),
               ),
               const Spacer(),
@@ -206,10 +228,10 @@ class _SkillCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           Text(
             strings.skillTitle(option.id),
-            maxLines: 2,
+            maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               fontSize: 13,
@@ -218,19 +240,17 @@ class _SkillCard extends StatelessWidget {
               letterSpacing: 0,
             ),
           ),
-          const SizedBox(height: 6),
-          Expanded(
-            child: Text(
-              strings.skillDescription(option.id),
-              maxLines: 4,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Color(0xBFE8FFF2),
-                fontSize: 11,
-                height: 1.18,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0,
-              ),
+          const SizedBox(height: 5),
+          Text(
+            strings.skillDescription(option.id),
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: Color(0xBFE8FFF2),
+              fontSize: 11,
+              height: 1.18,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0,
             ),
           ),
         ],
@@ -244,10 +264,40 @@ class _SkillCard extends StatelessWidget {
       'orbit_blade' || 'evolve_moon_wheel' => const Color(0xFFC7F7FF),
       'thunder_matrix' || 'evolve_thunder_chain' => const Color(0xFFB68CFF),
       'void_magnet' || 'evolve_black_hole' => const Color(0xFF8FE388),
+      'shadow_guard' || 'evolve_twin_shadow' => const Color(0xFFB68CFF),
       'ultimate_star_judgement' => const Color(0xFFFFD36E),
       'ultimate_black_moon' => const Color(0xFF7B61FF),
       _ => const Color(0xFF49D17D),
     };
+  }
+}
+
+class _SkillIcon extends StatelessWidget {
+  const _SkillIcon({
+    required this.assetPath,
+    required this.fallbackColor,
+  });
+
+  final String? assetPath;
+  final Color fallbackColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final path = assetPath;
+    if (path == null || path.isEmpty) {
+      return ColoredBox(color: fallbackColor);
+    }
+    return Padding(
+      padding: const EdgeInsets.all(3),
+      child: Image.asset(
+        path,
+        fit: BoxFit.contain,
+        filterQuality: FilterQuality.medium,
+        errorBuilder: (context, error, stackTrace) {
+          return ColoredBox(color: fallbackColor);
+        },
+      ),
+    );
   }
 }
 
@@ -264,6 +314,7 @@ class _LevelUpPanelStrings {
 
   String get title => isZh ? '选择升级' : 'Level Up';
   String get refresh => isZh ? '刷新' : 'Refresh';
+  String get close => isZh ? '关闭' : 'Close';
 
   String optionCount(int count) {
     return isZh ? '$count 项' : '$count options';
@@ -291,6 +342,7 @@ class _LevelUpPanelStrings {
         'ice_nova' => '霜环初现',
         'fire_trail' => '火星足迹',
         'poison_spore' => '孢子落点',
+        'shadow_guard' => '影卫召唤',
         'evolve_star_barrage' => '星河连射',
         'evolve_moon_wheel' => '月轮风暴',
         'evolve_thunder_chain' => '天罚连锁',
@@ -298,6 +350,7 @@ class _LevelUpPanelStrings {
         'evolve_permafrost_field' => '永冻领域',
         'evolve_inferno_path' => '炼狱轨迹',
         'evolve_corrosive_plague' => '腐蚀瘟疫',
+        'evolve_twin_shadow' => '双影共鸣',
         'ultimate_star_judgement' => '星陨审判',
         'ultimate_black_moon' => '黑月坍缩',
         'ultimate_frost_inferno' => '冰火炼狱',
@@ -312,6 +365,7 @@ class _LevelUpPanelStrings {
       'ice_nova' => 'Ice Nova',
       'fire_trail' => 'Fire Trail',
       'poison_spore' => 'Poison Spore',
+      'shadow_guard' => 'Shadow Guard',
       'evolve_star_barrage' => 'Star Barrage',
       'evolve_moon_wheel' => 'Moon Wheel Storm',
       'evolve_thunder_chain' => 'Thunder Chain',
@@ -319,6 +373,7 @@ class _LevelUpPanelStrings {
       'evolve_permafrost_field' => 'Permafrost Field',
       'evolve_inferno_path' => 'Inferno Path',
       'evolve_corrosive_plague' => 'Corrosive Plague',
+      'evolve_twin_shadow' => 'Twin Shadows',
       'ultimate_star_judgement' => 'Star Judgement',
       'ultimate_black_moon' => 'Black Moon Collapse',
       'ultimate_frost_inferno' => 'Frost Inferno',
@@ -336,6 +391,7 @@ class _LevelUpPanelStrings {
         'ice_nova' => '周期释放减速冰环，被包围时拉开空间。',
         'fire_trail' => '移动时留下燃烧区域，让走位也能输出。',
         'poison_spore' => '在怪群脚下生成毒雾，持续腐蚀敌人。',
+        'shadow_guard' => '周期召唤无敌影卫跟随作战，随机释放影刃、抓击和突袭。',
         'evolve_star_barrage' => '每 5 次攻击触发一轮扇形星矢弹幕。',
         'evolve_moon_wheel' => '环刃周期性扩张，形成切割风暴。',
         'evolve_thunder_chain' => '雷电会从厚血敌人扩散到周围敌群。',
@@ -343,6 +399,7 @@ class _LevelUpPanelStrings {
         'evolve_permafrost_field' => '冰环中心短暂冻结普通敌人并释放碎冰。',
         'evolve_inferno_path' => '移动轨迹变成更密集、更持久的燃烧带。',
         'evolve_corrosive_plague' => '中毒敌人死亡后扩散小毒雾。',
+        'evolve_twin_shadow' => '影卫分裂为两个，攻击更快并交替突袭怪群。',
         'ultimate_star_judgement' => '流星与雷暴同时降临，轰击全屏敌群。',
         'ultimate_black_moon' => '黑洞拉起月轮风暴，把敌群撕裂后引爆。',
         'ultimate_frost_inferno' => '冰区与火区交替爆发，减速后爆燃怪群。',
@@ -360,6 +417,8 @@ class _LevelUpPanelStrings {
       'ice_nova' => 'Releases a slowing ice ring to create breathing room.',
       'fire_trail' => 'Leaves burning ground while moving.',
       'poison_spore' => 'Creates poison clouds under enemy clusters.',
+      'shadow_guard' =>
+        'Summons an invincible shadow guard with random blade and claw attacks.',
       'evolve_star_barrage' => 'Every 5 attacks triggers a fan of star bolts.',
       'evolve_moon_wheel' =>
         'Ring blades expand periodically into a cutting storm.',
@@ -373,6 +432,8 @@ class _LevelUpPanelStrings {
         'Movement leaves denser and longer-lasting burning paths.',
       'evolve_corrosive_plague' =>
         'Poisoned enemies spread smaller clouds on death.',
+      'evolve_twin_shadow' =>
+        'Splits the guard into two faster shadows with alternating ambushes.',
       'ultimate_star_judgement' =>
         'Meteors and thunder strike across the whole screen.',
       'ultimate_black_moon' =>

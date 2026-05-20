@@ -19,17 +19,15 @@ class EnemyAnimationSet {
     required ui.Image image,
     required this.displaySize,
   })  : _image = image,
-        _rowCount = (image.height / (image.width / _columns)).round(),
-        _frameSize = Vector2.all(image.width / _columns);
+        _columns = math.max(1, (image.width / _cellSize).round()),
+        _rowCount = (image.height / _cellSize).round(),
+        _frameSize = Vector2.all(_cellSize);
 
-  static const int _columns = 6;
-  static const int _walkFrames = 4;
-  static const int _attackFrames = 4;
+  static const double _cellSize = 128;
   static const int _rows = 8;
-  static const int _attackRowOffset = 0;
-  static const int _walkRowOffset = 4;
 
   final ui.Image _image;
+  final int _columns;
   final int _rowCount;
   final Vector2 _frameSize;
   final Vector2 displaySize;
@@ -37,67 +35,40 @@ class EnemyAnimationSet {
   Map<EnemyFacing, SpriteAnimation> createWalkAnimations() {
     if (_rowCount >= _rows) {
       return {
-        EnemyFacing.front: _createAnimation(_walkRowOffset, 0, _walkFrames),
-        EnemyFacing.frontRight:
-            _createAnimation(_walkRowOffset, 1, _walkFrames),
-        EnemyFacing.right: _createAnimation(_walkRowOffset, 2, _walkFrames),
-        EnemyFacing.backRight: _createAnimation(_walkRowOffset, 3, _walkFrames),
-        EnemyFacing.back: _createAnimation(_walkRowOffset, 4, _walkFrames),
-        EnemyFacing.backLeft: _createAnimation(_walkRowOffset, 5, _walkFrames),
-        EnemyFacing.left: _createAnimation(_walkRowOffset, 6, _walkFrames),
-        EnemyFacing.frontLeft: _createAnimation(_walkRowOffset, 7, _walkFrames),
+        EnemyFacing.front: _createAnimation(0),
+        EnemyFacing.frontRight: _createAnimation(1),
+        EnemyFacing.right: _createAnimation(2),
+        EnemyFacing.backRight: _createAnimation(3),
+        EnemyFacing.back: _createAnimation(4),
+        EnemyFacing.backLeft: _createAnimation(5),
+        EnemyFacing.left: _createAnimation(6),
+        EnemyFacing.frontLeft: _createAnimation(7),
       };
     }
     return {
-      EnemyFacing.front: _createAnimation(0, 0, _walkFrames),
-      EnemyFacing.back: _createAnimation(0, 1, _walkFrames),
-      EnemyFacing.left: _createAnimation(0, 2, _walkFrames),
-      EnemyFacing.right: _createAnimation(0, 3, _walkFrames),
-      EnemyFacing.frontRight: _createAnimation(0, 3, _walkFrames),
-      EnemyFacing.backRight: _createAnimation(0, 3, _walkFrames),
-      EnemyFacing.backLeft: _createAnimation(0, 2, _walkFrames),
-      EnemyFacing.frontLeft: _createAnimation(0, 2, _walkFrames),
+      EnemyFacing.front: _createAnimation(0),
+      EnemyFacing.back: _createAnimation(1),
+      EnemyFacing.left: _createAnimation(2),
+      EnemyFacing.right: _createAnimation(3),
+      EnemyFacing.frontRight: _createAnimation(3),
+      EnemyFacing.backRight: _createAnimation(3),
+      EnemyFacing.backLeft: _createAnimation(2),
+      EnemyFacing.frontLeft: _createAnimation(2),
     };
   }
 
   Map<EnemyFacing, SpriteAnimation> createAttackAnimations() {
-    if (_rowCount < _rows) {
-      return const {};
-    }
-    return {
-      EnemyFacing.front:
-          _createAnimation(_attackRowOffset, 0, _attackFrames, loop: false),
-      EnemyFacing.frontRight:
-          _createAnimation(_attackRowOffset, 1, _attackFrames, loop: false),
-      EnemyFacing.right:
-          _createAnimation(_attackRowOffset, 2, _attackFrames, loop: false),
-      EnemyFacing.backRight:
-          _createAnimation(_attackRowOffset, 3, _attackFrames, loop: false),
-      EnemyFacing.back:
-          _createAnimation(_attackRowOffset, 4, _attackFrames, loop: false),
-      EnemyFacing.backLeft:
-          _createAnimation(_attackRowOffset, 5, _attackFrames, loop: false),
-      EnemyFacing.left:
-          _createAnimation(_attackRowOffset, 6, _attackFrames, loop: false),
-      EnemyFacing.frontLeft:
-          _createAnimation(_attackRowOffset, 7, _attackFrames, loop: false),
-    };
+    return const {};
   }
 
-  SpriteAnimation _createAnimation(
-    int rowOffset,
-    int directionRow,
-    int frameCount, {
-    bool loop = true,
-  }) {
+  SpriteAnimation _createAnimation(int row) {
     return SpriteAnimation.fromFrameData(
       _image,
       SpriteAnimationData.sequenced(
-        amount: frameCount,
-        stepTime: loop ? 0.12 : 0.08,
+        amount: _columns,
+        stepTime: 0.12,
         textureSize: _frameSize,
-        texturePosition: Vector2(0, _frameSize.y * (rowOffset + directionRow)),
-        loop: loop,
+        texturePosition: Vector2(0, _frameSize.y * row),
       ),
     );
   }

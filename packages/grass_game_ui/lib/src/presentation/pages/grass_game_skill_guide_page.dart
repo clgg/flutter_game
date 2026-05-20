@@ -1,7 +1,12 @@
 import 'package:app_core/app_core.dart';
 import 'package:flutter/material.dart';
 
+import '../../application/progression/weapon_catalog.dart';
+import '../../application/progression/weapon_definition.dart';
 import '../../application/skills/skill_guide_catalog.dart';
+
+const _fusionIconAsset =
+    'assets/game/grass_game/images/skills/skill_weapon_fusion_icon.png';
 
 class GrassGameSkillGuidePage extends StatefulWidget {
   const GrassGameSkillGuidePage({super.key});
@@ -28,10 +33,10 @@ class _GrassGameSkillGuidePageState extends State<GrassGameSkillGuidePage> {
         child: ListView.separated(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
           itemBuilder: (context, index) {
-            if (index == 0) {
+            if (index == skillGuideTrees.length) {
               return const _FusionTreeSection();
             }
-            final tree = skillGuideTrees[index - 1];
+            final tree = skillGuideTrees[index];
             final isExpanded = _expandedTreeIds.contains(tree.id);
             return _SkillTreeSection(
               tree: tree,
@@ -80,13 +85,17 @@ String _skillAssetForTree(String treeId) {
       'assets/game/grass_game/images/skills/skill_fire_trail.webp',
     'poison_spore' =>
       'assets/game/grass_game/images/skills/skill_poison_spore.webp',
-    'ultimate' =>
-      'assets/game/grass_game/images/skills/skill_star_projectile.webp',
+    'shadow_guard' =>
+      'assets/game/grass_game/images/skills/skill_shadow_guard.png',
+    'ultimate' => _fusionIconAsset,
     _ => 'assets/game/grass_game/images/skills/skill_star_projectile.webp',
   };
 }
 
 String _skillAssetForNode(String nodeId) {
+  if (nodeId.startsWith('ultimate_')) {
+    return _fusionIconAsset;
+  }
   if (nodeId.contains('orbit') || nodeId.contains('moon')) {
     return _skillAssetForTree('orbit_blade');
   }
@@ -108,6 +117,9 @@ String _skillAssetForNode(String nodeId) {
       nodeId.contains('spore') ||
       nodeId.contains('plague')) {
     return _skillAssetForTree('poison_spore');
+  }
+  if (nodeId.contains('shadow')) {
+    return _skillAssetForTree('shadow_guard');
   }
   if (nodeId.contains('star') ||
       nodeId.contains('barrage') ||
@@ -223,37 +235,21 @@ class _SkillTreeSection extends StatelessWidget {
 class _FusionTreeSection extends StatelessWidget {
   const _FusionTreeSection();
 
-  static const _recipes = [
-    _FusionRecipe(
-      leftTreeId: 'star_projectile',
-      rightTreeId: 'thunder_matrix',
-      resultNodeId: 'ultimate_star_judgement',
-      title: '星陨审判',
-      subtitle: '星矢进化 + 雷暴进化',
-      color: Color(0xFFFFD36E),
-    ),
-    _FusionRecipe(
-      leftTreeId: 'orbit_blade',
-      rightTreeId: 'void_magnet',
-      resultNodeId: 'ultimate_black_moon',
-      title: '黑月坍缩',
-      subtitle: '月轮风暴 + 黑洞核心',
-      color: Color(0xFFB7F0D0),
-    ),
-    _FusionRecipe(
-      leftTreeId: 'ice_nova',
-      rightTreeId: 'fire_trail',
-      resultNodeId: 'ultimate_frost_inferno',
-      title: '冰火炼狱',
-      subtitle: '永冻领域 + 炼狱轨迹',
-      color: Color(0xFFFFB36B),
-    ),
-  ];
-
   @override
   Widget build(BuildContext context) {
     final gameTheme = context.gameTheme;
     final strings = _SkillGuideStrings.of(context);
+    final weaponsById = {
+      for (final weapon in grassGameWeaponCatalog) weapon.id: weapon,
+    };
+    final recipes = grassGameWeaponCatalog
+        .where((weapon) => weapon.recipe != null)
+        .where(
+          (weapon) => weapon.recipe!.materialWeaponIds.every(
+            weaponsById.containsKey,
+          ),
+        )
+        .toList(growable: false);
     return DecoratedBox(
       decoration: BoxDecoration(
         color: gameTheme.deep,
@@ -265,14 +261,32 @@ class _FusionTreeSection extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              strings.fusionTitle,
-              style: TextStyle(
-                color: gameTheme.foreground,
-                fontSize: 16,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 0,
-              ),
+            Row(
+              children: [
+                Image.asset(
+                  _fusionIconAsset,
+                  width: 34,
+                  height: 34,
+                  filterQuality: FilterQuality.medium,
+                  errorBuilder: (_, __, ___) => Icon(
+                    Icons.account_tree_rounded,
+                    color: gameTheme.accent2,
+                    size: 26,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    strings.fusionTitle,
+                    style: TextStyle(
+                      color: gameTheme.foreground,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0,
+                    ),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 4),
             Text(
@@ -285,9 +299,12 @@ class _FusionTreeSection extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 14),
-            for (final recipe in _recipes) ...[
-              _FusionRecipeRow(recipe: recipe),
-              if (recipe != _recipes.last) const SizedBox(height: 10),
+            for (final weapon in recipes) ...[
+              _WeaponFusionRecipeRow(
+                resultWeapon: weapon,
+                weaponsById: weaponsById,
+              ),
+              if (weapon != recipes.last) const SizedBox(height: 10),
             ],
           ],
         ),
@@ -296,56 +313,110 @@ class _FusionTreeSection extends StatelessWidget {
   }
 }
 
-class _FusionRecipe {
-  const _FusionRecipe({
-    required this.leftTreeId,
-    required this.rightTreeId,
-    required this.resultNodeId,
-    required this.title,
-    required this.subtitle,
-    required this.color,
+class _WeaponFusionRecipeRow extends StatelessWidget {
+  const _WeaponFusionRecipeRow({
+    required this.resultWeapon,
+    required this.weaponsById,
   });
 
-  final String leftTreeId;
-  final String rightTreeId;
-  final String resultNodeId;
-  final String title;
-  final String subtitle;
-  final Color color;
-}
-
-class _FusionRecipeRow extends StatelessWidget {
-  const _FusionRecipeRow({required this.recipe});
-
-  final _FusionRecipe recipe;
+  final WeaponDefinition resultWeapon;
+  final Map<String, WeaponDefinition> weaponsById;
 
   @override
   Widget build(BuildContext context) {
     final gameTheme = context.gameTheme;
+    final recipe = resultWeapon.recipe!;
+    final materials = recipe.materialWeaponIds
+        .map((id) => weaponsById[id]!)
+        .toList(growable: false);
+    final color = Color(resultWeapon.baseColorValue);
     return Container(
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: gameTheme.panel,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: gameTheme.line),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _FusionIcon(assetPath: _skillAssetForTree(recipe.leftTreeId)),
-          _FusionPlus(color: recipe.color),
-          _FusionIcon(assetPath: _skillAssetForTree(recipe.rightTreeId)),
-          _FusionArrow(color: recipe.color),
-          _FusionIcon(
-            assetPath: _skillAssetForNode(recipe.resultNodeId),
-            color: recipe.color,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              for (var index = 0; index < materials.length; index++) ...[
+                Expanded(
+                  child: _FusionInputNode(
+                    assetPath: materials[index].iconAssetPath,
+                    color: Color(materials[index].baseColorValue),
+                    title: materials[index].name,
+                  ),
+                ),
+                if (index != materials.length - 1) const SizedBox(width: 12),
+              ],
+            ],
           ),
+          SizedBox(
+            height: 34,
+            child: CustomPaint(
+              painter: _FusionConnectorPainter(
+                color: color,
+                inputCount: materials.length,
+              ),
+              child: const SizedBox.expand(),
+            ),
+          ),
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 250),
+              child: _FusionResultNode(
+                assetPath: resultWeapon.iconAssetPath,
+                color: color,
+                title: resultWeapon.name,
+                subtitle: materials.map((weapon) => weapon.name).join(' + '),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FusionResultNode extends StatelessWidget {
+  const _FusionResultNode({
+    required this.assetPath,
+    required this.color,
+    required this.title,
+    required this.subtitle,
+  });
+
+  final String assetPath;
+  final Color color;
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    final gameTheme = context.gameTheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: gameTheme.glass,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withValues(alpha: 0.48)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _FusionIcon(assetPath: assetPath, color: color),
           const SizedBox(width: 10),
-          Expanded(
+          Flexible(
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  recipe.title,
+                  title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -356,7 +427,7 @@ class _FusionRecipeRow extends StatelessWidget {
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  recipe.subtitle,
+                  subtitle,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -372,6 +443,92 @@ class _FusionRecipeRow extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+class _FusionInputNode extends StatelessWidget {
+  const _FusionInputNode({
+    required this.assetPath,
+    required this.color,
+    required this.title,
+  });
+
+  final String assetPath;
+  final Color color;
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    final gameTheme = context.gameTheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      decoration: BoxDecoration(
+        color: gameTheme.glass,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: gameTheme.line),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _FusionIcon(assetPath: assetPath, color: color),
+            const SizedBox(height: 6),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              child: Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: gameTheme.foreground,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FusionConnectorPainter extends CustomPainter {
+  const _FusionConnectorPainter({
+    required this.color,
+    required this.inputCount,
+  });
+
+  final Color color;
+  final int inputCount;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (inputCount == 0) {
+      return;
+    }
+    final paint = Paint()
+      ..color = color.withValues(alpha: 0.85)
+      ..strokeWidth = 2
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+    final centerX = size.width / 2;
+    final joinY = size.height * 0.48;
+    final inputWidth = size.width / inputCount;
+    for (var index = 0; index < inputCount; index++) {
+      final x = inputWidth * index + inputWidth / 2;
+      canvas.drawLine(Offset(x, 0), Offset(x, joinY), paint);
+      canvas.drawLine(Offset(x, joinY), Offset(centerX, joinY), paint);
+    }
+    canvas.drawLine(
+        Offset(centerX, joinY), Offset(centerX, size.height), paint);
+  }
+
+  @override
+  bool shouldRepaint(_FusionConnectorPainter oldDelegate) {
+    return oldDelegate.color != color || oldDelegate.inputCount != inputCount;
   }
 }
 
@@ -391,41 +548,6 @@ class _FusionIcon extends StatelessWidget {
       assetPath: assetPath,
       icon: Icons.auto_awesome_rounded,
       size: 42,
-    );
-  }
-}
-
-class _FusionPlus extends StatelessWidget {
-  const _FusionPlus({required this.color});
-
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 6),
-      child: Text(
-        '+',
-        style: TextStyle(
-          color: color,
-          fontWeight: FontWeight.w900,
-          letterSpacing: 0,
-        ),
-      ),
-    );
-  }
-}
-
-class _FusionArrow extends StatelessWidget {
-  const _FusionArrow({required this.color});
-
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 6),
-      child: Icon(Icons.arrow_forward_rounded, color: color, size: 18),
     );
   }
 }
@@ -592,11 +714,11 @@ class _SkillImage extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: color.withOpacity(0.2),
-        border: Border.all(color: color.withOpacity(0.78), width: 2),
+        color: color.withValues(alpha: 0.2),
+        border: Border.all(color: color.withValues(alpha: 0.78), width: 2),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.16),
+            color: color.withValues(alpha: 0.16),
             blurRadius: 12,
             spreadRadius: 1,
           ),
@@ -631,9 +753,9 @@ class _TierPill extends StatelessWidget {
     final gameTheme = context.gameTheme;
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: color.withOpacity(0.14),
+        color: color.withValues(alpha: 0.14),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: color.withOpacity(0.48)),
+        border: Border.all(color: color.withValues(alpha: 0.48)),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
@@ -680,7 +802,7 @@ class _SkillDetailSheet extends StatelessWidget {
           decoration: BoxDecoration(
             color: gameTheme.deep,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: node.color.withOpacity(0.6)),
+            border: Border.all(color: node.color.withValues(alpha: 0.6)),
           ),
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
@@ -796,8 +918,8 @@ class _SkillGuideStrings {
   String get title => isZh ? '技能图鉴' : 'Skill Guide';
   String get fusionTitle => isZh ? '武器合成路线' : 'Weapon Fusion Tree';
   String get fusionSubtitle => isZh
-      ? '两条核心进化组合后解锁终极大招。'
-      : 'Pair two core evolutions to unlock an ultimate.';
+      ? '收集配方武器并消耗金币，合成更高阶的武器。'
+      : 'Combine recipe weapons and coins to craft higher-tier weapons.';
   String get requiredLevel => isZh ? '需要等级' : 'Required Level';
   String get unlock => isZh ? '解锁条件' : 'Unlock';
   String get parameters => isZh ? '技能参数' : 'Parameters';
@@ -819,9 +941,9 @@ class _DetailBlock extends StatelessWidget {
     final gameTheme = context.gameTheme;
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.36)),
+        border: Border.all(color: color.withValues(alpha: 0.36)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(10),

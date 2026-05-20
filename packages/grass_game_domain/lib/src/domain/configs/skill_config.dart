@@ -12,6 +12,7 @@ class SkillConfig {
     this.level = 1,
     required this.weight,
     required this.maxLevel,
+    this.iconAssetPath,
     this.requires = const [],
     this.blocks = const [],
   });
@@ -22,6 +23,7 @@ class SkillConfig {
   final int level;
   final int weight;
   final int maxLevel;
+  final String? iconAssetPath;
   final List<String> requires;
   final List<String> blocks;
 }

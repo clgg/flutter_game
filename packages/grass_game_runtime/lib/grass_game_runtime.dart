@@ -1,3 +1,4 @@
+export 'src/runtime/components/companion_component.dart';
 export 'src/runtime/components/enemy_component.dart';
 export 'src/runtime/components/exp_gem_component.dart';
 export 'src/runtime/components/muzzle_flash_component.dart';

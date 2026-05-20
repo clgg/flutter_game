@@ -21,12 +21,14 @@ class PlayerAnimationSet {
     required ui.Image image,
     required this.displaySize,
   })  : _image = image,
-        _rowCount = (image.height / (image.width / _columns)).round(),
-        _frameSize = Vector2.all(image.width / _columns);
+        _columns = math.max(1, (image.width / _cellSize).round()),
+        _rowCount = (image.height / _cellSize).round(),
+        _frameSize = Vector2.all(_cellSize);
 
-  static const int _columns = 6;
+  static const double _cellSize = 128;
 
   final ui.Image _image;
+  final int _columns;
   final int _rowCount;
   final Vector2 _frameSize;
   final Vector2 displaySize;

@@ -43,7 +43,20 @@ void main() {
 
       expect(
         options.map((skill) => skill.id),
-        containsAll(['ice_nova', 'fire_trail', 'poison_spore']),
+        containsAll(['ice_nova', 'fire_trail', 'poison_spore', 'shadow_guard']),
+      );
+    });
+
+    test('offers twin shadow evolution after shadow guard reaches level 5', () {
+      final options = selector.selectOptions(
+        skills,
+        count: 20,
+        skillLevels: const {'shadow_guard': 5},
+      );
+
+      expect(
+        options.map((skill) => skill.id),
+        contains('evolve_twin_shadow'),
       );
     });
 
@@ -125,6 +138,7 @@ void main() {
           'ice_nova': 5,
           'fire_trail': 5,
           'poison_spore': 5,
+          'shadow_guard': 5,
         },
         evolvedSkills: const {
           'evolve_star_barrage',
@@ -134,6 +148,7 @@ void main() {
           'evolve_permafrost_field',
           'evolve_inferno_path',
           'evolve_corrosive_plague',
+          'evolve_twin_shadow',
         },
         ultimateSkillId: 'ultimate_star_judgement',
       );

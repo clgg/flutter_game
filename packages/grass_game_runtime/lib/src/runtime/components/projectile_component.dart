@@ -3,6 +3,12 @@ import 'dart:math' as math;
 
 import 'package:flame/components.dart';
 
+enum ProjectileMotionType {
+  straight,
+  bouncing,
+  boomerang,
+}
+
 class ProjectileComponent extends CircleComponent {
   ProjectileComponent({
     required this.damage,
@@ -13,14 +19,19 @@ class ProjectileComponent extends CircleComponent {
     this.image,
     this.skillTag,
     this.pierceRemaining = 0,
+    this.motionType = ProjectileMotionType.straight,
+    int bouncesRemaining = 0,
+    Vector2? origin,
   }) : super(
           radius: visualStyle.collisionRadius,
           anchor: Anchor.center,
           position: position,
           paint: ui.Paint()..color = const ui.Color(0xFFE8FFF2),
         ) {
-    _direction = velocity.length2 == 0 ? Vector2(1, 0) : velocity.normalized();
-    _angle = math.atan2(_direction.y, _direction.x);
+    _origin = origin?.clone() ?? position.clone();
+    _speed = velocity.length;
+    _bouncesRemaining = bouncesRemaining;
+    _setVelocity(velocity.length2 == 0 ? Vector2(1, 0) * _speed : velocity);
     _previousPosition = position.clone();
     _imagePaint = ui.Paint()
       ..filterQuality = ui.FilterQuality.none
@@ -37,33 +48,91 @@ class ProjectileComponent extends CircleComponent {
   }
 
   final int damage;
-  final Vector2 velocity;
+  Vector2 velocity;
   final double maxTravelDistance;
   final ProjectileVisualStyle visualStyle;
   final ui.Image? image;
   final String? skillTag;
+  final ProjectileMotionType motionType;
   int pierceRemaining;
   double age = 0;
   double _travelDistance = 0;
-  late final double _angle;
-  late final Vector2 _direction;
+  late final Vector2 _origin;
+  late double _speed;
+  late double _angle;
+  late Vector2 _direction;
   late Vector2 _previousPosition;
   late final ui.Paint _imagePaint;
   late final ui.Paint _trailPaint;
   late final ui.Paint _glowPaint;
   late final ui.Paint _corePaint;
   late final ui.Paint _highlightPaint;
+  late int _bouncesRemaining;
+  bool _isReturning = false;
+  bool _isDone = false;
+  final Set<int> _hitKeys = {};
 
   bool get hasExceededRange => _travelDistance >= maxTravelDistance;
+  bool get isDone => _isDone;
+  bool get isReturning => _isReturning;
 
   @override
   void update(double dt) {
     super.update(dt);
     age += dt;
+    _updateBoomerangVelocity();
     final step = velocity * dt;
     _previousPosition = position.clone();
     position += step;
     _travelDistance += step.length;
+  }
+
+  bool bounceInside(ui.Rect bounds) {
+    if (motionType != ProjectileMotionType.bouncing || _isDone) {
+      return false;
+    }
+
+    var nextVelocity = velocity.clone();
+    var bounced = false;
+    if (position.x < bounds.left) {
+      position.x = bounds.left;
+      nextVelocity.x = nextVelocity.x.abs();
+      bounced = true;
+    } else if (position.x > bounds.right) {
+      position.x = bounds.right;
+      nextVelocity.x = -nextVelocity.x.abs();
+      bounced = true;
+    }
+
+    if (position.y < bounds.top) {
+      position.y = bounds.top;
+      nextVelocity.y = nextVelocity.y.abs();
+      bounced = true;
+    } else if (position.y > bounds.bottom) {
+      position.y = bounds.bottom;
+      nextVelocity.y = -nextVelocity.y.abs();
+      bounced = true;
+    }
+
+    if (!bounced) {
+      return false;
+    }
+    if (_bouncesRemaining <= 0) {
+      _isDone = true;
+      return true;
+    }
+    _bouncesRemaining--;
+    _setVelocity(nextVelocity);
+    return true;
+  }
+
+  bool canHit(Object target) {
+    final key = Object.hash(identityHashCode(target), _isReturning);
+    return !_hitKeys.contains(key);
+  }
+
+  void markHit(Object target) {
+    _hitKeys.add(Object.hash(identityHashCode(target), _isReturning));
   }
 
   @override
@@ -100,7 +169,7 @@ class ProjectileComponent extends CircleComponent {
     final fallbackTrail = -_direction * visualStyle.trailLength;
     final localTrail = delta.length2 > 1 ? delta : fallbackTrail;
     final start = ui.Offset(localTrail.x, localTrail.y);
-    final end = ui.Offset.zero;
+    const end = ui.Offset.zero;
     canvas.drawLine(start, end, _trailPaint);
     canvas.drawCircle(ui.Offset.zero, visualStyle.glowRadius, _glowPaint);
   }
@@ -130,6 +199,32 @@ class ProjectileComponent extends CircleComponent {
       _highlightPaint,
     );
   }
+
+  void _updateBoomerangVelocity() {
+    if (motionType != ProjectileMotionType.boomerang || _isDone) {
+      return;
+    }
+    if (!_isReturning && _travelDistance >= maxTravelDistance * 0.48) {
+      _isReturning = true;
+    }
+    if (!_isReturning) {
+      return;
+    }
+
+    final toOrigin = _origin - position;
+    if (toOrigin.length <= math.max(14, radius * 2.2)) {
+      _isDone = true;
+      return;
+    }
+    toOrigin.normalize();
+    _setVelocity(toOrigin * math.max(_speed, 1) * 1.12);
+  }
+
+  void _setVelocity(Vector2 nextVelocity) {
+    velocity = nextVelocity;
+    _direction = velocity.length2 == 0 ? Vector2(1, 0) : velocity.normalized();
+    _angle = math.atan2(_direction.y, _direction.x);
+  }
 }
 
 class ProjectileVisualStyle {
@@ -150,6 +245,32 @@ class ProjectileVisualStyle {
 
   factory ProjectileVisualStyle.forKind(String kind) {
     return switch (kind) {
+      'weapon_bounce' => const ProjectileVisualStyle(
+          collisionRadius: 7,
+          imageWidth: 28,
+          imageHeight: 28,
+          coreLength: 22,
+          coreWidth: 13,
+          trailLength: 22,
+          trailWidth: 5,
+          glowRadius: 13,
+          coreColor: ui.Color(0xFFFFD36E),
+          trailColor: ui.Color(0xFFFFC857),
+          glowColor: ui.Color(0x66FFD36E),
+        ),
+      'weapon_boomerang' => const ProjectileVisualStyle(
+          collisionRadius: 9,
+          imageWidth: 44,
+          imageHeight: 30,
+          coreLength: 36,
+          coreWidth: 10,
+          trailLength: 34,
+          trailWidth: 6,
+          glowRadius: 12,
+          coreColor: ui.Color(0xFFE8FFF2),
+          trailColor: ui.Color(0xFF8FE388),
+          glowColor: ui.Color(0x668FE388),
+        ),
       'star_projectile' => const ProjectileVisualStyle(
           collisionRadius: 4,
           imageWidth: 26,
@@ -162,6 +283,19 @@ class ProjectileVisualStyle {
           coreColor: ui.Color(0xFFFFFFFF),
           trailColor: ui.Color(0xFF8FD7FF),
           glowColor: ui.Color(0x558FD7FF),
+        ),
+      'shadow_guard' => const ProjectileVisualStyle(
+          collisionRadius: 6,
+          imageWidth: 34,
+          imageHeight: 18,
+          coreLength: 30,
+          coreWidth: 7,
+          trailLength: 38,
+          trailWidth: 5,
+          glowRadius: 12,
+          coreColor: ui.Color(0xFFE8D8FF),
+          trailColor: ui.Color(0xFFB68CFF),
+          glowColor: ui.Color(0x667B61FF),
         ),
       '霰弹枪' => const ProjectileVisualStyle(
           collisionRadius: 6,

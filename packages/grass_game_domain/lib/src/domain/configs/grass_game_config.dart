@@ -18,6 +18,8 @@ class GrassGameConfig {
   final List<SkillConfig> skills;
   final List<WaveConfig> waves;
 
+  static const _skillAssetRoot = 'assets/game/grass_game/images/skills';
+
   static const defaults = GrassGameConfig(
     version: 1,
     balance: GameBalance.defaults,
@@ -93,42 +95,56 @@ class GrassGameConfig {
         treeId: 'star_projectile',
         weight: 100,
         maxLevel: 5,
+        iconAssetPath: '$_skillAssetRoot/skill_star_projectile.webp',
       ),
       SkillConfig(
         id: 'orbit_blade',
         treeId: 'orbit_blade',
         weight: 100,
         maxLevel: 5,
+        iconAssetPath: '$_skillAssetRoot/skill_orbit_blade.webp',
       ),
       SkillConfig(
         id: 'thunder_matrix',
         treeId: 'thunder_matrix',
         weight: 100,
         maxLevel: 5,
+        iconAssetPath: '$_skillAssetRoot/skill_thunder_matrix.webp',
       ),
       SkillConfig(
         id: 'void_magnet',
         treeId: 'void_magnet',
         weight: 100,
         maxLevel: 5,
+        iconAssetPath: '$_skillAssetRoot/skill_void_magnet.webp',
       ),
       SkillConfig(
         id: 'ice_nova',
         treeId: 'ice_nova',
         weight: 100,
         maxLevel: 5,
+        iconAssetPath: '$_skillAssetRoot/skill_ice_nova.webp',
       ),
       SkillConfig(
         id: 'fire_trail',
         treeId: 'fire_trail',
         weight: 100,
         maxLevel: 5,
+        iconAssetPath: '$_skillAssetRoot/skill_fire_trail.webp',
       ),
       SkillConfig(
         id: 'poison_spore',
         treeId: 'poison_spore',
         weight: 90,
         maxLevel: 5,
+        iconAssetPath: '$_skillAssetRoot/skill_poison_spore.webp',
+      ),
+      SkillConfig(
+        id: 'shadow_guard',
+        treeId: 'shadow_guard',
+        weight: 95,
+        maxLevel: 5,
+        iconAssetPath: '$_skillAssetRoot/skill_shadow_guard.png',
       ),
       SkillConfig(
         id: 'evolve_star_barrage',
@@ -136,6 +152,7 @@ class GrassGameConfig {
         tier: SkillTier.evolution,
         weight: 140,
         maxLevel: 1,
+        iconAssetPath: '$_skillAssetRoot/skill_star_projectile.webp',
         requires: ['star_projectile'],
       ),
       SkillConfig(
@@ -144,6 +161,7 @@ class GrassGameConfig {
         tier: SkillTier.evolution,
         weight: 140,
         maxLevel: 1,
+        iconAssetPath: '$_skillAssetRoot/skill_orbit_blade.webp',
         requires: ['orbit_blade'],
       ),
       SkillConfig(
@@ -152,6 +170,7 @@ class GrassGameConfig {
         tier: SkillTier.evolution,
         weight: 140,
         maxLevel: 1,
+        iconAssetPath: '$_skillAssetRoot/skill_thunder_matrix.webp',
         requires: ['thunder_matrix'],
       ),
       SkillConfig(
@@ -160,6 +179,7 @@ class GrassGameConfig {
         tier: SkillTier.evolution,
         weight: 140,
         maxLevel: 1,
+        iconAssetPath: '$_skillAssetRoot/skill_void_magnet.webp',
         requires: ['void_magnet'],
       ),
       SkillConfig(
@@ -168,6 +188,7 @@ class GrassGameConfig {
         tier: SkillTier.evolution,
         weight: 140,
         maxLevel: 1,
+        iconAssetPath: '$_skillAssetRoot/skill_ice_nova.webp',
         requires: ['ice_nova'],
       ),
       SkillConfig(
@@ -176,6 +197,7 @@ class GrassGameConfig {
         tier: SkillTier.evolution,
         weight: 140,
         maxLevel: 1,
+        iconAssetPath: '$_skillAssetRoot/skill_fire_trail.webp',
         requires: ['fire_trail'],
       ),
       SkillConfig(
@@ -184,13 +206,24 @@ class GrassGameConfig {
         tier: SkillTier.evolution,
         weight: 140,
         maxLevel: 1,
+        iconAssetPath: '$_skillAssetRoot/skill_poison_spore.webp',
         requires: ['poison_spore'],
+      ),
+      SkillConfig(
+        id: 'evolve_twin_shadow',
+        treeId: 'shadow_guard',
+        tier: SkillTier.evolution,
+        weight: 140,
+        maxLevel: 1,
+        iconAssetPath: '$_skillAssetRoot/skill_shadow_guard.png',
+        requires: ['shadow_guard'],
       ),
       SkillConfig(
         id: 'ultimate_star_judgement',
         tier: SkillTier.ultimate,
         weight: 160,
         maxLevel: 1,
+        iconAssetPath: '$_skillAssetRoot/skill_weapon_fusion_icon.png',
         requires: ['evolve_star_barrage', 'evolve_thunder_chain'],
       ),
       SkillConfig(
@@ -198,6 +231,7 @@ class GrassGameConfig {
         tier: SkillTier.ultimate,
         weight: 160,
         maxLevel: 1,
+        iconAssetPath: '$_skillAssetRoot/skill_weapon_fusion_icon.png',
         requires: ['evolve_moon_wheel', 'evolve_black_hole'],
       ),
       SkillConfig(
@@ -205,6 +239,7 @@ class GrassGameConfig {
         tier: SkillTier.ultimate,
         weight: 150,
         maxLevel: 1,
+        iconAssetPath: '$_skillAssetRoot/skill_weapon_fusion_icon.png',
         requires: ['evolve_permafrost_field', 'evolve_inferno_path'],
       ),
     ],

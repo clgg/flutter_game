@@ -26,7 +26,6 @@ class GameStageDefinition {
     required this.rewardCoins,
     required this.bossId,
     required this.bossName,
-    required this.bossSpriteSheetAssetPath,
     this.isDeathmatch = false,
   });
 
@@ -44,7 +43,6 @@ class GameStageDefinition {
   final int rewardCoins;
   final String bossId;
   final String bossName;
-  final String bossSpriteSheetAssetPath;
   final bool isDeathmatch;
 }
 
@@ -444,8 +442,6 @@ class GrassGameProgressController extends ChangeNotifier {
     rewardCoins: 0,
     bossId: 'deathmatch',
     bossName: 'Endless',
-    bossSpriteSheetAssetPath:
-        'assets/game/grass_game/images/bosses/boss_tiger_walk_runtime.png',
     isDeathmatch: true,
   );
 
@@ -454,23 +450,6 @@ class GrassGameProgressController extends ChangeNotifier {
       return _createEarlyStage(stage);
     }
 
-    const bossIds = [
-      'tiger',
-      'crocodile',
-      'zombie',
-      'skeleton',
-      'trex',
-      'dragon',
-    ];
-    const bossNames = [
-      'Tiger',
-      'Crocodile',
-      'Zombie',
-      'Skeleton',
-      'T-Rex',
-      'Wyvern',
-    ];
-    final bossIndex = (chapter + stage - 2) % bossIds.length;
     final enemyTypes = <String>[
       'basic',
       'lamb',
@@ -488,7 +467,7 @@ class GrassGameProgressController extends ChangeNotifier {
       stage: stage,
       name: 'Chapter $chapter-$stage',
       description:
-          'Clear wave ${chapter * 10 + stage} and defeat ${bossNames[bossIndex]}.',
+          'Clear wave ${chapter * 10 + stage} and defeat a random Guaishou.',
       difficulty: chapter * 10 + stage,
       enemyCount: (56 + chapter * 13 + stage * 6) * 4,
       enemyStrengthMultiplier: double.parse(
@@ -498,16 +477,12 @@ class GrassGameProgressController extends ChangeNotifier {
       bossTimeSeconds: bossTimeSeconds,
       rewardExp: 135 + chapter * 26 + stage * 10,
       rewardCoins: 65 + chapter * 13 + stage * 8,
-      bossId: bossIds[bossIndex],
-      bossName: bossNames[bossIndex],
-      bossSpriteSheetAssetPath:
-          'assets/game/grass_game/images/bosses/boss_${bossIds[bossIndex]}_walk_runtime.png',
+      bossId: 'random_guaishou',
+      bossName: 'Random Guaishou',
     );
   }
 
   static GameStageDefinition _createEarlyStage(int stage) {
-    const bossIds = ['tiger', 'crocodile', 'zombie', 'skeleton', 'trex'];
-    const bossNames = ['Tiger', 'Crocodile', 'Zombie', 'Skeleton', 'T-Rex'];
     const enemyCounts = [150, 210, 280, 350, 430];
     const bossTimes = [145, 170, 200, 230, 260];
     const strength = [0.78, 0.9, 1.02, 1.16, 1.3];
@@ -530,7 +505,8 @@ class GrassGameProgressController extends ChangeNotifier {
       stage: stage,
       name: 'Chapter 1-$stage',
       description: switch (stage) {
-        1 => 'Learn movement, collect EXP, and defeat the first Tiger.',
+        1 =>
+          'Learn movement, collect EXP, and defeat the first random Guaishou.',
         2 => 'Fast enemies enter the field. Keep moving.',
         3 => 'Weapon upgrades begin to matter against denser waves.',
         4 => 'Tank enemies test your damage and spacing.',
@@ -543,10 +519,8 @@ class GrassGameProgressController extends ChangeNotifier {
       bossTimeSeconds: bossTimes[index],
       rewardExp: rewardExp[index],
       rewardCoins: rewardCoins[index],
-      bossId: bossIds[index],
-      bossName: bossNames[index],
-      bossSpriteSheetAssetPath:
-          'assets/game/grass_game/images/bosses/boss_${bossIds[index]}_walk_runtime.png',
+      bossId: 'random_guaishou',
+      bossName: 'Random Guaishou',
     );
   }
 

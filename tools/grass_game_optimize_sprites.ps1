@@ -1,3 +1,8 @@
+param(
+  [ValidateSet('all', 'player', 'guaishou', 'bosses')]
+  [string]$Category = 'all'
+)
+
 Add-Type -AssemblyName System.Drawing
 
 $ErrorActionPreference = 'Stop'
@@ -88,6 +93,74 @@ function Get-AlphaBounds {
   return New-Object System.Drawing.Rectangle $left, $top, ($right - $left), ($bottom - $top)
 }
 
+function Get-FrameBounds {
+  param(
+    [System.Drawing.Bitmap]$Bitmap,
+    [int]$Row,
+    [int]$Column
+  )
+  $layout = Get-SourceLayout -Image $Bitmap
+  $rowTop = $Row * $layout.CellHeight
+  $rowBottom = [Math]::Min($Bitmap.Height, $rowTop + $layout.CellHeight)
+  $runs = New-Object System.Collections.Generic.List[object]
+  $inRun = $false
+  $runStart = 0
+  $lastAlphaX = 0
+
+  for ($x = 0; $x -lt $Bitmap.Width; $x++) {
+    $hasAlpha = $false
+    for ($y = $rowTop; $y -lt $rowBottom; $y++) {
+      if ($Bitmap.GetPixel($x, $y).A -gt $alphaThreshold) {
+        $hasAlpha = $true
+        break
+      }
+    }
+    if ($hasAlpha) {
+      if (-not $inRun) {
+        $runStart = $x
+        $inRun = $true
+      }
+      $lastAlphaX = $x
+    } elseif ($inRun -and ($x - $lastAlphaX) -gt 10) {
+      $runs.Add(@{ Start = $runStart; End = $lastAlphaX }) | Out-Null
+      $inRun = $false
+    }
+  }
+  if ($inRun) {
+    $runs.Add(@{ Start = $runStart; End = $lastAlphaX }) | Out-Null
+  }
+
+  $filtered = @($runs | Where-Object { ($_.End - $_.Start) -gt 18 })
+  if ($filtered.Count -lt $columns) {
+    $fallback = New-Object System.Drawing.Rectangle (
+      $Column * $layout.CellWidth
+    ), $rowTop, $layout.CellWidth, $layout.CellHeight
+    return Get-AlphaBounds -Bitmap $Bitmap -Rect $fallback
+  }
+
+  $selected = $filtered[[Math]::Min($Column, $filtered.Count - 1)]
+  $left = [Math]::Max(0, [int]$selected.Start - 4)
+  $right = [Math]::Min($Bitmap.Width, [int]$selected.End + 5)
+  $minY = $rowBottom
+  $maxY = $rowTop - 1
+  for ($y = $rowTop; $y -lt $rowBottom; $y++) {
+    for ($x = $left; $x -lt $right; $x++) {
+      if ($Bitmap.GetPixel($x, $y).A -gt $alphaThreshold) {
+        if ($y -lt $minY) { $minY = $y }
+        if ($y -gt $maxY) { $maxY = $y }
+        break
+      }
+    }
+  }
+  if ($maxY -lt $minY) {
+    $minY = $rowTop
+    $maxY = $rowBottom - 1
+  }
+  $top = [Math]::Max($rowTop, $minY - 4)
+  $bottom = [Math]::Min($rowBottom, $maxY + 5)
+  return New-Object System.Drawing.Rectangle $left, $top, ($right - $left), ($bottom - $top)
+}
+
 function New-OpacityAttributes {
   param([double]$Opacity)
   $matrix = New-Object System.Drawing.Imaging.ColorMatrix
@@ -140,26 +213,29 @@ function New-CellFromSource {
   )
   $layout = Get-SourceLayout -Image $Source
   $sourceRow = [Math]::Max(0, [Math]::Min($layout.RowCount - 1, $Row))
-  $srcCell = New-Object System.Drawing.Rectangle ($Column * $layout.CellWidth), ($sourceRow * $layout.CellHeight), $layout.CellWidth, $layout.CellHeight
-  $bounds = Get-AlphaBounds -Bitmap $Source -Rect $srcCell
+  $srcCell = Get-FrameBounds -Bitmap $Source -Row $sourceRow -Column $Column
   $bitmap = New-TransparentBitmap -Width $targetCell -Height $targetCell
   $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
   try {
     Set-Quality -Graphics $graphics
-    $maxWidth = 104
-    $maxHeight = 108
-    $scale = [Math]::Min($maxWidth / $bounds.Width, $maxHeight / $bounds.Height) * $ScaleMultiplier
-    if ($scale -gt 1.0) { $scale = 1.0 }
-    $drawWidth = [int][Math]::Round($bounds.Width * $scale)
-    $drawHeight = [int][Math]::Round($bounds.Height * $scale)
+    $maxWidth = 114
+    $maxHeight = 114
+    $scale = [Math]::Min($maxWidth / $srcCell.Width, $maxHeight / $srcCell.Height) * $ScaleMultiplier
+    $drawWidth = [int][Math]::Round($srcCell.Width * $scale)
+    $drawHeight = [int][Math]::Round($srcCell.Height * $scale)
     $left = [int][Math]::Round(($targetCell - $drawWidth) / 2 + $OffsetX)
-    $top = [int][Math]::Round(116 - $drawHeight + $OffsetY)
-    if ($top -lt 7) { $top = 7 }
-    if ($left -lt 4) { $left = 4 }
-    if ($left + $drawWidth -gt 124) { $left = 124 - $drawWidth }
+    $top = [int][Math]::Round(($targetCell - $drawHeight) / 2 + $OffsetY)
+    if ($top -lt 5) { $top = 5 }
+    if ($left -lt 5) { $left = 5 }
+    if ($left + $drawWidth -gt 123) { $left = 123 - $drawWidth }
     if ($top + $drawHeight -gt 123) { $top = 123 - $drawHeight }
     $dst = New-Object System.Drawing.Rectangle $left, $top, $drawWidth, $drawHeight
-    $graphics.DrawImage($Source, $dst, $bounds, [System.Drawing.GraphicsUnit]::Pixel)
+    $cellImage = $Source.Clone($srcCell, [System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
+    try {
+      $graphics.DrawImage($cellImage, $dst)
+    } finally {
+      $cellImage.Dispose()
+    }
   } finally {
     $graphics.Dispose()
   }
@@ -262,13 +338,13 @@ function New-8DirectionSheet {
       Set-Quality -Graphics $attackGraphics
       $rowPlan = @(
         @{ Primary = 'front'; Secondary = $null; OffsetX = 0; OffsetY = 0 },
-        @{ Primary = 'right'; Secondary = 'front'; OffsetX = 4; OffsetY = 2 },
+        @{ Primary = 'right'; Secondary = 'front'; OffsetX = 0; OffsetY = 0 },
         @{ Primary = 'right'; Secondary = $null; OffsetX = 0; OffsetY = 0 },
-        @{ Primary = 'right'; Secondary = 'back'; OffsetX = 4; OffsetY = -2 },
+        @{ Primary = 'right'; Secondary = 'back'; OffsetX = 0; OffsetY = 0 },
         @{ Primary = 'back'; Secondary = $null; OffsetX = 0; OffsetY = 0 },
-        @{ Primary = 'left'; Secondary = 'back'; OffsetX = -4; OffsetY = -2 },
+        @{ Primary = 'left'; Secondary = 'back'; OffsetX = 0; OffsetY = 0 },
         @{ Primary = 'left'; Secondary = $null; OffsetX = 0; OffsetY = 0 },
-        @{ Primary = 'left'; Secondary = 'front'; OffsetX = -4; OffsetY = 2 }
+        @{ Primary = 'left'; Secondary = 'front'; OffsetX = 0; OffsetY = 0 }
       )
       for ($row = 0; $row -lt $directions; $row++) {
         $plan = $rowPlan[$row]
@@ -277,7 +353,7 @@ function New-8DirectionSheet {
           $primaryCell = New-CellFromSource -Source $source -Column $column -Row $Rows[$plan.Primary] -OffsetX $plan.OffsetX -OffsetY $plan.OffsetY
           try {
             if ($plan.Secondary) {
-              $secondaryCell = New-CellFromSource -Source $source -Column $column -Row $Rows[$plan.Secondary] -ScaleMultiplier 0.94 -OffsetX (-$plan.OffsetX) -OffsetY (-$plan.OffsetY)
+              $secondaryCell = New-CellFromSource -Source $source -Column $column -Row $Rows[$plan.Secondary] -ScaleMultiplier 0.94
               try {
                 Draw-Cell -Graphics $walkGraphics -Cell $secondaryCell -Column $column -Row $row -Opacity 0.22
               } finally {
@@ -287,8 +363,8 @@ function New-8DirectionSheet {
             Draw-Cell -Graphics $walkGraphics -Cell $primaryCell -Column $column -Row $row -Opacity 1.0
 
             $lunge = [Math]::Sin((($column + 1) / $columns) * [Math]::PI)
-            $attackOffsetX = [int]([double]$vector[0] * 9 * $lunge)
-            $attackOffsetY = [int]([double]$vector[1] * 9 * $lunge)
+            $attackOffsetX = 0
+            $attackOffsetY = 0
             Draw-Cell -Graphics $attackGraphics -Cell $primaryCell -Column $column -Row $row -Opacity 1.0 -OffsetX $attackOffsetX -OffsetY $attackOffsetY
             Draw-AttackArc -Graphics $attackGraphics -Column $column -Row $row -Color $EffectColor
           } finally {
@@ -367,49 +443,58 @@ function Select-SourceRows {
 }
 
 $playerDir = Join-Path $imageRoot 'player'
-Get-ChildItem $playerDir -Filter 'player_*_walk_sheet.png' | ForEach-Object {
-  $base = Get-PlayerBaseName $_.Name
-  $existing8 = Join-Path $playerDir "$base`_walk_8dir_sheet.png"
-  $sourcePath = $_.FullName
-  $rows = Select-SourceRows -SourcePath $sourcePath -FallbackRows @{ front = 0; back = 1; left = 2; right = 3 }
-  New-8DirectionSheet `
-    -SourcePath $sourcePath `
-    -WalkOutputPath $existing8 `
-    -AttackOutputPath (Join-Path $playerDir "$base`_attack_8dir_sheet.png") `
-    -EffectOutputPath (Join-Path $playerDir "$base`_attack_effect_8dir_sheet.png") `
-    -Rows $rows `
-    -EffectColor ([System.Drawing.Color]::FromArgb(39, 214, 255))
+if ($Category -eq 'all' -or $Category -eq 'player') {
+  Get-ChildItem $playerDir -Filter 'player_*_walk_sheet.png' | ForEach-Object {
+    $base = Get-PlayerBaseName $_.Name
+    $existing8 = Join-Path $playerDir "$base`_walk_8dir_sheet.png"
+    $sourcePath = $_.FullName
+    $rows = Select-SourceRows -SourcePath $sourcePath -FallbackRows @{ front = 0; back = 1; left = 2; right = 3 }
+    New-8DirectionSheet `
+      -SourcePath $sourcePath `
+      -WalkOutputPath $existing8 `
+      -AttackOutputPath (Join-Path $playerDir "$base`_attack_8dir_sheet.png") `
+      -EffectOutputPath (Join-Path $playerDir "$base`_attack_effect_8dir_sheet.png") `
+      -Rows $rows `
+      -EffectColor ([System.Drawing.Color]::FromArgb(39, 214, 255))
+  }
+  Write-Host 'Player sprites regenerated.'
 }
 
 $guaishouDir = Join-Path $imageRoot 'guaishou'
-Get-ChildItem $guaishouDir -Filter 'guaishou_*_walk_sheet.png' | ForEach-Object {
-  $base = Get-GuaishouBaseName $_.Name
-  $walk8 = Join-Path $guaishouDir "$base`_walk_8dir_sheet.png"
-  $sourcePath = $_.FullName
-  $rows = Select-SourceRows -SourcePath $sourcePath -FallbackRows @{ front = 0; back = 1; left = 2; right = 3 }
-  New-8DirectionSheet `
-    -SourcePath $sourcePath `
-    -WalkOutputPath $walk8 `
-    -AttackOutputPath (Join-Path $guaishouDir "$base`_attack_8dir_sheet.png") `
-    -EffectOutputPath (Join-Path $guaishouDir "$base`_attack_effect_8dir_sheet.png") `
-    -Rows $rows `
-    -EffectColor ([System.Drawing.Color]::FromArgb(255, 91, 111))
-  Copy-Item -LiteralPath $walk8 -Destination (Join-Path $guaishouDir "$base`_walk_sheet_runtime_128.png") -Force
+if ($Category -eq 'all' -or $Category -eq 'guaishou') {
+  Get-ChildItem $guaishouDir -Filter 'guaishou_*_walk_sheet.png' | ForEach-Object {
+    $base = Get-GuaishouBaseName $_.Name
+    $walk8 = Join-Path $guaishouDir "$base`_walk_8dir_sheet.png"
+    $sourcePath = $_.FullName
+    $rows = Select-SourceRows -SourcePath $sourcePath -FallbackRows @{ front = 0; back = 1; left = 2; right = 3 }
+    New-8DirectionSheet `
+      -SourcePath $sourcePath `
+      -WalkOutputPath $walk8 `
+      -AttackOutputPath (Join-Path $guaishouDir "$base`_attack_8dir_sheet.png") `
+      -EffectOutputPath (Join-Path $guaishouDir "$base`_attack_effect_8dir_sheet.png") `
+      -Rows $rows `
+      -EffectColor ([System.Drawing.Color]::FromArgb(255, 91, 111))
+    Copy-Item -LiteralPath $walk8 -Destination (Join-Path $guaishouDir "$base`_walk_sheet_runtime_128.png") -Force
+  }
+  Write-Host 'Guaishou sprites regenerated.'
 }
 
 $bossDir = Join-Path $imageRoot 'bosses'
-Get-ChildItem $bossDir -Filter 'boss_*_walk_8dir_sheet.png' | ForEach-Object {
-  $base = Get-BossBaseName $_.Name
-  $walk8 = $_.FullName
-  $rows = Select-SourceRows -SourcePath $walk8 -FallbackRows @{ front = 0; back = 4; left = 6; right = 2 }
-  New-8DirectionSheet `
-    -SourcePath $walk8 `
-    -WalkOutputPath $walk8 `
-    -AttackOutputPath (Join-Path $bossDir "$base`_attack_8dir_sheet.png") `
-    -EffectOutputPath (Join-Path $bossDir "$base`_attack_effect_8dir_sheet.png") `
-    -Rows $rows `
-    -EffectColor ([System.Drawing.Color]::FromArgb(255, 200, 87))
-  Copy-Item -LiteralPath $walk8 -Destination (Join-Path $bossDir "$base`_walk_runtime.png") -Force
+if ($Category -eq 'all' -or $Category -eq 'bosses') {
+  Get-ChildItem $bossDir -Filter 'boss_*_walk_8dir_sheet.png' | ForEach-Object {
+    $base = Get-BossBaseName $_.Name
+    $walk8 = $_.FullName
+    $rows = Select-SourceRows -SourcePath $walk8 -FallbackRows @{ front = 0; back = 4; left = 6; right = 2 }
+    New-8DirectionSheet `
+      -SourcePath $walk8 `
+      -WalkOutputPath $walk8 `
+      -AttackOutputPath (Join-Path $bossDir "$base`_attack_8dir_sheet.png") `
+      -EffectOutputPath (Join-Path $bossDir "$base`_attack_effect_8dir_sheet.png") `
+      -Rows $rows `
+      -EffectColor ([System.Drawing.Color]::FromArgb(255, 200, 87))
+    Copy-Item -LiteralPath $walk8 -Destination (Join-Path $bossDir "$base`_walk_runtime.png") -Force
+  }
+  Write-Host 'Boss sprites regenerated.'
 }
 
 Write-Host 'Grass game sprite optimization complete.'
