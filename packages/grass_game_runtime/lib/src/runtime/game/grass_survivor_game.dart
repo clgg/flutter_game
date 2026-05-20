@@ -16,12 +16,35 @@ import '../snapshots/hud_snapshot.dart';
 import 'grass_game_runtime_controller.dart';
 import 'grass_game_runtime_state.dart';
 
+class WeaponRuntimeStats {
+  const WeaponRuntimeStats({
+    required this.attackPattern,
+    required this.damage,
+    required this.attacksPerSecond,
+    required this.range,
+    required this.areaRadius,
+    required this.pierce,
+    required this.knockback,
+    required this.effectId,
+  });
+
+  final String attackPattern;
+  final int damage;
+  final double attacksPerSecond;
+  final double range;
+  final double areaRadius;
+  final int pierce;
+  final double knockback;
+  final String effectId;
+}
+
 class GrassSurvivorGame extends FlameGame {
   GrassSurvivorGame({
     required this.config,
     required this.controller,
     this.playerMaxHp = 100,
     this.playerMoveSpeedMultiplier = 1,
+    this.playerCharacterId = 'runner',
     this.playerSpriteSheetAssetPath =
         'assets/game/grass_game/images/player/player_soldier_walk_8dir_sheet.png',
     this.weaponDamage = 1,
@@ -31,6 +54,7 @@ class GrassSurvivorGame extends FlameGame {
     this.weaponProjectileAssetPath,
     this.weaponMuzzleFlashAssetPath,
     this.weaponFireSoundAssetPath,
+    this.weaponRuntimeStats,
     this.soundVolume = 1,
     this.vibrationIntensity = 1,
     this.stageName = 'Chapter 1-1',
@@ -54,6 +78,7 @@ class GrassSurvivorGame extends FlameGame {
   final GrassGameRuntimeController controller;
   final int playerMaxHp;
   final double playerMoveSpeedMultiplier;
+  final String playerCharacterId;
   final String playerSpriteSheetAssetPath;
   final int weaponDamage;
   final double weaponCooldownMultiplier;
@@ -62,6 +87,7 @@ class GrassSurvivorGame extends FlameGame {
   final String? weaponProjectileAssetPath;
   final String? weaponMuzzleFlashAssetPath;
   final String? weaponFireSoundAssetPath;
+  final WeaponRuntimeStats? weaponRuntimeStats;
   final double soundVolume;
   final double vibrationIntensity;
   final String stageName;
@@ -78,6 +104,19 @@ class GrassSurvivorGame extends FlameGame {
   final String bossSpriteSheetAssetPath;
   GrassGameRuntimeState state;
   String languageCode = 'en';
+
+  static const supportedWeaponAttackPatterns = <String>{
+    'meleeSweep',
+    'projectile',
+    'bouncingProjectile',
+    'boomerang',
+    'coneShot',
+    'beam',
+    'lobbedExplosion',
+    'chainLightning',
+    'flameStream',
+    'orbitSlash',
+  };
 
   late final PlayerComponent player;
 
@@ -98,6 +137,10 @@ class GrassSurvivorGame extends FlameGame {
   Image? _fireEffectImage;
   Image? _iceEffectImage;
   Image? _thunderEffectImage;
+  Image? _poisonEffectImage;
+  Image? _blackHoleEffectImage;
+  Image? _orbitBladeEffectImage;
+  Image? _ultimateBeamEffectImage;
   Image? _projectileImage;
   Image? _muzzleFlashImage;
   String? _fireSoundFileName;
@@ -137,6 +180,11 @@ class GrassSurvivorGame extends FlameGame {
   static const int _bossCoinDropMax = 80;
   static const double _deathmatchRareCoinDropChance = 0.18;
   static const double _deathmatchHighCoinDropChance = 0.44;
+  static const int _healthPackHealAmount = 50;
+  static const double _basicHealthPackDropChance = 0.045;
+  static const double _fastHealthPackDropChance = 0.055;
+  static const double _tankHealthPackDropChance = 0.08;
+  static const double _deathmatchHealthPackDropChance = 0.10;
   static const double _starProjectileDamageMultiplier = 0.42;
   static const double _starBarrageDamageMultiplier = 0.62;
   static const double _orbitBladeDamageMultiplier = 0.36;
@@ -159,8 +207,11 @@ class GrassSurvivorGame extends FlameGame {
   int _coins = 0;
   int _pendingLevelUps = 0;
   int _levelUpRerollOffset = 0;
-  late int _weaponDamage = weaponDamage;
+  late int _weaponDamage = weaponRuntimeStats?.damage ?? weaponDamage;
   late double _cooldownMultiplier = weaponCooldownMultiplier;
+  late double _weaponRange = weaponRuntimeStats?.range ?? _attackRange;
+  late double _weaponAreaRadius = weaponRuntimeStats?.areaRadius ?? 0;
+  late int _weaponPierce = weaponRuntimeStats?.pierce ?? 0;
   bool _finished = false;
   bool _bossSpawned = false;
   bool _bossWarningShown = false;
@@ -217,14 +268,26 @@ class GrassSurvivorGame extends FlameGame {
         'assets/game/grass_game/images/guaishou/guaishou_black_white_armor_walk_sheet_runtime_128.png',
     'guaishou_blue_antenna_alien':
         'assets/game/grass_game/images/guaishou/guaishou_blue_antenna_alien_walk_sheet_runtime_128.png',
+    'guaishou_feral_hound':
+        'assets/game/grass_game/images/guaishou/guaishou_feral_hound_walk_sheet_runtime_128.png',
+    'guaishou_feral_rooster':
+        'assets/game/grass_game/images/guaishou/guaishou_feral_rooster_walk_sheet_runtime_128.png',
     'guaishou_gold_snail_mouth':
         'assets/game/grass_game/images/guaishou/guaishou_gold_snail_mouth_walk_sheet_runtime_128.png',
     'guaishou_gray_block_head':
         'assets/game/grass_game/images/guaishou/guaishou_gray_block_head_walk_sheet_runtime_128.png',
     'guaishou_horned_brute':
         'assets/game/grass_game/images/guaishou/guaishou_horned_brute_walk_sheet_runtime_128.png',
+    'guaishou_horned_goat':
+        'assets/game/grass_game/images/guaishou/guaishou_horned_goat_walk_sheet_runtime_128.png',
     'guaishou_insect_claw':
         'assets/game/grass_game/images/guaishou/guaishou_insect_claw_walk_sheet_runtime_128.png',
+    'guaishou_iron_boar':
+        'assets/game/grass_game/images/guaishou/guaishou_iron_boar_walk_sheet_runtime_128.png',
+    'guaishou_mad_bull':
+        'assets/game/grass_game/images/guaishou/guaishou_mad_bull_walk_sheet_runtime_128.png',
+    'guaishou_marsh_duck':
+        'assets/game/grass_game/images/guaishou/guaishou_marsh_duck_walk_sheet_runtime_128.png',
     'guaishou_red_gold_spear_alien':
         'assets/game/grass_game/images/guaishou/guaishou_red_gold_spear_alien_walk_sheet_runtime_128.png',
     'guaishou_shell_kaiju':
@@ -432,6 +495,18 @@ class GrassSurvivorGame extends FlameGame {
     );
     _thunderEffectImage = await _loadImage(
       'assets/game/grass_game/images/effects/skill_thunder_lightning_sheet.png',
+    );
+    _poisonEffectImage = await _loadImage(
+      'assets/game/grass_game/images/effects/skill_poison_spore_sheet.png',
+    );
+    _blackHoleEffectImage = await _loadImage(
+      'assets/game/grass_game/images/effects/skill_void_black_hole_sheet.png',
+    );
+    _orbitBladeEffectImage = await _loadImage(
+      'assets/game/grass_game/images/effects/skill_orbit_blade_sheet.png',
+    );
+    _ultimateBeamEffectImage = await _loadImage(
+      'assets/game/grass_game/images/effects/skill_ultimate_beam_sheet.png',
     );
   }
 
@@ -897,15 +972,19 @@ class GrassSurvivorGame extends FlameGame {
   }
 
   void _fireWeapon() {
+    final runtimeStats = weaponRuntimeStats;
     final cooldown = math.max(
       0.06,
-      weaponFireIntervalSeconds * _cooldownMultiplier,
+      (runtimeStats == null
+              ? weaponFireIntervalSeconds
+              : 1 / runtimeStats.attacksPerSecond) *
+          _cooldownMultiplier,
     );
     if (_weaponTimer < cooldown || _enemies.isEmpty) {
       return;
     }
 
-    final target = _nearestEnemy(maxDistance: _attackRange);
+    final target = _nearestEnemy(maxDistance: _weaponRange);
     if (target == null) {
       return;
     }
@@ -919,16 +998,7 @@ class GrassSurvivorGame extends FlameGame {
     direction.normalize();
     _lastAimDirection = direction.clone();
     final spawnPosition = player.position + direction * 34;
-    _spawnProjectile(
-      direction: direction,
-      position: spawnPosition,
-      damage: _weaponDamage,
-      speed: 380,
-      range: _attackRange,
-      style: ProjectileVisualStyle.forKind(weaponKind),
-      image: _projectileImage,
-      pierceRemaining: _skillLevel('star_projectile') >= 4 ? 1 : 0,
-    );
+    _fireWeaponPattern(direction, spawnPosition);
     _fireStarProjectiles(direction);
     _fireStarBarrage(direction);
 
@@ -943,6 +1013,116 @@ class GrassSurvivorGame extends FlameGame {
       );
     }
     _playFireSound(cooldown);
+  }
+
+  void _fireWeaponPattern(Vector2 direction, Vector2 spawnPosition) {
+    final pattern = weaponRuntimeStats?.attackPattern ?? 'projectile';
+    switch (pattern) {
+      case 'bouncingProjectile':
+        _fireWeaponProjectile(
+          direction: direction,
+          position: spawnPosition,
+          speed: 360,
+          skillTag: 'weapon_bounce',
+          pierceBonus: 2,
+        );
+      case 'boomerang':
+        _fireWeaponProjectile(
+          direction: direction,
+          position: spawnPosition,
+          speed: 300,
+          skillTag: 'weapon_boomerang',
+          pierceBonus: 3,
+        );
+      case 'coneShot':
+        _fireWeaponCone(direction, spawnPosition);
+      case 'beam':
+        _damageEnemiesAlongLine(
+          direction: direction,
+          length: _weaponRange,
+          width: math.max(18, _weaponAreaRadius * 0.34),
+          damage: _weaponDamage,
+          color: const Color(0xFF8FD7FF),
+          bossDamageMultiplier: 0.42,
+        );
+      case 'lobbedExplosion':
+        _fireWeaponProjectile(
+          direction: direction,
+          position: spawnPosition,
+          speed: 310,
+          skillTag: 'weapon_explosion',
+        );
+      case 'chainLightning':
+        _fireWeaponProjectile(
+          direction: direction,
+          position: spawnPosition,
+          speed: 390,
+          skillTag: 'weapon_chain',
+        );
+      case 'meleeSweep':
+      case 'flameStream':
+        _fireWeaponCone(direction, spawnPosition, count: 3, angleSpread: 0.58);
+      case 'orbitSlash':
+        _damageEnemiesInRadius(
+          origin: player.position,
+          radius: math.max(_weaponRange, _weaponAreaRadius),
+          damage: _weaponDamage,
+          color: const Color(0xFF9BD3FF),
+          bossDamageMultiplier: 0.38,
+          slowMultiplier:
+              weaponRuntimeStats?.effectId.contains('slow') ?? false ? 0.76 : 1,
+          slowDuration:
+              weaponRuntimeStats?.effectId.contains('slow') ?? false ? 0.9 : 0,
+          knockback: weaponRuntimeStats?.knockback ?? 0,
+        );
+      default:
+        _fireWeaponProjectile(direction: direction, position: spawnPosition);
+    }
+  }
+
+  void _fireWeaponCone(
+    Vector2 direction,
+    Vector2 spawnPosition, {
+    int? count,
+    double angleSpread = 0.74,
+  }) {
+    final projectileCount = count ??
+        (weaponRuntimeStats?.effectId == 'burn_spread'
+            ? 6
+            : weaponRuntimeStats?.effectId == 'spread_5'
+                ? 5
+                : 4);
+    for (var i = 0; i < projectileCount; i++) {
+      final factor = projectileCount == 1 ? 0.5 : i / (projectileCount - 1);
+      final angle = -angleSpread / 2 + angleSpread * factor;
+      _fireWeaponProjectile(
+        direction: _rotated(direction, angle),
+        position: spawnPosition,
+        speed: 340,
+      );
+    }
+  }
+
+  void _fireWeaponProjectile({
+    required Vector2 direction,
+    required Vector2 position,
+    double speed = 380,
+    String? skillTag,
+    int pierceBonus = 0,
+  }) {
+    _spawnProjectile(
+      direction: direction,
+      position: position,
+      damage: _weaponDamage,
+      speed: speed,
+      range: _weaponRange,
+      style: ProjectileVisualStyle.forKind(weaponKind),
+      image: _projectileImage,
+      skillTag: skillTag,
+      pierceRemaining: _weaponPierce +
+          pierceBonus +
+          (_skillLevel('star_projectile') >= 4 ? 1 : 0),
+    );
   }
 
   void _spawnProjectile({
@@ -1720,7 +1900,7 @@ class GrassSurvivorGame extends FlameGame {
       if (beam.damageTimer > 0) {
         continue;
       }
-      beam.damageTimer = 0.10;
+      beam.damageTimer = beam.damageInterval;
       _damageEnemiesInBeam(beam);
     }
     _chargedUltimateBeams.removeWhere((beam) => beam.isDone);
@@ -1848,18 +2028,31 @@ class GrassSurvivorGame extends FlameGame {
       final start = player.position + direction * 22;
       final end = start + direction * beam.length;
       final opacity = math.sin(progress * math.pi).clamp(0, 1).toDouble();
+      final beamEffectImage = _ultimateBeamEffectImage;
+      if (beamEffectImage != null) {
+        _drawUltimateBeamEffectSprite(
+          canvas,
+          image: beamEffectImage,
+          start: Offset(start.x, start.y),
+          direction: direction,
+          length: beam.length,
+          width: beam.width,
+          opacity: opacity,
+          progress: progress,
+        );
+      }
       final glowPaint = Paint()
-        ..color = const Color(0xFFFFD36E).withOpacity(0.34 * opacity)
+        ..color = beam.glowColor.withOpacity(0.34 * opacity)
         ..strokeWidth = beam.width * 1.65
         ..strokeCap = StrokeCap.round
         ..style = PaintingStyle.stroke;
       final bodyPaint = Paint()
-        ..color = const Color(0xFFFFF2A6).withOpacity(0.78 * opacity)
+        ..color = beam.bodyColor.withOpacity(0.78 * opacity)
         ..strokeWidth = beam.width
         ..strokeCap = StrokeCap.round
         ..style = PaintingStyle.stroke;
       final corePaint = Paint()
-        ..color = const Color(0xFFFFFFFF).withOpacity(0.88 * opacity)
+        ..color = beam.coreColor.withOpacity(0.88 * opacity)
         ..strokeWidth = beam.width * 0.34
         ..strokeCap = StrokeCap.round
         ..style = PaintingStyle.stroke;
@@ -1883,10 +2076,45 @@ class GrassSurvivorGame extends FlameGame {
         Offset(start.x, start.y),
         beam.width * 0.78,
         Paint()
-          ..color = const Color(0xFFFFFFFF).withOpacity(0.68 * opacity)
+          ..color = beam.coreColor.withOpacity(0.68 * opacity)
           ..style = PaintingStyle.fill,
       );
     }
+  }
+
+  void _drawUltimateBeamEffectSprite(
+    Canvas canvas, {
+    required Image image,
+    required Offset start,
+    required Vector2 direction,
+    required double length,
+    required double width,
+    required double opacity,
+    required double progress,
+  }) {
+    const columns = 4;
+    final frame = (progress * columns).floor().clamp(0, columns - 1);
+    final frameWidth = image.width / columns;
+    final source = Rect.fromLTWH(
+      frame * frameWidth,
+      0,
+      frameWidth,
+      image.height.toDouble(),
+    );
+    final angle = math.atan2(direction.y, direction.x);
+    canvas.save();
+    canvas.translate(start.dx, start.dy);
+    canvas.rotate(angle);
+    canvas.drawImageRect(
+      image,
+      source,
+      Rect.fromLTWH(0, -width * 1.25, length, width * 2.5),
+      Paint()
+        ..filterQuality = FilterQuality.medium
+        ..blendMode = BlendMode.screen
+        ..color = Color.fromRGBO(255, 255, 255, opacity),
+    );
+    canvas.restore();
   }
 
   void _drawGroundFieldEffects(Canvas canvas) {
@@ -1986,7 +2214,7 @@ class GrassSurvivorGame extends FlameGame {
     const rows = 6;
     final frameCount = columns * rows;
     final frame =
-        ((_elapsed * (isEvolved ? 18 : 13) + seed) * 1.7).floor() % frameCount;
+        (_elapsed * (isEvolved ? 15 : 10) + seed).floor() % frameCount;
     final frameWidth = image.width / columns;
     final frameHeight = image.height / rows;
     final source = Rect.fromLTWH(
@@ -2006,21 +2234,6 @@ class GrassSurvivorGame extends FlameGame {
       ..blendMode = BlendMode.screen
       ..color = Color.fromRGBO(255, 255, 255, opacity);
     canvas.drawImageRect(image, source, destination, paint);
-
-    final coreSide = side * 0.62;
-    final coreFrame = (frame + 7) % frameCount;
-    final coreSource = Rect.fromLTWH(
-      (coreFrame % columns) * frameWidth,
-      (coreFrame ~/ columns) * frameHeight,
-      frameWidth,
-      frameHeight,
-    );
-    canvas.drawImageRect(
-      image,
-      coreSource,
-      Rect.fromCenter(center: center, width: coreSide, height: coreSide),
-      paint..color = Color.fromRGBO(255, 255, 255, opacity * 0.82),
-    );
   }
 
   void _drawPoisonField(Canvas canvas, _GroundEffectField field) {
@@ -2029,6 +2242,19 @@ class GrassSurvivorGame extends FlameGame {
     final opacity = (1 - progress * 0.55).clamp(0, 1).toDouble();
     final seed = _visualSeed(field);
     final radius = field.radius * (0.92 + 0.06 * math.sin(_elapsed * 2 + seed));
+    final poisonEffectImage = _poisonEffectImage;
+
+    if (poisonEffectImage != null) {
+      _drawPoisonEffectSprite(
+        canvas,
+        image: poisonEffectImage,
+        center: center,
+        radius: radius,
+        opacity: opacity,
+        seed: seed,
+      );
+      return;
+    }
 
     _drawIrregularPatch(
       canvas,
@@ -2069,6 +2295,42 @@ class GrassSurvivorGame extends FlameGame {
           ..strokeWidth = 1.2,
       );
     }
+  }
+
+  void _drawPoisonEffectSprite(
+    Canvas canvas, {
+    required Image image,
+    required Offset center,
+    required double radius,
+    required double opacity,
+    required double seed,
+  }) {
+    const columns = 6;
+    const rows = 6;
+    final frameCount = columns * rows;
+    final frame = ((_elapsed * 11 + seed) * 1.4).floor() % frameCount;
+    final frameWidth = image.width / columns;
+    final frameHeight = image.height / rows;
+    final source = Rect.fromLTWH(
+      (frame % columns) * frameWidth,
+      (frame ~/ columns) * frameHeight,
+      frameWidth,
+      frameHeight,
+    );
+    final side = radius * 2.5;
+    canvas.drawImageRect(
+      image,
+      source,
+      Rect.fromCenter(
+        center: center.translate(0, -radius * 0.08),
+        width: side,
+        height: side,
+      ),
+      Paint()
+        ..filterQuality = FilterQuality.medium
+        ..blendMode = BlendMode.screen
+        ..color = Color.fromRGBO(255, 255, 255, opacity),
+    );
   }
 
   void _drawFrostField(Canvas canvas, _GroundEffectField field) {
@@ -2289,18 +2551,64 @@ class GrassSurvivorGame extends FlameGame {
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
       ..strokeWidth = stormPhase ? 13 : 10;
+    final orbitBladeEffectImage = _orbitBladeEffectImage;
     for (var i = 0; i < bladeCount; i++) {
       final angle = _orbitAngle + math.pi * 2 * i / bladeCount;
       final rect = Rect.fromCircle(
         center: Offset(player.position.x, player.position.y),
         radius: radius,
       );
+      if (orbitBladeEffectImage != null) {
+        _drawOrbitBladeEffectSprite(
+          canvas,
+          image: orbitBladeEffectImage,
+          center: Offset(player.position.x, player.position.y),
+          radius: radius,
+          angle: angle,
+          size: stormPhase ? 58 : 42,
+          opacity: stormPhase ? 0.86 : 0.68,
+        );
+      }
       if (level >= 5 || stormPhase) {
         canvas.drawArc(rect, angle - 0.72, 0.86, false, trailPaint);
       }
       canvas.drawArc(
           rect, angle - 0.42, stormPhase ? 0.62 : 0.48, false, bladePaint);
     }
+  }
+
+  void _drawOrbitBladeEffectSprite(
+    Canvas canvas, {
+    required Image image,
+    required Offset center,
+    required double radius,
+    required double angle,
+    required double size,
+    required double opacity,
+  }) {
+    const columns = 4;
+    final frame = ((_elapsed * 18).floor()) % columns;
+    final frameWidth = image.width / columns;
+    final source = Rect.fromLTWH(
+      frame * frameWidth,
+      0,
+      frameWidth,
+      image.height.toDouble(),
+    );
+    final position = center + Offset(math.cos(angle), math.sin(angle)) * radius;
+    canvas.save();
+    canvas.translate(position.dx, position.dy);
+    canvas.rotate(angle + math.pi / 2);
+    canvas.drawImageRect(
+      image,
+      source,
+      Rect.fromCenter(center: Offset.zero, width: size, height: size),
+      Paint()
+        ..filterQuality = FilterQuality.medium
+        ..blendMode = BlendMode.screen
+        ..color = Color.fromRGBO(255, 255, 255, opacity),
+    );
+    canvas.restore();
   }
 
   void _drawThunderEffects(Canvas canvas) {
@@ -2402,6 +2710,17 @@ class GrassSurvivorGame extends FlameGame {
         ..style = PaintingStyle.stroke
         ..strokeWidth = 4;
       final center = Offset(field.center.x, field.center.y);
+      final blackHoleEffectImage = _blackHoleEffectImage;
+      if (blackHoleEffectImage != null) {
+        _drawBlackHoleEffectSprite(
+          canvas,
+          image: blackHoleEffectImage,
+          center: center,
+          radius: field.radius,
+          progress: progress,
+          opacity: 0.9,
+        );
+      }
       canvas.drawCircle(
         center,
         field.radius * (0.82 + 0.18 * math.sin(progress * math.pi)),
@@ -2437,6 +2756,39 @@ class GrassSurvivorGame extends FlameGame {
     }
   }
 
+  void _drawBlackHoleEffectSprite(
+    Canvas canvas, {
+    required Image image,
+    required Offset center,
+    required double radius,
+    required double progress,
+    required double opacity,
+  }) {
+    const columns = 6;
+    const rows = 6;
+    final frameCount = columns * rows;
+    final frame =
+        ((_elapsed * 16 + progress * frameCount).floor()) % frameCount;
+    final frameWidth = image.width / columns;
+    final frameHeight = image.height / rows;
+    final source = Rect.fromLTWH(
+      (frame % columns) * frameWidth,
+      (frame ~/ columns) * frameHeight,
+      frameWidth,
+      frameHeight,
+    );
+    final side = radius * 2.35;
+    canvas.drawImageRect(
+      image,
+      source,
+      Rect.fromCenter(center: center, width: side, height: side),
+      Paint()
+        ..filterQuality = FilterQuality.medium
+        ..blendMode = BlendMode.screen
+        ..color = Color.fromRGBO(255, 255, 255, opacity),
+    );
+  }
+
   int _skillLevel(String treeId) => _skillLevels[treeId] ?? 0;
 
   void _damageEnemiesInRadius({
@@ -2444,6 +2796,10 @@ class GrassSurvivorGame extends FlameGame {
     required double radius,
     required int damage,
     required Color color,
+    double bossDamageMultiplier = 0.45,
+    double slowMultiplier = 1,
+    double slowDuration = 0,
+    double knockback = 0,
   }) {
     final radiusSquared = radius * radius;
     var hitCount = 0;
@@ -2453,8 +2809,21 @@ class GrassSurvivorGame extends FlameGame {
         continue;
       }
       enemy.takeDamage(
-        enemy.enemyId == 'boss' ? math.max(1, (damage * 0.45).ceil()) : damage,
+        enemy.enemyId == 'boss'
+            ? math.max(1, (damage * bossDamageMultiplier).ceil())
+            : damage,
       );
+      if (slowMultiplier < 1 && slowDuration > 0) {
+        enemy.applySlow(multiplier: slowMultiplier, duration: slowDuration);
+      }
+      if (knockback > 0) {
+        final direction = enemy.position - origin;
+        if (direction.length2 > 0.0001) {
+          direction.normalize();
+          final push = enemy.enemyId == 'boss' ? knockback * 0.24 : knockback;
+          enemy.position += direction * push;
+        }
+      }
       hitCount++;
     }
     if (hitCount == 0) {
@@ -2464,6 +2833,56 @@ class GrassSurvivorGame extends FlameGame {
       position: origin.clone(),
       color: color,
       maxRadius: radius,
+    );
+  }
+
+  void _damageEnemiesAlongLine({
+    required Vector2 direction,
+    required double length,
+    required double width,
+    required int damage,
+    required Color color,
+    double bossDamageMultiplier = 0.45,
+    double slowMultiplier = 1,
+    double slowDuration = 0,
+  }) {
+    if (direction.length2 == 0) {
+      return;
+    }
+    final normalized = direction.normalized();
+    final start = player.position + normalized * 28;
+    final end = start + normalized * length;
+    final hitRadius = math.max(6, width * 0.5);
+    var hitCount = 0;
+
+    for (final enemy in _nearbyEnemies(player.position, length + hitRadius)) {
+      if (enemy.isDead) {
+        continue;
+      }
+      final distanceSquared =
+          _distanceToSegmentSquared(enemy.position, start, end);
+      final combinedRadius = hitRadius + enemy.collisionRadius;
+      if (distanceSquared > combinedRadius * combinedRadius) {
+        continue;
+      }
+      enemy.takeDamage(
+        enemy.enemyId == 'boss'
+            ? math.max(1, (damage * bossDamageMultiplier).ceil())
+            : damage,
+      );
+      if (slowMultiplier < 1 && slowDuration > 0) {
+        enemy.applySlow(multiplier: slowMultiplier, duration: slowDuration);
+      }
+      hitCount++;
+    }
+
+    if (hitCount == 0) {
+      return;
+    }
+    _addWorldPulse(
+      position: start + normalized * math.min(length * 0.55, 260),
+      color: color,
+      maxRadius: math.max(26, width * 1.5),
     );
   }
 
@@ -2484,8 +2903,25 @@ class GrassSurvivorGame extends FlameGame {
       if (distanceSquared > hitRadius * hitRadius) {
         continue;
       }
-      final damageRatio = enemy.enemyId == 'boss' ? 0.10 : 0.50;
-      enemy.takeDamage(math.max(1, (enemy.hp * damageRatio).ceil()));
+      final flatDamage = beam.flatDamage;
+      final damage = flatDamage == null
+          ? math.max(
+              1,
+              (enemy.hp *
+                      (enemy.enemyId == 'boss'
+                          ? beam.bossHpDamageRatio
+                          : beam.normalHpDamageRatio))
+                  .ceil(),
+            )
+          : math.max(
+              1,
+              (flatDamage *
+                      (enemy.enemyId == 'boss'
+                          ? beam.bossFlatDamageMultiplier
+                          : 1))
+                  .ceil(),
+            );
+      enemy.takeDamage(damage);
       hitCount++;
     }
 
@@ -2494,7 +2930,7 @@ class GrassSurvivorGame extends FlameGame {
     }
     _addWorldPulse(
       position: start + direction * math.min(beam.length * 0.55, 260),
-      color: const Color(0xFFFFF2A6),
+      color: beam.pulseColor,
       maxRadius: beam.width * 2.4,
     );
   }
@@ -2665,6 +3101,43 @@ class GrassSurvivorGame extends FlameGame {
         }
 
         enemy.takeDamage(projectile.damage);
+        if (projectile.skillTag == 'weapon_explosion' &&
+            _weaponAreaRadius > 0) {
+          _damageEnemiesInRadius(
+            origin: enemy.position,
+            radius: _weaponAreaRadius,
+            damage: math.max(1, (projectile.damage * 0.65).ceil()),
+            color: const Color(0xFFFF8A4C),
+          );
+        }
+        if (projectile.skillTag == 'weapon_chain') {
+          _damageNearestEnemy(
+            origin: enemy.position,
+            exclude: enemy,
+            radius: math.max(96, _weaponAreaRadius),
+            damage: math.max(1, (projectile.damage * 0.62).ceil()),
+            color: const Color(0xFFB68CFF),
+          );
+        }
+        if (projectile.skillTag == 'weapon_bounce') {
+          _damageNearestEnemy(
+            origin: enemy.position,
+            exclude: enemy,
+            radius: math.max(82, _weaponAreaRadius),
+            damage: math.max(1, (projectile.damage * 0.52).ceil()),
+            color: const Color(0xFFFFC857),
+          );
+        }
+        if (projectile.skillTag == 'weapon_boomerang' &&
+            _weaponAreaRadius > 0) {
+          _damageEnemiesInRadius(
+            origin: enemy.position,
+            radius: _weaponAreaRadius,
+            damage: math.max(1, (projectile.damage * 0.38).ceil()),
+            color: const Color(0xFFFFD36E),
+            bossDamageMultiplier: 0.34,
+          );
+        }
         if (projectile.skillTag == 'star_projectile' &&
             _skillLevel('star_projectile') >= 2) {
           _damageNearestEnemy(
@@ -2752,21 +3225,35 @@ class GrassSurvivorGame extends FlameGame {
       position: _randomDropPosition(enemy.position),
       exp: expDrop.value,
       coins: 0,
+      healing: 0,
       expTier: expDrop.tier,
       coinTier: DropVisualTier.normal,
     );
 
     final coinDrop = _rollCoinDrop(enemy);
-    if (coinDrop.value <= 0) {
+    if (coinDrop.value > 0) {
+      _spawnDrop(
+        position: _randomDropPosition(enemy.position),
+        exp: 0,
+        coins: coinDrop.value,
+        healing: 0,
+        expTier: DropVisualTier.normal,
+        coinTier: coinDrop.tier,
+      );
+    }
+
+    final healing = _rollHealthPackDrop(enemy);
+    if (healing <= 0) {
       return;
     }
 
     _spawnDrop(
       position: _randomDropPosition(enemy.position),
       exp: 0,
-      coins: coinDrop.value,
+      coins: 0,
+      healing: healing,
       expTier: DropVisualTier.normal,
-      coinTier: coinDrop.tier,
+      coinTier: DropVisualTier.normal,
     );
   }
 
@@ -2774,15 +3261,24 @@ class GrassSurvivorGame extends FlameGame {
     required Vector2 position,
     required int exp,
     required int coins,
+    required int healing,
     required DropVisualTier expTier,
     required DropVisualTier coinTier,
   }) {
-    final isExpDrop = exp > 0;
-    final mergeTarget = _findMergeTarget(position, isExpDrop: isExpDrop);
+    if (exp <= 0 && coins <= 0 && healing <= 0) {
+      return;
+    }
+    final payloadKind = _payloadKindForDrop(
+      exp: exp,
+      coins: coins,
+      healing: healing,
+    );
+    final mergeTarget = _findMergeTarget(position, payloadKind: payloadKind);
     if (mergeTarget != null) {
       mergeTarget.absorb(
         addedExp: exp,
         addedCoins: coins,
+        addedHealing: healing,
         addedExpTier: expTier,
         addedCoinTier: coinTier,
       );
@@ -2792,6 +3288,7 @@ class GrassSurvivorGame extends FlameGame {
     final drop = ExpGemComponent(
       exp: exp,
       coins: coins,
+      healing: healing,
       icons: _dropIcons,
       expTier: expTier,
       coinTier: coinTier,
@@ -2800,13 +3297,13 @@ class GrassSurvivorGame extends FlameGame {
     _gems.add(drop);
     add(drop);
     if (_gems.length > _maxGemCount) {
-      _compactOldestDrop(isExpDrop: isExpDrop);
+      _compactOldestDrop(payloadKind: payloadKind);
     }
   }
 
   ExpGemComponent? _findMergeTarget(
     Vector2 position, {
-    required bool isExpDrop,
+    required DropPayloadKind payloadKind,
   }) {
     final mergeRadiusSquared = _gemMergeRadius * _gemMergeRadius;
     var checked = 0;
@@ -2816,7 +3313,7 @@ class GrassSurvivorGame extends FlameGame {
         break;
       }
       final gem = _gems[i];
-      if (gem.isExpDrop != isExpDrop || gem.isAttracted) {
+      if (gem.payloadKind != payloadKind || gem.isAttracted) {
         continue;
       }
       if (gem.position.distanceToSquared(position) > mergeRadiusSquared &&
@@ -2828,10 +3325,10 @@ class GrassSurvivorGame extends FlameGame {
     return null;
   }
 
-  void _compactOldestDrop({required bool isExpDrop}) {
+  void _compactOldestDrop({required DropPayloadKind payloadKind}) {
     ExpGemComponent? oldest;
     for (final gem in _gems) {
-      if (gem.isExpDrop == isExpDrop && !gem.isAttracted) {
+      if (gem.payloadKind == payloadKind && !gem.isAttracted) {
         oldest = gem;
         break;
       }
@@ -2843,11 +3340,26 @@ class GrassSurvivorGame extends FlameGame {
     newest.absorb(
       addedExp: oldest.exp,
       addedCoins: oldest.coins,
+      addedHealing: oldest.healing,
       addedExpTier: oldest.expTier,
       addedCoinTier: oldest.coinTier,
     );
     _gems.remove(oldest);
     oldest.removeFromParent();
+  }
+
+  DropPayloadKind _payloadKindForDrop({
+    required int exp,
+    required int coins,
+    required int healing,
+  }) {
+    if (exp > 0) {
+      return DropPayloadKind.exp;
+    }
+    if (coins > 0) {
+      return DropPayloadKind.coin;
+    }
+    return DropPayloadKind.health;
   }
 
   _DropRoll _rollExpDrop(EnemyComponent enemy) {
@@ -2934,6 +3446,20 @@ class GrassSurvivorGame extends FlameGame {
     return _DropRoll(value, visualTier);
   }
 
+  int _rollHealthPackDrop(EnemyComponent enemy) {
+    if (enemy.enemyId == 'boss') {
+      return 0;
+    }
+    final chance = isDeathmatch && enemy.enemyId.startsWith('guaishou_')
+        ? _deathmatchHealthPackDropChance
+        : switch (_enemyWaveGroup(enemy.enemyId)) {
+            'tank' => _tankHealthPackDropChance,
+            'fast' => _fastHealthPackDropChance,
+            _ => _basicHealthPackDropChance,
+          };
+    return _random.nextDouble() < chance ? _healthPackHealAmount : 0;
+  }
+
   Vector2 _randomDropPosition(Vector2 origin) {
     final angle = _random.nextDouble() * math.pi * 2;
     final distance = 8 + _random.nextDouble() * 22;
@@ -2948,6 +3474,7 @@ class GrassSurvivorGame extends FlameGame {
         continue;
       }
       if (player.takeDamage(_randomEnemyDamage(enemy))) {
+        enemy.triggerAttackAnimation();
         _damageFlashTimer = 0.35;
         _addWorldPulse(
           position: player.position.clone(),
@@ -3005,13 +3532,25 @@ class GrassSurvivorGame extends FlameGame {
       _gems.remove(gem);
       gem.removeFromParent();
       _coins += gem.coins;
+      final healed = player.heal(gem.healing);
       if (_collectedGemBuffer.length <= 12 || gem.isRare) {
         _addWorldPulse(
           position: gem.position.clone(),
-          color:
-              gem.exp > 0 ? const Color(0xFF8FE388) : const Color(0xFFFFD36E),
+          color: switch (gem.payloadKind) {
+            DropPayloadKind.exp => const Color(0xFF8FE388),
+            DropPayloadKind.coin => const Color(0xFFFFD36E),
+            DropPayloadKind.health => const Color(0xFFFF6B7E),
+          },
           maxRadius: gem.isRare ? 42 : 28,
         );
+      }
+      if (healed > 0) {
+        _addWorldPulse(
+          position: player.position.clone(),
+          color: const Color(0xFFFF6B7E),
+          maxRadius: 36,
+        );
+        _syncHud(force: true);
       }
       if (gem.exp > 0 && _skillLevel('void_magnet') >= 2) {
         _damageEnemiesInRadius(
@@ -3377,20 +3916,298 @@ class GrassSurvivorGame extends FlameGame {
 
     _chargedUltimateCharge = 0;
     final direction = _currentChargedUltimateDirection();
-    _chargedUltimateBeams.add(
-      _ChargedUltimateBeam(
-        baseDirection: direction,
-        length: math.max(size.x, size.y) * 1.15,
-        width: 36,
+    _triggerCharacterChargedUltimate(direction);
+    _playHaptic(_GameHaptic.heavy);
+    _syncHud(force: true);
+  }
+
+  void _triggerCharacterChargedUltimate(Vector2 direction) {
+    switch (playerCharacterId) {
+      case 'guard':
+        _triggerGuardUltimate();
+      case 'scout':
+        _triggerScoutUltimate(direction);
+      case 'aotuman':
+        _triggerAotumanUltimate(direction);
+      case 'aomeijia':
+        _triggerAomeijiaUltimate(direction);
+      case 'jingangman':
+        _triggerJingangmanUltimate();
+      case 'beliya':
+        _triggerBeliyaUltimate();
+      case 'sevengar':
+        _triggerSevengarUltimate();
+      case 'runner':
+      default:
+        _triggerRunnerUltimate(direction);
+    }
+  }
+
+  void _triggerRunnerUltimate(Vector2 direction) {
+    const projectileCount = 15;
+    final baseDamage = math.max(3, (_weaponDamage * 1.35).ceil());
+    for (var i = 0; i < projectileCount; i++) {
+      final angle = -0.96 + 1.92 * (i / (projectileCount - 1));
+      final nextDirection = _rotated(direction, angle);
+      _spawnProjectile(
+        direction: nextDirection,
+        position: player.position + nextDirection * 34,
+        damage: baseDamage,
+        speed: 620,
+        range: math.max(_weaponRange * 1.45, _attackRange * 1.55),
+        style: ProjectileVisualStyle.forKind('star_projectile'),
+        skillTag: 'star_projectile',
+        pierceRemaining: 2,
+      );
+    }
+    _expandingRings.add(
+      _ExpandingRing(
+        center: player.position.clone(),
+        radius: 150,
+        color: const Color(0xFF8FD7FF),
+        strokeWidth: 4,
       ),
     );
     _addWorldPulse(
       position: player.position.clone(),
-      color: const Color(0xFFFFF2A6),
+      color: const Color(0xFF8FD7FF),
       maxRadius: 150,
     );
-    _playHaptic(_GameHaptic.heavy);
-    _syncHud(force: true);
+  }
+
+  void _triggerGuardUltimate() {
+    final origin = player.position.clone();
+    _damageEnemiesInRadius(
+      origin: origin,
+      radius: 185,
+      damage: math.max(4, (_weaponDamage * 2.35).ceil()),
+      bossDamageMultiplier: 0.55,
+      color: const Color(0xFFFF8AB8),
+      slowMultiplier: 0.72,
+      slowDuration: 1.25,
+      knockback: 42,
+    );
+    for (final radius in const [118.0, 178.0, 226.0]) {
+      _expandingRings.add(
+        _ExpandingRing(
+          center: origin.clone(),
+          radius: radius,
+          color: const Color(0xFFFF8AB8),
+          strokeWidth: 4,
+        ),
+      );
+    }
+    _addWorldPulse(
+      position: origin,
+      color: const Color(0xFFFF8AB8),
+      maxRadius: 226,
+    );
+  }
+
+  void _triggerScoutUltimate(Vector2 direction) {
+    for (final angle in const [-0.16, 0.0, 0.16]) {
+      _chargedUltimateBeams.add(
+        _ChargedUltimateBeam(
+          baseDirection: _rotated(direction, angle),
+          length: math.max(size.x, size.y) * 1.18,
+          width: 24,
+          duration: 1.05,
+          damageInterval: 0.12,
+          spinTurns: 0,
+          flatDamage: math.max(3, (_weaponDamage * 1.18).ceil()),
+          bossFlatDamageMultiplier: 0.34,
+          glowColor: const Color(0xFF54D7FF),
+          bodyColor: const Color(0xFF89F2FF),
+          coreColor: const Color(0xFFFFFFFF),
+          pulseColor: const Color(0xFF54D7FF),
+        ),
+      );
+    }
+    _addWorldPulse(
+      position: player.position.clone(),
+      color: const Color(0xFF54D7FF),
+      maxRadius: 165,
+    );
+  }
+
+  void _triggerAotumanUltimate(Vector2 direction) {
+    final baseAngle = math.atan2(direction.y, direction.x);
+    for (var i = 0; i < 4; i++) {
+      final angle = baseAngle + i * math.pi / 2;
+      _chargedUltimateBeams.add(
+        _ChargedUltimateBeam(
+          baseDirection: Vector2(math.cos(angle), math.sin(angle)),
+          length: math.max(size.x, size.y) * 1.22,
+          width: 32,
+          duration: 0.95,
+          damageInterval: 0.11,
+          spinTurns: 0,
+          normalHpDamageRatio: 0.32,
+          bossHpDamageRatio: 0.07,
+          glowColor: const Color(0xFFFF3B4F),
+          bodyColor: const Color(0xFFFFD36E),
+          coreColor: const Color(0xFFFFFFFF),
+          pulseColor: const Color(0xFFFFD36E),
+        ),
+      );
+    }
+    _damageEnemiesInRadius(
+      origin: player.position.clone(),
+      radius: 112,
+      damage: math.max(3, (_weaponDamage * 1.85).ceil()),
+      bossDamageMultiplier: 0.5,
+      color: const Color(0xFFFFD36E),
+    );
+    _addWorldPulse(
+      position: player.position.clone(),
+      color: const Color(0xFFFFD36E),
+      maxRadius: 210,
+    );
+  }
+
+  void _triggerAomeijiaUltimate(Vector2 direction) {
+    final targets = _pickThunderTargets(count: 4);
+    final centers = <Vector2>[
+      for (final target in targets) target.position.clone(),
+    ];
+    if (centers.isEmpty) {
+      for (var i = 0; i < 4; i++) {
+        final angle = math.atan2(direction.y, direction.x) + i * math.pi / 2;
+        centers.add(
+          player.position + Vector2(math.cos(angle), math.sin(angle)) * 118,
+        );
+      }
+    }
+
+    for (final center in centers) {
+      _addGroundField(
+        _GroundEffectField(
+          type: _GroundEffectType.frostInferno,
+          center: center,
+          radius: 92,
+          duration: 2.05,
+          tickInterval: 0.28,
+          damage: math.max(2, (_weaponDamage * 0.92).ceil()),
+          bossDamageMultiplier: 0.42,
+          color: const Color(0xFF9BD3FF),
+        ),
+      );
+      _expandingRings.add(
+        _ExpandingRing(
+          center: center.clone(),
+          radius: 112,
+          color: const Color(0xFFC7F7FF),
+          strokeWidth: 3,
+        ),
+      );
+    }
+    _damageEnemiesInRadius(
+      origin: player.position.clone(),
+      radius: 172,
+      damage: math.max(3, (_weaponDamage * 1.5).ceil()),
+      bossDamageMultiplier: 0.48,
+      color: const Color(0xFFC7F7FF),
+      slowMultiplier: 0.42,
+      slowDuration: 2.2,
+    );
+  }
+
+  void _triggerJingangmanUltimate() {
+    final origin = player.position.clone();
+    _damageEnemiesInRadius(
+      origin: origin,
+      radius: 218,
+      damage: math.max(6, (_weaponDamage * 3.05).ceil()),
+      bossDamageMultiplier: 0.62,
+      color: const Color(0xFFFF8A4C),
+      slowMultiplier: 0.64,
+      slowDuration: 1.4,
+      knockback: 128,
+    );
+    for (final radius in const [86.0, 148.0, 218.0]) {
+      _expandingRings.add(
+        _ExpandingRing(
+          center: origin.clone(),
+          radius: radius,
+          color: const Color(0xFFFF8A4C),
+          strokeWidth: 6,
+        ),
+      );
+    }
+    _addWorldPulse(
+      position: origin,
+      color: const Color(0xFFFF8A4C),
+      maxRadius: 240,
+    );
+  }
+
+  void _triggerBeliyaUltimate() {
+    final target = _nearestEnemy(maxDistance: math.max(size.x, size.y) * 0.86);
+    final center = target?.position.clone() ?? player.position.clone();
+    _blackHoles.add(
+      _BlackHoleField(
+        center: center,
+        radius: 226,
+        duration: 2.65,
+        damage: math.max(2, (_weaponDamage * 0.92).ceil()),
+        explosionDamage: math.max(9, (_weaponDamage * 4.05).ceil()),
+        pull: 170,
+        color: const Color(0xFFFF3B4F),
+      ),
+    );
+    _damageEnemiesInRadius(
+      origin: center,
+      radius: 128,
+      damage: math.max(3, (_weaponDamage * 1.65).ceil()),
+      bossDamageMultiplier: 0.44,
+      color: const Color(0xFFFF3B4F),
+      slowMultiplier: 0.58,
+      slowDuration: 1.2,
+    );
+    _addWorldPulse(
+      position: center,
+      color: const Color(0xFFFF3B4F),
+      maxRadius: 226,
+    );
+  }
+
+  void _triggerSevengarUltimate() {
+    final targets = _pickThunderTargets(count: 8);
+    final centers = <Vector2>[
+      for (final target in targets) target.position.clone(),
+    ];
+    if (centers.isEmpty) {
+      for (var i = 0; i < 6; i++) {
+        final angle = i * math.pi * 2 / 6;
+        centers.add(
+          player.position + Vector2(math.cos(angle), math.sin(angle)) * 122,
+        );
+      }
+    }
+
+    for (final center in centers) {
+      _damageEnemiesInRadius(
+        origin: center,
+        radius: 74,
+        damage: math.max(4, (_weaponDamage * 2.08).ceil()),
+        bossDamageMultiplier: 0.46,
+        color: const Color(0xFFFFD166),
+        knockback: 34,
+      );
+      _expandingRings.add(
+        _ExpandingRing(
+          center: center,
+          radius: 88,
+          color: const Color(0xFFFFD166),
+          strokeWidth: 5,
+        ),
+      );
+    }
+    _addWorldPulse(
+      position: player.position.clone(),
+      color: const Color(0xFFFFD166),
+      maxRadius: 172,
+    );
   }
 
   Vector2 _currentChargedUltimateDirection() {
@@ -3467,23 +4284,44 @@ class _ChargedUltimateBeam {
     required Vector2 baseDirection,
     required this.length,
     required this.width,
+    this.duration = 1.45,
+    this.damageInterval = 0.10,
+    this.spinTurns = 5,
+    this.normalHpDamageRatio = 0.50,
+    this.bossHpDamageRatio = 0.10,
+    this.flatDamage,
+    this.bossFlatDamageMultiplier = 0.35,
+    this.glowColor = const Color(0xFFFFD36E),
+    this.bodyColor = const Color(0xFFFFF2A6),
+    this.coreColor = const Color(0xFFFFFFFF),
+    this.pulseColor = const Color(0xFFFFF2A6),
   }) : _baseAngle = math.atan2(baseDirection.y, baseDirection.x);
 
   final double _baseAngle;
   final double length;
   final double width;
+  final double duration;
+  final double damageInterval;
+  final double spinTurns;
+  final double normalHpDamageRatio;
+  final double bossHpDamageRatio;
+  final int? flatDamage;
+  final double bossFlatDamageMultiplier;
+  final Color glowColor;
+  final Color bodyColor;
+  final Color coreColor;
+  final Color pulseColor;
   double age = 0;
   double damageTimer = 0;
-  static const double _duration = 1.45;
 
-  double get progress => (age / _duration).clamp(0, 1).toDouble();
+  double get progress => (age / duration).clamp(0, 1).toDouble();
 
   Vector2 get direction {
-    final angle = _baseAngle + progress * math.pi * 10;
+    final angle = _baseAngle + progress * math.pi * 2 * spinTurns;
     return Vector2(math.cos(angle), math.sin(angle));
   }
 
-  bool get isDone => age >= _duration;
+  bool get isDone => age >= duration;
 }
 
 class _ThunderStrike {

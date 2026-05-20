@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:grass_game_domain/grass_game_domain.dart';
+import 'package:grass_game_runtime/grass_game_runtime.dart';
 import 'package:grass_game_ui/grass_game_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -92,6 +93,30 @@ void main() {
       expect(restored.progressFor(weapon.id).level, 2);
     });
 
+    test('crafts recipe weapon without consuming material weapons', () async {
+      SharedPreferences.setMockInitialValues({});
+      final controller = GrassGameProgressController.defaults();
+      await controller.loadSavedProgress();
+
+      final material = controller.weapons.firstWhere(
+        (item) => item.id == 'bounce_ball',
+      );
+      final crafted = controller.weapons.firstWhere(
+        (item) => item.id == 'ball_hammer',
+      );
+
+      controller.coins = material.buyCost + controller.craftCost(crafted.id);
+
+      expect(controller.buyWeapon(material.id), isTrue);
+      expect(controller.canCraftWeapon(crafted.id), isTrue);
+      expect(controller.craftWeapon(crafted.id), isTrue);
+      expect(controller.progressFor(crafted.id).isOwned, isTrue);
+      expect(controller.progressFor(crafted.id).isCrafted, isTrue);
+      expect(controller.progressFor('wooden_stick').isOwned, isTrue);
+      expect(controller.progressFor(material.id).isOwned, isTrue);
+      expect(controller.selectedWeaponId, crafted.id);
+    });
+
     test('restores invalid selected stage to the first playable stage',
         () async {
       SharedPreferences.setMockInitialValues({
@@ -110,7 +135,7 @@ void main() {
       await controller.loadSavedProgress();
 
       final weapon = controller.selectedWeapon;
-      final baseDamage = weapon.damage;
+      final baseDamage = weapon.baseDamage;
       controller.profileLevel = 3;
       controller.coins = controller.upgradeCost(weapon.id);
 
@@ -120,8 +145,10 @@ void main() {
 
       final loadout = controller.currentLoadout;
       expect(loadout.playerMaxHp, controller.selectedCharacter.baseHp + 16);
-      expect(loadout.weaponDamage, (baseDamage * 1.09 * 1.03).round());
-      expect(loadout.weaponCooldownMultiplier, closeTo(1 / 1.055, 0.001));
+      expect(loadout.weaponDamage, (baseDamage * 1.10 * 1.03).round());
+      expect(loadout.weaponAttacksPerSecond, closeTo(1.2 * 1.03, 0.001));
+      expect(loadout.weaponRuntimeStats.attackPattern, 'meleeSweep');
+      expect(loadout.weaponRuntimeStats.range, closeTo(70 * 1.03, 0.001));
     });
 
     test('early stage rewards follow in-run growth economy targets', () async {
@@ -177,6 +204,32 @@ void main() {
       }
     });
 
+    test('weapon catalog follows craft-focused survivor design', () async {
+      SharedPreferences.setMockInitialValues({});
+      final controller = GrassGameProgressController.defaults();
+      await controller.loadSavedProgress();
+
+      expect(controller.weapons, hasLength(18));
+      expect(controller.selectedWeaponId, 'wooden_stick');
+      expect(controller.selectedWeapon.attackPattern,
+          WeaponAttackPattern.meleeSweep);
+      expect(
+        controller.weapons.where((weapon) => weapon.recipe != null),
+        hasLength(7),
+      );
+      expect(
+        controller.weapons.map((weapon) => weapon.id),
+        containsAll([
+          'wooden_stick',
+          'bounce_ball',
+          'scatter_blunder',
+          'mini_grenade',
+          'storm_hammer',
+          'star_core_cannon',
+        ]),
+      );
+    });
+
     test('deathmatch stage is always selectable with guaishou pool', () async {
       SharedPreferences.setMockInitialValues({});
       final controller = GrassGameProgressController.defaults();
@@ -188,7 +241,7 @@ void main() {
 
       expect(deathmatch.isDeathmatch, isTrue);
       expect(deathmatch.chapter, 11);
-      expect(deathmatch.enemyTypes.length, 12);
+      expect(deathmatch.enemyTypes.length, 18);
       expect(deathmatch.enemyTypes.every((id) => id.startsWith('guaishou_')),
           isTrue);
       expect(controller.canSelectStage(deathmatch.id), isTrue);
@@ -205,6 +258,57 @@ void main() {
         expect(runtimeSheet.existsSync(), isTrue);
         expect(previewGif.existsSync(), isTrue);
       }
+    });
+
+    test('campaign next stage never advances into deathmatch', () async {
+      SharedPreferences.setMockInitialValues({});
+      final controller = GrassGameProgressController.defaults();
+      await controller.loadSavedProgress();
+
+      final campaignStages =
+          controller.stages.where((stage) => !stage.isDeathmatch).toList();
+      expect(campaignStages, isNotEmpty);
+
+      for (final stage in campaignStages) {
+        expect(controller.selectStage(stage.id), isTrue);
+        controller.applyBattleResult(
+          const GameResult(
+            survivalSeconds: 300,
+            killCount: 100,
+            level: 8,
+            isWin: true,
+            coinsEarned: 25,
+            characterExpEarned: 80,
+          ),
+        );
+      }
+
+      expect(controller.selectedStage.isDeathmatch, isFalse);
+      expect(controller.nextStageId, isNull);
+      expect(controller.hasNextStage, isFalse);
+      expect(controller.selectNextStage(), isFalse);
+      expect(controller.selectedStage.isDeathmatch, isFalse);
+      expect(
+        controller
+            .canSelectStage(GrassGameProgressController.deathmatchStageId),
+        isTrue,
+      );
+    });
+
+    test('all configured weapon attack patterns are supported by runtime',
+        () async {
+      SharedPreferences.setMockInitialValues({});
+      final controller = GrassGameProgressController.defaults();
+      await controller.loadSavedProgress();
+
+      final configuredPatterns =
+          controller.weapons.map((weapon) => weapon.attackPattern.name).toSet();
+
+      expect(
+        configuredPatterns
+            .difference(GrassSurvivorGame.supportedWeaponAttackPatterns),
+        isEmpty,
+      );
     });
   });
 }

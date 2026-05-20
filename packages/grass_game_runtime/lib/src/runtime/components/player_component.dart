@@ -191,6 +191,15 @@ class PlayerComponent extends SpriteAnimationComponent {
     return true;
   }
 
+  int heal(int value) {
+    if (value <= 0 || hp >= maxHp) {
+      return 0;
+    }
+    final previousHp = hp;
+    hp = (hp + value).clamp(0, maxHp);
+    return hp - previousHp;
+  }
+
   bool get isDead => hp <= 0;
 
   @override

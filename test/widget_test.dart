@@ -66,6 +66,7 @@ void main() {
 
     await tester.pump(const Duration(seconds: 2));
     await _pumpUntilFound(tester, find.byType(GrassGameLoadoutPage));
+    await tester.pump(const Duration(milliseconds: 500));
 
     await tester.tap(find.byIcon(Icons.settings_rounded));
     await _pumpUntilFound(tester, find.text('Settings'));
@@ -120,6 +121,55 @@ void main() {
     expect(find.text('第 1 章'), findsOneWidget);
     expect(find.text('继续'), findsOneWidget);
     expect(find.textContaining('个敌人'), findsWidgets);
+  });
+
+  testWidgets('stage select scrolls to the next playable chapter', (
+    WidgetTester tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final controller = GrassGameProgressController.defaults();
+    await controller.loadSavedProgress();
+
+    for (var index = 0; index < 7; index++) {
+      controller.applyBattleResult(
+        const GameResult(
+          survivalSeconds: 300,
+          killCount: 100,
+          level: 8,
+          isWin: true,
+          coinsEarned: 25,
+          characterExpEarned: 80,
+        ),
+      );
+      final nextStageId = controller.nextStageId;
+      if (nextStageId != null) {
+        controller.selectStage(nextStageId);
+      }
+    }
+
+    await tester.pumpWidget(
+      MaterialApp(
+        supportedLocales: const [Locale('en'), Locale('zh')],
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        theme: ThemeData(
+          extensions: const [AppGameTheme.glyph],
+          useMaterial3: true,
+        ),
+        home: GrassGameStageSelectPage(
+          progressController: controller,
+          onBack: () {},
+          onStageSelected: () {},
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Chapter 2'), findsOneWidget);
+    expect(find.text('Chapter 1'), findsNothing);
   });
 
   testWidgets('loadout opens skill guide and skill detail', (

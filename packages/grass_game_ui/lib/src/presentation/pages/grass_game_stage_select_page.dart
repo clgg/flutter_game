@@ -26,12 +26,26 @@ class _GrassGameStageSelectPageState extends State<GrassGameStageSelectPage> {
   String? _activeStageId;
   int? _expandedChapter;
   bool _hasUserSelectedStage = false;
+  late final ScrollController _scrollController;
+  final Map<int, GlobalKey> _chapterKeys = {
+    for (var chapter = 1; chapter <= 10; chapter++) chapter: GlobalKey(),
+  };
 
   @override
   void initState() {
     super.initState();
     _activeStageId = _defaultContinueStageId();
     _expandedChapter = _activeStage().chapter;
+    _scrollController = ScrollController(
+      initialScrollOffset: _estimatedChapterScrollOffset(_expandedChapter),
+    );
+    _scrollToExpandedChapter();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   @override
@@ -41,7 +55,22 @@ class _GrassGameStageSelectPageState extends State<GrassGameStageSelectPage> {
       _activeStageId = _defaultContinueStageId();
       _expandedChapter = _activeStage().chapter;
       _hasUserSelectedStage = false;
+      if (_scrollController.hasClients) {
+        _scrollController.jumpTo(
+          _estimatedChapterScrollOffset(_expandedChapter),
+        );
+      }
+      _scrollToExpandedChapter();
     }
+  }
+
+  double _estimatedChapterScrollOffset(int? chapter) {
+    if (chapter == null || chapter <= 1) {
+      return 0;
+    }
+    const heroAndSelectedPanelHeight = 260.0;
+    const collapsedChapterHeight = 78.0;
+    return heroAndSelectedPanelHeight + (chapter - 1) * collapsedChapterHeight;
   }
 
   String _defaultContinueStageId() {
@@ -115,6 +144,28 @@ class _GrassGameStageSelectPageState extends State<GrassGameStageSelectPage> {
     }
   }
 
+  void _scrollToExpandedChapter() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      final chapter = _expandedChapter;
+      if (chapter == null || chapter <= 1) {
+        return;
+      }
+      final context = _chapterKeys[chapter]?.currentContext;
+      if (context == null) {
+        return;
+      }
+      Scrollable.ensureVisible(
+        context,
+        alignment: 0.08,
+        duration: const Duration(milliseconds: 360),
+        curve: Curves.easeOutCubic,
+      );
+    });
+  }
+
   GameStageDefinition _preferredStageInChapter(
       List<GameStageDefinition> stages) {
     for (final stage in stages) {
@@ -169,6 +220,7 @@ class _GrassGameStageSelectPageState extends State<GrassGameStageSelectPage> {
               final isUnlocked =
                   widget.progressController.canSelectStage(activeStage.id);
               return CustomScrollView(
+                controller: _scrollController,
                 slivers: [
                   SliverToBoxAdapter(child: _StageHero(strings: strings)),
                   SliverToBoxAdapter(
@@ -192,6 +244,7 @@ class _GrassGameStageSelectPageState extends State<GrassGameStageSelectPage> {
                       itemBuilder: (context, index) {
                         final chapter = index + 1;
                         return _ChapterSnakeSection(
+                          key: _chapterKeys[chapter],
                           chapter: chapter,
                           stages: widget.progressController
                               .stagesForChapter(chapter),
@@ -255,6 +308,7 @@ class _StageHero extends StatelessWidget {
 
 class _ChapterSnakeSection extends StatelessWidget {
   const _ChapterSnakeSection({
+    super.key,
     required this.chapter,
     required this.stages,
     required this.progressController,

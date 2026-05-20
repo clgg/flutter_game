@@ -24,6 +24,10 @@ class EnemyAnimationSet {
 
   static const int _columns = 6;
   static const int _walkFrames = 4;
+  static const int _attackFrames = 4;
+  static const int _rows = 8;
+  static const int _attackRowOffset = 0;
+  static const int _walkRowOffset = 4;
 
   final ui.Image _image;
   final int _rowCount;
@@ -31,38 +35,69 @@ class EnemyAnimationSet {
   final Vector2 displaySize;
 
   Map<EnemyFacing, SpriteAnimation> createWalkAnimations() {
-    if (_rowCount >= 8) {
+    if (_rowCount >= _rows) {
       return {
-        EnemyFacing.front: _createWalkAnimation(0),
-        EnemyFacing.frontRight: _createWalkAnimation(1),
-        EnemyFacing.right: _createWalkAnimation(2),
-        EnemyFacing.backRight: _createWalkAnimation(3),
-        EnemyFacing.back: _createWalkAnimation(4),
-        EnemyFacing.backLeft: _createWalkAnimation(5),
-        EnemyFacing.left: _createWalkAnimation(6),
-        EnemyFacing.frontLeft: _createWalkAnimation(7),
+        EnemyFacing.front: _createAnimation(_walkRowOffset, 0, _walkFrames),
+        EnemyFacing.frontRight:
+            _createAnimation(_walkRowOffset, 1, _walkFrames),
+        EnemyFacing.right: _createAnimation(_walkRowOffset, 2, _walkFrames),
+        EnemyFacing.backRight: _createAnimation(_walkRowOffset, 3, _walkFrames),
+        EnemyFacing.back: _createAnimation(_walkRowOffset, 4, _walkFrames),
+        EnemyFacing.backLeft: _createAnimation(_walkRowOffset, 5, _walkFrames),
+        EnemyFacing.left: _createAnimation(_walkRowOffset, 6, _walkFrames),
+        EnemyFacing.frontLeft: _createAnimation(_walkRowOffset, 7, _walkFrames),
       };
     }
     return {
-      EnemyFacing.front: _createWalkAnimation(0),
-      EnemyFacing.back: _createWalkAnimation(1),
-      EnemyFacing.left: _createWalkAnimation(2),
-      EnemyFacing.right: _createWalkAnimation(3),
-      EnemyFacing.frontRight: _createWalkAnimation(3),
-      EnemyFacing.backRight: _createWalkAnimation(3),
-      EnemyFacing.backLeft: _createWalkAnimation(2),
-      EnemyFacing.frontLeft: _createWalkAnimation(2),
+      EnemyFacing.front: _createAnimation(0, 0, _walkFrames),
+      EnemyFacing.back: _createAnimation(0, 1, _walkFrames),
+      EnemyFacing.left: _createAnimation(0, 2, _walkFrames),
+      EnemyFacing.right: _createAnimation(0, 3, _walkFrames),
+      EnemyFacing.frontRight: _createAnimation(0, 3, _walkFrames),
+      EnemyFacing.backRight: _createAnimation(0, 3, _walkFrames),
+      EnemyFacing.backLeft: _createAnimation(0, 2, _walkFrames),
+      EnemyFacing.frontLeft: _createAnimation(0, 2, _walkFrames),
     };
   }
 
-  SpriteAnimation _createWalkAnimation(int directionRow) {
+  Map<EnemyFacing, SpriteAnimation> createAttackAnimations() {
+    if (_rowCount < _rows) {
+      return const {};
+    }
+    return {
+      EnemyFacing.front:
+          _createAnimation(_attackRowOffset, 0, _attackFrames, loop: false),
+      EnemyFacing.frontRight:
+          _createAnimation(_attackRowOffset, 1, _attackFrames, loop: false),
+      EnemyFacing.right:
+          _createAnimation(_attackRowOffset, 2, _attackFrames, loop: false),
+      EnemyFacing.backRight:
+          _createAnimation(_attackRowOffset, 3, _attackFrames, loop: false),
+      EnemyFacing.back:
+          _createAnimation(_attackRowOffset, 4, _attackFrames, loop: false),
+      EnemyFacing.backLeft:
+          _createAnimation(_attackRowOffset, 5, _attackFrames, loop: false),
+      EnemyFacing.left:
+          _createAnimation(_attackRowOffset, 6, _attackFrames, loop: false),
+      EnemyFacing.frontLeft:
+          _createAnimation(_attackRowOffset, 7, _attackFrames, loop: false),
+    };
+  }
+
+  SpriteAnimation _createAnimation(
+    int rowOffset,
+    int directionRow,
+    int frameCount, {
+    bool loop = true,
+  }) {
     return SpriteAnimation.fromFrameData(
       _image,
       SpriteAnimationData.sequenced(
-        amount: _walkFrames,
-        stepTime: 0.12,
+        amount: frameCount,
+        stepTime: loop ? 0.12 : 0.08,
         textureSize: _frameSize,
-        texturePosition: Vector2(0, _frameSize.y * directionRow),
+        texturePosition: Vector2(0, _frameSize.y * (rowOffset + directionRow)),
+        loop: loop,
       ),
     );
   }
@@ -94,7 +129,8 @@ class EnemyComponent extends SpriteAnimationComponent {
                                 ? 28
                                 : 14),
         _fallbackPaint = ui.Paint()..color = _colorFor(enemyId),
-        _animations = animationSet?.createWalkAnimations(),
+        _walkAnimations = animationSet?.createWalkAnimations(),
+        _attackAnimations = animationSet?.createAttackAnimations(),
         super(
           anchor: Anchor.center,
           position: position,
@@ -106,7 +142,7 @@ class EnemyComponent extends SpriteAnimationComponent {
                       ? 44
                       : 34),
         ) {
-    animation = _animations?[EnemyFacing.front];
+    animation = _walkAnimations?[EnemyFacing.front];
   }
 
   final String enemyId;
@@ -117,14 +153,29 @@ class EnemyComponent extends SpriteAnimationComponent {
   int meleeDamageMin;
   int meleeDamageMax;
   final ui.Paint _fallbackPaint;
-  final Map<EnemyFacing, SpriteAnimation>? _animations;
+  final Map<EnemyFacing, SpriteAnimation>? _walkAnimations;
+  final Map<EnemyFacing, SpriteAnimation>? _attackAnimations;
   int hp;
   EnemyFacing _facing = EnemyFacing.front;
   double _facingLockSeconds = 0;
+  double _attackAnimationSeconds = 0;
   double _slowTimer = 0;
   double _slowMultiplier = 1;
 
   bool get isDead => hp <= 0;
+  bool get isAttackAnimationActive => _attackAnimationSeconds > 0;
+
+  @override
+  void update(double dt) {
+    super.update(dt);
+    if (_attackAnimationSeconds <= 0) {
+      return;
+    }
+    _attackAnimationSeconds -= dt;
+    if (_attackAnimationSeconds <= 0) {
+      _setWalkAnimation();
+    }
+  }
 
   void moveToward(Vector2 target, double dt) {
     if (_slowTimer > 0) {
@@ -156,10 +207,29 @@ class EnemyComponent extends SpriteAnimationComponent {
     }
     _facing = nextFacing;
     _facingLockSeconds = 0.18;
-    final nextAnimation = _animations?[nextFacing];
+    if (_attackAnimationSeconds > 0) {
+      return;
+    }
+    _setWalkAnimation();
+  }
+
+  void triggerAttackAnimation() {
+    final nextAnimation = _attackAnimations?[_facing];
+    if (nextAnimation != null) {
+      animation = nextAnimation;
+      animationTicker?.reset();
+      _attackAnimationSeconds = 0.34;
+      return;
+    }
+    _attackAnimationSeconds = 0.18;
+  }
+
+  void _setWalkAnimation() {
+    final nextAnimation = _walkAnimations?[_facing];
     if (nextAnimation != null) {
       animation = nextAnimation;
     }
+    _attackAnimationSeconds = 0;
   }
 
   EnemyFacing _facingForDirection(Vector2 direction) {

@@ -121,12 +121,18 @@ class AppRouter {
           progressController: _progressController,
           soundVolume: feedbackSettingsController.soundVolume,
           vibrationIntensity: feedbackSettingsController.vibrationIntensity,
-          onExit: () => context.go(stageSelect),
+          onExit: () => context.go(_currentRunExitRoute),
           onUpgradeWeapon: () => context.go(loadout),
         ),
       ),
     ],
   );
+
+  String get _currentRunExitRoute {
+    return _progressController.selectedStage.isDeathmatch
+        ? loadout
+        : stageSelect;
+  }
 
   void _startDeathmatch(BuildContext context) {
     _progressController
