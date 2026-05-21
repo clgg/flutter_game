@@ -452,12 +452,15 @@ class GrassGameProgressController extends ChangeNotifier {
 
     final enemyTypes = <String>[
       'basic',
+      'chick',
       'lamb',
       'piglet',
+      if (chapter >= 2 || stage >= 2) 'sheep',
       if (chapter >= 2 || stage >= 2) 'calf',
       if (chapter >= 2 || stage >= 3) 'fast',
       if (chapter >= 3 || stage >= 3) 'rooster',
       if (chapter >= 4 || stage >= 4) 'turkey',
+      if (chapter >= 4 || stage >= 5) 'bull',
       if (chapter >= 4 || stage >= 5) 'tank',
     ];
     final bossTimeSeconds = 220 + chapter * 9 + stage * 11;
@@ -491,12 +494,15 @@ class GrassGameProgressController extends ChangeNotifier {
     final index = stage - 1;
     final enemyTypes = <String>[
       'basic',
+      'chick',
       'lamb',
       'piglet',
       if (stage >= 2) 'calf',
       if (stage >= 2) 'fast',
+      if (stage >= 3) 'sheep',
       if (stage >= 3) 'rooster',
       if (stage >= 4) 'turkey',
+      if (stage >= 4) 'bull',
       if (stage >= 4) 'tank',
     ];
     return GameStageDefinition(

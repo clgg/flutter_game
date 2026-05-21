@@ -302,6 +302,30 @@ class GrassSurvivorGame extends FlameGame {
     'guaishou_winged_dragon':
         'assets/game/grass_game/images/guaishou/guaishou_winged_dragon_walk_sheet_runtime_128.png',
   };
+  static const Map<String, String> _animalSpriteSheets = {
+    'basic':
+        'assets/game/grass_game/images/animals/runtime/animal_chick_walk_sheet_runtime_128.png',
+    'chick':
+        'assets/game/grass_game/images/animals/runtime/animal_chick_walk_sheet_runtime_128.png',
+    'lamb':
+        'assets/game/grass_game/images/animals/runtime/animal_lamb_walk_sheet_runtime_128.png',
+    'piglet':
+        'assets/game/grass_game/images/animals/runtime/animal_piglet_walk_sheet_runtime_128.png',
+    'calf':
+        'assets/game/grass_game/images/animals/runtime/animal_calf_walk_sheet_runtime_128.png',
+    'fast':
+        'assets/game/grass_game/images/animals/runtime/animal_rooster_walk_sheet_runtime_128.png',
+    'rooster':
+        'assets/game/grass_game/images/animals/runtime/animal_rooster_walk_sheet_runtime_128.png',
+    'turkey':
+        'assets/game/grass_game/images/animals/runtime/animal_turkey_walk_sheet_runtime_128.png',
+    'sheep':
+        'assets/game/grass_game/images/animals/runtime/animal_sheep_walk_sheet_runtime_128.png',
+    'tank':
+        'assets/game/grass_game/images/animals/runtime/animal_bull_walk_sheet_runtime_128.png',
+    'bull':
+        'assets/game/grass_game/images/animals/runtime/animal_bull_walk_sheet_runtime_128.png',
+  };
 
   @override
   Color backgroundColor() => const Color(0xFF102418);
@@ -405,62 +429,36 @@ class GrassSurvivorGame extends FlameGame {
   Future<void> _loadEnemyAnimations() async {
     _enemyAnimations
       ..clear()
-      ..addAll({
-        'basic': EnemyAnimationSet(
-          image: await _loadImage(
-            _guaishouSpriteSheets['guaishou_black_white_armor']!,
-          ),
-          displaySize: Vector2.all(42),
-        ),
-        'lamb': EnemyAnimationSet(
-          image: await _loadImage(
-            _guaishouSpriteSheets['guaishou_gray_block_head']!,
-          ),
-          displaySize: Vector2.all(34),
-        ),
-        'piglet': EnemyAnimationSet(
-          image: await _loadImage(
-            _guaishouSpriteSheets['guaishou_blue_antenna_alien']!,
-          ),
-          displaySize: Vector2.all(38),
-        ),
-        'calf': EnemyAnimationSet(
-          image: await _loadImage(
-            _guaishouSpriteSheets['guaishou_horned_brute']!,
-          ),
-          displaySize: Vector2.all(52),
-        ),
-        'fast': EnemyAnimationSet(
-          image: await _loadImage(
-            _guaishouSpriteSheets['guaishou_insect_claw']!,
-          ),
-          displaySize: Vector2.all(32),
-        ),
-        'rooster': EnemyAnimationSet(
-          image: await _loadImage(
-            _guaishouSpriteSheets['guaishou_red_gold_spear_alien']!,
-          ),
-          displaySize: Vector2.all(42),
-        ),
-        'turkey': EnemyAnimationSet(
-          image: await _loadImage(
-            _guaishouSpriteSheets['guaishou_winged_dragon']!,
-          ),
-          displaySize: Vector2.all(48),
-        ),
-        'tank': EnemyAnimationSet(
-          image: await _loadImage(
-            _guaishouSpriteSheets['guaishou_spiked_mane_beast']!,
-          ),
-          displaySize: Vector2.all(66),
-        ),
-      });
+      ..addAll(await _loadAnimalEnemyAnimations());
     for (final entry in _guaishouSpriteSheets.entries) {
       _enemyAnimations[entry.key] = EnemyAnimationSet(
         image: await _loadImage(entry.value),
         displaySize: Vector2.all(isDeathmatch ? _deathmatchEnemySize : 42),
       );
     }
+  }
+
+  Future<Map<String, EnemyAnimationSet>> _loadAnimalEnemyAnimations() async {
+    final animations = <String, EnemyAnimationSet>{};
+    for (final entry in _animalSpriteSheets.entries) {
+      animations[entry.key] = EnemyAnimationSet(
+        image: await _loadImage(entry.value),
+        displaySize: _animalEnemyDisplaySize(entry.key),
+      );
+    }
+    return animations;
+  }
+
+  Vector2 _animalEnemyDisplaySize(String enemyId) {
+    return Vector2.all(
+      switch (enemyId) {
+        'chick' || 'fast' || 'rooster' => 30,
+        'lamb' || 'piglet' || 'sheep' => 34,
+        'calf' => 42,
+        'tank' || 'bull' => 54,
+        _ => 32,
+      },
+    );
   }
 
   Future<void> _loadCompanionAnimations() async {
@@ -909,8 +907,8 @@ class GrassSurvivorGame extends FlameGame {
 
   String _enemyWaveGroup(String enemyId) {
     return switch (enemyId) {
-      'fast' || 'calf' || 'rooster' => 'fast',
-      'tank' || 'turkey' => 'tank',
+      'fast' || 'calf' || 'rooster' || 'chick' => 'fast',
+      'tank' || 'turkey' || 'sheep' || 'bull' => 'tank',
       _ => 'basic',
     };
   }
@@ -953,6 +951,11 @@ class GrassSurvivorGame extends FlameGame {
 
   EnemyConfig? _enemyConfig(String id) {
     for (final enemy in config.enemies) {
+      if (enemy.id == id) {
+        return enemy;
+      }
+    }
+    for (final enemy in GrassGameConfig.defaults.enemies) {
       if (enemy.id == id) {
         return enemy;
       }
@@ -2404,7 +2407,7 @@ class GrassSurvivorGame extends FlameGame {
         ..strokeCap = StrokeCap.round
         ..strokeWidth = 18 * (1 - progress * 0.36);
       final edgePaint = Paint()
-        ..color = const Color(0xFFFFF1A8).withOpacity( 0.74 * opacity)
+        ..color = const Color(0xFFFFF1A8).withOpacity(0.74 * opacity)
         ..style = PaintingStyle.stroke
         ..strokeCap = StrokeCap.round
         ..strokeWidth = 5.5;

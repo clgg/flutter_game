@@ -889,7 +889,14 @@ class _StageSelectStrings {
   }
 
   String enemyTypes(List<String> types) {
-    return types.map(enemyType).join(isZh ? ' / ' : '/');
+    final labels = <String>[];
+    for (final type in types) {
+      final label = enemyType(type);
+      if (!labels.contains(label)) {
+        labels.add(label);
+      }
+    }
+    return labels.join(isZh ? ' / ' : '/');
   }
 
   String guaishouPool(int count) {
@@ -897,14 +904,16 @@ class _StageSelectStrings {
   }
 
   String enemyType(String type) {
-    if (!isZh) {
-      return type;
-    }
     return switch (type) {
-      'basic' => '普通',
-      'fast' => '快速',
-      'tank' => '重甲',
-      final id when id.startsWith('guaishou_') => '怪兽',
+      'basic' ||
+      'chick' ||
+      'lamb' ||
+      'piglet' ||
+      'sheep' =>
+        isZh ? '普通' : 'basic',
+      'fast' || 'calf' || 'rooster' => isZh ? '快速' : 'fast',
+      'tank' || 'turkey' || 'bull' => isZh ? '重甲' : 'tank',
+      final id when id.startsWith('guaishou_') => isZh ? '怪兽' : 'guaishou',
       _ => type,
     };
   }

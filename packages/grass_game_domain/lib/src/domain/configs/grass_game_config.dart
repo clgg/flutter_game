@@ -88,6 +88,30 @@ class GrassGameConfig {
         meleeDamageMin: 15,
         meleeDamageMax: 22,
       ),
+      EnemyConfig(
+        id: 'chick',
+        hp: 8,
+        moveSpeed: 188,
+        expDrop: 4,
+        meleeDamageMin: 4,
+        meleeDamageMax: 6,
+      ),
+      EnemyConfig(
+        id: 'sheep',
+        hp: 18,
+        moveSpeed: 118,
+        expDrop: 6,
+        meleeDamageMin: 6,
+        meleeDamageMax: 9,
+      ),
+      EnemyConfig(
+        id: 'bull',
+        hp: 60,
+        moveSpeed: 92,
+        expDrop: 15,
+        meleeDamageMin: 16,
+        meleeDamageMax: 23,
+      ),
     ],
     skills: [
       SkillConfig(

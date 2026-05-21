@@ -104,13 +104,19 @@ class EnemyComponent extends SpriteAnimationComponent {
                 ? 34
                 : enemyId == 'tank'
                     ? 20
-                    : enemyId == 'turkey' || enemyId == 'calf'
-                        ? 17
-                        : enemyId == 'fast'
-                            ? 11
-                            : enemyId.startsWith('guaishou_')
-                                ? 28
-                                : 14),
+                    : enemyId == 'bull'
+                        ? 19
+                        : enemyId == 'turkey' || enemyId == 'calf'
+                            ? 17
+                            : enemyId == 'sheep'
+                                ? 16
+                                : enemyId == 'fast'
+                                    ? 11
+                                    : enemyId == 'chick'
+                                        ? 9
+                                        : enemyId.startsWith('guaishou_')
+                                            ? 28
+                                            : 14),
         _fallbackPaint = ui.Paint()..color = _colorFor(enemyId),
         _walkAnimations = animationSet?.createWalkAnimations(),
         _attackAnimations = animationSet?.createAttackAnimations(),
