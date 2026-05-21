@@ -13,7 +13,7 @@
 
 ## 2. 标准运行时尺寸
 
-当前人物和怪兽行走动画优先使用轻量规格：
+当前人物行走动画优先使用轻量规格：
 
 ```text
 sheet width  = 256
@@ -24,7 +24,20 @@ cell width   = 128
 cell height  = 128
 ```
 
-含义：8 行对应 8 个方向；每行 2 帧，分别表示左脚在前、右脚在前。这个规格比 `8 行 x 6 列` 更省内存，也更容易让 GPT 或美术稳定对齐。怪兽也使用同一规格。
+含义：8 行对应 8 个方向；每行 2 帧，分别表示左脚在前、右脚在前。这个规格比 `8 行 x 6 列` 更省内存，也更容易让 GPT 或美术稳定对齐。
+
+当前怪兽和动物小怪运行时改用更顺滑的 6 帧规格：
+
+```text
+sheet width  = 768
+sheet height = 1024
+columns      = 6
+rows         = 8
+cell width   = 128
+cell height  = 128
+```
+
+怪兽源图仍按 `1536x1024` 或 `1536x2048`、`6列 x 4/8行`、`256x256` 源格管理；生成运行图时优先按源图固定格取帧，再统一缩放、居中和脚底线。历史源图如果已经出现跨格主体，转换脚本必须先按整行主体连通块拆回 6 个完整角色，再进入固定 `128x128` 运行格，避免把相邻帧残片带入运行图。
 
 固定读取公式：
 
@@ -43,7 +56,7 @@ frameH = 128
 第 2 行第 1 帧：x=0,   y=128, w=128, h=128
 ```
 
-如果后续确实需要更顺滑动画，可以扩展为 `8 行 x 4 列` 或 `8 行 x 6 列`，但必须仍然保持 `128x128` 单格和同样的行顺序。MVP 不默认使用 6 列。
+如果后续确实需要更顺滑动画，可以扩展为 `8 行 x 4 列` 或 `8 行 x 6 列`，但必须仍然保持 `128x128` 单格和同样的行顺序。当前怪兽和动物小怪已经采用 `8 行 x 6 列`。
 
 ## 3. 8 方向行顺序
 
@@ -60,7 +73,7 @@ row 6: left
 row 7: down_left
 ```
 
-每行 2 帧。帧顺序从左到右播放：第 1 帧左脚在前，第 2 帧右脚在前。
+每行帧数由图片宽度决定。当前人物是 2 帧，怪兽和动物小怪是 6 帧；帧顺序从左到右播放。
 
 ## 4. 格内安全区
 
@@ -89,15 +102,16 @@ assets/game/grass_game/images/player/player_<id>_walk_8dir_sheet.png
 怪兽：
 
 ```text
-assets/game/grass_game/images/guaishou/guaishou_<id>_walk_sheet_runtime_128.png
 assets/game/grass_game/images/guaishou/guaishou_<id>_walk_8dir_sheet.png
 ```
+
+当前怪兽运行图为 `768x1024 / 6列 x 8行 / 128x128`。8 行全部是移动行，不再混入攻击行；运行时按上面的 8 方向顺序读取。攻击时不切换怪兽动画，只保持当前移动方向。
 
 Boss 不再维护独立图片目录。Boss 外观从 `guaishou` 池随机选择并运行时强化。
 
 ## 6. 旧 4 方向素材兼容
 
-旧人物源图常见为：
+旧怪兽源图常见为：
 
 ```text
 1536x1024
@@ -109,7 +123,20 @@ row 2: left
 row 3: right
 ```
 
-兼容转换只能做整格缩放，不允许裁切主体：
+兼容转换输出仍是 8 行移动图。4 方向旧源图按下面的规则补齐斜向：
+
+```text
+target row 0 front/down  <- source row 0 front/down
+target row 1 down_right  <- source row 3 right
+target row 2 right       <- source row 3 right
+target row 3 up_right    <- source row 3 right
+target row 4 back/up     <- source row 1 back/up
+target row 5 up_left     <- source row 2 left
+target row 6 left        <- source row 2 left
+target row 7 down_left   <- source row 2 left
+```
+
+没有跨格问题的旧源图可以整格缩放：
 
 ```text
 sourceX = column * 256
@@ -190,13 +217,9 @@ powershell -ExecutionPolicy Bypass -File tools/grass_game_build_player_fixed_gri
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File tools/grass_game_validate_fixed_grid.ps1 -Path assets/game/grass_game/images/player -Filter 'player_*_walk_8dir_sheet.png'
-powershell -ExecutionPolicy Bypass -File tools/grass_game_validate_fixed_grid.ps1 -Path assets/game/grass_game/images/guaishou -Filter 'guaishou_*_walk_sheet_runtime_128.png'
+powershell -ExecutionPolicy Bypass -File tools/grass_game_validate_fixed_grid.ps1 -Path assets/game/grass_game/images/guaishou -Filter 'guaishou_*_walk_8dir_sheet.png'
 ```
 
-把已经修复过的怪兽 `768x1024 / 6x8 / 128x128` 行走图转换成 `256x1024 / 2x8 / 128x128` 运行时固定网格：
-
-```powershell
-powershell -ExecutionPolicy Bypass -File tools/grass_game_build_guaishou_fixed_grid.ps1
-```
+怪兽当前只在 App 资源中保留 `*_walk_8dir_sheet.png` 运行图。旧源图、预览 GIF 和中间 runtime 文件不放进 `assets/game/grass_game/images/`，避免被 Flutter assets 打包进安装包。
 
 这些工具都不能生成正式缺失美术方向。它们只负责固定坐标转换和检查；如果需要真实 8 方向或攻击动作，必须按第 7 节提示词重新生成或由美术重做。当前阶段不生成攻击效果 sheet。

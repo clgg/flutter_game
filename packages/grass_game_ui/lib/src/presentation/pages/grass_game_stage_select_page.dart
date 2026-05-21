@@ -911,7 +911,7 @@ class _StageSelectStrings {
       'piglet' ||
       'sheep' =>
         isZh ? '普通' : 'basic',
-      'fast' || 'calf' || 'rooster' => isZh ? '快速' : 'fast',
+      'fast' || 'calf' || 'rooster' || 'dog' => isZh ? '快速' : 'fast',
       'tank' || 'turkey' || 'bull' => isZh ? '重甲' : 'tank',
       final id when id.startsWith('guaishou_') => isZh ? '怪兽' : 'guaishou',
       _ => type,

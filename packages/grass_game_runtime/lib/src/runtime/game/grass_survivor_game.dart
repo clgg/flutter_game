@@ -266,41 +266,41 @@ class GrassSurvivorGame extends FlameGame {
   static const double _gemMaxAgeSeconds = 14;
   static const Map<String, String> _guaishouSpriteSheets = {
     'guaishou_black_armored_beetle':
-        'assets/game/grass_game/images/guaishou/guaishou_black_armored_beetle_walk_sheet_runtime_128.png',
+        'assets/game/grass_game/images/guaishou/guaishou_black_armored_beetle_walk_8dir_sheet.png',
     'guaishou_black_white_armor':
-        'assets/game/grass_game/images/guaishou/guaishou_black_white_armor_walk_sheet_runtime_128.png',
+        'assets/game/grass_game/images/guaishou/guaishou_black_white_armor_walk_8dir_sheet.png',
     'guaishou_blue_antenna_alien':
-        'assets/game/grass_game/images/guaishou/guaishou_blue_antenna_alien_walk_sheet_runtime_128.png',
+        'assets/game/grass_game/images/guaishou/guaishou_blue_antenna_alien_walk_8dir_sheet.png',
     'guaishou_feral_hound':
-        'assets/game/grass_game/images/guaishou/guaishou_feral_hound_walk_sheet_runtime_128.png',
+        'assets/game/grass_game/images/guaishou/guaishou_feral_hound_walk_8dir_sheet.png',
     'guaishou_feral_rooster':
-        'assets/game/grass_game/images/guaishou/guaishou_feral_rooster_walk_sheet_runtime_128.png',
+        'assets/game/grass_game/images/guaishou/guaishou_feral_rooster_walk_8dir_sheet.png',
     'guaishou_gold_snail_mouth':
-        'assets/game/grass_game/images/guaishou/guaishou_gold_snail_mouth_walk_sheet_runtime_128.png',
+        'assets/game/grass_game/images/guaishou/guaishou_gold_snail_mouth_walk_8dir_sheet.png',
     'guaishou_gray_block_head':
-        'assets/game/grass_game/images/guaishou/guaishou_gray_block_head_walk_sheet_runtime_128.png',
+        'assets/game/grass_game/images/guaishou/guaishou_gray_block_head_walk_8dir_sheet.png',
     'guaishou_horned_brute':
-        'assets/game/grass_game/images/guaishou/guaishou_horned_brute_walk_sheet_runtime_128.png',
+        'assets/game/grass_game/images/guaishou/guaishou_horned_brute_walk_8dir_sheet.png',
     'guaishou_horned_goat':
-        'assets/game/grass_game/images/guaishou/guaishou_horned_goat_walk_sheet_runtime_128.png',
+        'assets/game/grass_game/images/guaishou/guaishou_horned_goat_walk_8dir_sheet.png',
     'guaishou_insect_claw':
-        'assets/game/grass_game/images/guaishou/guaishou_insect_claw_walk_sheet_runtime_128.png',
+        'assets/game/grass_game/images/guaishou/guaishou_insect_claw_walk_8dir_sheet.png',
     'guaishou_iron_boar':
-        'assets/game/grass_game/images/guaishou/guaishou_iron_boar_walk_sheet_runtime_128.png',
+        'assets/game/grass_game/images/guaishou/guaishou_iron_boar_walk_8dir_sheet.png',
     'guaishou_mad_bull':
-        'assets/game/grass_game/images/guaishou/guaishou_mad_bull_walk_sheet_runtime_128.png',
+        'assets/game/grass_game/images/guaishou/guaishou_mad_bull_walk_8dir_sheet.png',
     'guaishou_marsh_duck':
-        'assets/game/grass_game/images/guaishou/guaishou_marsh_duck_walk_sheet_runtime_128.png',
+        'assets/game/grass_game/images/guaishou/guaishou_marsh_duck_walk_8dir_sheet.png',
     'guaishou_red_gold_spear_alien':
-        'assets/game/grass_game/images/guaishou/guaishou_red_gold_spear_alien_walk_sheet_runtime_128.png',
+        'assets/game/grass_game/images/guaishou/guaishou_red_gold_spear_alien_walk_8dir_sheet.png',
     'guaishou_shell_kaiju':
-        'assets/game/grass_game/images/guaishou/guaishou_shell_kaiju_walk_sheet_runtime_128.png',
+        'assets/game/grass_game/images/guaishou/guaishou_shell_kaiju_walk_8dir_sheet.png',
     'guaishou_silver_mask_rifle':
-        'assets/game/grass_game/images/guaishou/guaishou_silver_mask_rifle_walk_sheet_runtime_128.png',
+        'assets/game/grass_game/images/guaishou/guaishou_silver_mask_rifle_walk_8dir_sheet.png',
     'guaishou_spiked_mane_beast':
-        'assets/game/grass_game/images/guaishou/guaishou_spiked_mane_beast_walk_sheet_runtime_128.png',
+        'assets/game/grass_game/images/guaishou/guaishou_spiked_mane_beast_walk_8dir_sheet.png',
     'guaishou_winged_dragon':
-        'assets/game/grass_game/images/guaishou/guaishou_winged_dragon_walk_sheet_runtime_128.png',
+        'assets/game/grass_game/images/guaishou/guaishou_winged_dragon_walk_8dir_sheet.png',
   };
   static const Map<String, String> _animalSpriteSheets = {
     'basic':
@@ -317,6 +317,8 @@ class GrassSurvivorGame extends FlameGame {
         'assets/game/grass_game/images/animals/runtime/animal_rooster_walk_sheet_runtime_128.png',
     'rooster':
         'assets/game/grass_game/images/animals/runtime/animal_rooster_walk_sheet_runtime_128.png',
+    'dog':
+        'assets/game/grass_game/images/animals/runtime/animal_dog_walk_sheet_runtime_128.png',
     'turkey':
         'assets/game/grass_game/images/animals/runtime/animal_turkey_walk_sheet_runtime_128.png',
     'sheep':
@@ -453,6 +455,7 @@ class GrassSurvivorGame extends FlameGame {
     return Vector2.all(
       switch (enemyId) {
         'chick' || 'fast' || 'rooster' => 30,
+        'dog' => 32,
         'lamb' || 'piglet' || 'sheep' => 34,
         'calf' => 42,
         'tank' || 'bull' => 54,
@@ -907,7 +910,7 @@ class GrassSurvivorGame extends FlameGame {
 
   String _enemyWaveGroup(String enemyId) {
     return switch (enemyId) {
-      'fast' || 'calf' || 'rooster' || 'chick' => 'fast',
+      'fast' || 'calf' || 'rooster' || 'chick' || 'dog' => 'fast',
       'tank' || 'turkey' || 'sheep' || 'bull' => 'tank',
       _ => 'basic',
     };

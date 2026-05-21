@@ -35,14 +35,14 @@ class EnemyAnimationSet {
   Map<EnemyFacing, SpriteAnimation> createWalkAnimations() {
     if (_rowCount >= _rows) {
       return {
-        EnemyFacing.front: _createAnimation(4),
-        EnemyFacing.frontRight: _createAnimation(7),
-        EnemyFacing.right: _createAnimation(7),
-        EnemyFacing.backRight: _createAnimation(7),
-        EnemyFacing.back: _createAnimation(5),
-        EnemyFacing.backLeft: _createAnimation(6),
+        EnemyFacing.front: _createAnimation(0),
+        EnemyFacing.frontRight: _createAnimation(1),
+        EnemyFacing.right: _createAnimation(2),
+        EnemyFacing.backRight: _createAnimation(3),
+        EnemyFacing.back: _createAnimation(4),
+        EnemyFacing.backLeft: _createAnimation(5),
         EnemyFacing.left: _createAnimation(6),
-        EnemyFacing.frontLeft: _createAnimation(6),
+        EnemyFacing.frontLeft: _createAnimation(7),
       };
     }
     return {
@@ -58,18 +58,6 @@ class EnemyAnimationSet {
   }
 
   Map<EnemyFacing, SpriteAnimation> createAttackAnimations() {
-    if (_rowCount >= _rows) {
-      return {
-        EnemyFacing.front: _createAnimation(0),
-        EnemyFacing.frontRight: _createAnimation(3),
-        EnemyFacing.right: _createAnimation(3),
-        EnemyFacing.backRight: _createAnimation(3),
-        EnemyFacing.back: _createAnimation(1),
-        EnemyFacing.backLeft: _createAnimation(2),
-        EnemyFacing.left: _createAnimation(2),
-        EnemyFacing.frontLeft: _createAnimation(2),
-      };
-    }
     return const {};
   }
 
@@ -112,11 +100,13 @@ class EnemyComponent extends SpriteAnimationComponent {
                                 ? 16
                                 : enemyId == 'fast'
                                     ? 11
-                                    : enemyId == 'chick'
-                                        ? 9
-                                        : enemyId.startsWith('guaishou_')
-                                            ? 28
-                                            : 14),
+                                    : enemyId == 'dog'
+                                        ? 11
+                                        : enemyId == 'chick'
+                                            ? 9
+                                            : enemyId.startsWith('guaishou_')
+                                                ? 28
+                                                : 14),
         _fallbackPaint = ui.Paint()..color = _colorFor(enemyId),
         _walkAnimations = animationSet?.createWalkAnimations(),
         _attackAnimations = animationSet?.createAttackAnimations(),
@@ -210,7 +200,7 @@ class EnemyComponent extends SpriteAnimationComponent {
       _attackAnimationSeconds = 0.34;
       return;
     }
-    _attackAnimationSeconds = 0.18;
+    _attackAnimationSeconds = 0;
   }
 
   void _setWalkAnimation() {
@@ -300,6 +290,7 @@ class EnemyComponent extends SpriteAnimationComponent {
       'lamb' => const ui.Color(0xFFE8FFF2),
       'piglet' => const ui.Color(0xFFFF9BB0),
       'calf' => const ui.Color(0xFF9BD3FF),
+      'dog' => const ui.Color(0xFFC77A3A),
       'rooster' => const ui.Color(0xFFFF6B6B),
       'turkey' => const ui.Color(0xFFB68CFF),
       'tank' => const ui.Color(0xFFFF6B6B),

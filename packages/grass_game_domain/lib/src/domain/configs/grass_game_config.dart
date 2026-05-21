@@ -73,6 +73,14 @@ class GrassGameConfig {
         meleeDamageMax: 9,
       ),
       EnemyConfig(
+        id: 'dog',
+        hp: 13,
+        moveSpeed: 170,
+        expDrop: 5,
+        meleeDamageMin: 5,
+        meleeDamageMax: 8,
+      ),
+      EnemyConfig(
         id: 'turkey',
         hp: 34,
         moveSpeed: 124,

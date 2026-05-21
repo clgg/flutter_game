@@ -249,14 +249,10 @@ void main() {
       expect(controller.currentLoadout.stage.isDeathmatch, isTrue);
 
       for (final id in deathmatch.enemyTypes) {
-        final runtimeSheet = File(
-          'assets/game/grass_game/images/guaishou/${id}_walk_sheet_runtime_128.png',
+        final walkSheet = File(
+          'assets/game/grass_game/images/guaishou/${id}_walk_8dir_sheet.png',
         );
-        final previewGif = File(
-          'assets/game/grass_game/images/guaishou/${id}_walk_sheet_preview.gif',
-        );
-        expect(runtimeSheet.existsSync(), isTrue);
-        expect(previewGif.existsSync(), isTrue);
+        expect(walkSheet.existsSync(), isTrue);
       }
     });
 

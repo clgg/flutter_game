@@ -85,7 +85,6 @@ flutter:
     - assets/game/grass_game/images/player/
     - assets/game/grass_game/images/weapons/
     - assets/game/grass_game/images/companions/
-    - assets/game/grass_game/images/animals/PNG/Without_shadow/
     - assets/game/grass_game/images/animals/runtime/
     - assets/game/grass_game/images/guaishou/
     - assets/game/grass_game/audio/

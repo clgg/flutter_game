@@ -92,7 +92,7 @@ void main() {
     expect(game.playerCharacterId, 'beliya');
   });
 
-  test('enemy switches to attack animation and returns to walk', () async {
+  test('enemy keeps walk animation when attack sheet is unavailable', () async {
     final animationSet = EnemyAnimationSet(
       image: await _testSpriteSheetImage(),
       displaySize: Vector2.all(32),
@@ -108,7 +108,7 @@ void main() {
 
     expect(enemy.isAttackAnimationActive, isFalse);
     enemy.triggerAttackAnimation();
-    expect(enemy.isAttackAnimationActive, isTrue);
+    expect(enemy.isAttackAnimationActive, isFalse);
 
     enemy.update(0.4);
     expect(enemy.isAttackAnimationActive, isFalse);
