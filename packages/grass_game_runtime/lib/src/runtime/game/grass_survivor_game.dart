@@ -2399,12 +2399,12 @@ class GrassSurvivorGame extends FlameGame {
         radius: sweep.radius,
       );
       final glowPaint = Paint()
-        ..color = sweep.color.withValues(alpha: 0.24 * opacity)
+        ..color = sweep.color.withOpacity(0.24 * opacity)
         ..style = PaintingStyle.stroke
         ..strokeCap = StrokeCap.round
         ..strokeWidth = 18 * (1 - progress * 0.36);
       final edgePaint = Paint()
-        ..color = const Color(0xFFFFF1A8).withValues(alpha: 0.74 * opacity)
+        ..color = const Color(0xFFFFF1A8).withOpacity( 0.74 * opacity)
         ..style = PaintingStyle.stroke
         ..strokeCap = StrokeCap.round
         ..strokeWidth = 5.5;

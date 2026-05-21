@@ -456,8 +456,8 @@ class _CharacterCard extends StatelessWidget {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: character.isOwned
-                        ? color.withValues(alpha: 0.28)
-                        : gameTheme.muted.withValues(alpha: 0.22),
+                        ? color.withOpacity( 0.28)
+                        : gameTheme.muted.withOpacity( 0.22),
                     border: Border.all(
                       color: character.isOwned ? color : gameTheme.line,
                     ),
@@ -786,7 +786,7 @@ class _LoadoutActionBar extends StatelessWidget {
         border: Border(top: BorderSide(color: gameTheme.line)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.24),
+            color: Colors.black.withOpacity( 0.24),
             blurRadius: 18,
             offset: const Offset(0, -8),
           ),
@@ -1171,7 +1171,7 @@ class _WeaponRecipeConnectorPainter extends CustomPainter {
       return;
     }
     final paint = Paint()
-      ..color = color.withValues(alpha: 0.8)
+      ..color = color.withOpacity( 0.8)
       ..strokeWidth = 2
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
@@ -1353,9 +1353,9 @@ class _WeaponCostPill extends StatelessWidget {
     final gameTheme = context.gameTheme;
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: gameTheme.accent2.withValues(alpha: 0.16),
+        color: gameTheme.accent2.withOpacity( 0.16),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: gameTheme.accent2.withValues(alpha: 0.42)),
+        border: Border.all(color: gameTheme.accent2.withOpacity( 0.42)),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
@@ -2031,7 +2031,7 @@ class _WeaponIcon extends StatelessWidget {
       decoration: BoxDecoration(
         color: isOwned
             ? Color(weapon.baseColorValue)
-            : Color(weapon.baseColorValue).withValues(alpha: 0.18),
+            : Color(weapon.baseColorValue).withOpacity( 0.18),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Stack(

@@ -254,7 +254,7 @@ class _FusionTreeSection extends StatelessWidget {
       decoration: BoxDecoration(
         color: gameTheme.deep,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: gameTheme.accent2.withValues(alpha: 0.7)),
+        border: Border.all(color: gameTheme.accent2.withOpacity( 0.7)),
       ),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(14, 14, 14, 16),
@@ -403,7 +403,7 @@ class _FusionResultNode extends StatelessWidget {
       decoration: BoxDecoration(
         color: gameTheme.glass,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withValues(alpha: 0.48)),
+        border: Border.all(color: color.withOpacity( 0.48)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -510,7 +510,7 @@ class _FusionConnectorPainter extends CustomPainter {
       return;
     }
     final paint = Paint()
-      ..color = color.withValues(alpha: 0.85)
+      ..color = color.withOpacity( 0.85)
       ..strokeWidth = 2
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
@@ -714,11 +714,11 @@ class _SkillImage extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: color.withValues(alpha: 0.2),
-        border: Border.all(color: color.withValues(alpha: 0.78), width: 2),
+        color: color.withOpacity( 0.2),
+        border: Border.all(color: color.withOpacity( 0.78), width: 2),
         boxShadow: [
           BoxShadow(
-            color: color.withValues(alpha: 0.16),
+            color: color.withOpacity( 0.16),
             blurRadius: 12,
             spreadRadius: 1,
           ),
@@ -753,9 +753,9 @@ class _TierPill extends StatelessWidget {
     final gameTheme = context.gameTheme;
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.14),
+        color: color.withOpacity( 0.14),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: color.withValues(alpha: 0.48)),
+        border: Border.all(color: color.withOpacity( 0.48)),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
@@ -802,7 +802,7 @@ class _SkillDetailSheet extends StatelessWidget {
           decoration: BoxDecoration(
             color: gameTheme.deep,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: node.color.withValues(alpha: 0.6)),
+            border: Border.all(color: node.color.withOpacity( 0.6)),
           ),
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
@@ -941,9 +941,9 @@ class _DetailBlock extends StatelessWidget {
     final gameTheme = context.gameTheme;
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
+        color: color.withOpacity( 0.1),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withValues(alpha: 0.36)),
+        border: Border.all(color: color.withOpacity( 0.36)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(10),

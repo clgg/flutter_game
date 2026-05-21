@@ -201,15 +201,15 @@ class _OdtLogoPainter extends CustomPainter {
       ..lineTo(tCenter, bottom);
     _drawPartialPath(canvas, tStemPath, tStemProgress, logoPaint);
 
-    final dotPaint = Paint()
-      ..color = const Color(0xFF49D17D).withOpacity(
-        (tStemProgress * backgroundProgress).clamp(0, 1),
-      );
-    canvas.drawCircle(
-      Offset(width * 0.32, centerY),
-      strokeWidth * 0.24,
-      dotPaint,
-    );
+    // final dotPaint = Paint()
+    //   ..color = const Color(0xFF49D17D).withOpacity(
+    //     (tStemProgress * backgroundProgress).clamp(0, 1),
+    //   );
+    // canvas.drawCircle(
+    //   Offset(width * 0.32, centerY),
+    //   strokeWidth * 0.24,
+    //   dotPaint,
+    // );
   }
 
   void _drawPartialPath(

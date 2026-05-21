@@ -443,7 +443,7 @@ class _DeathmatchLoadingPage extends StatelessWidget {
                     border: Border.all(color: gameTheme.accent, width: 2),
                     boxShadow: [
                       BoxShadow(
-                        color: gameTheme.accent.withValues(alpha: 0.22),
+                        color: gameTheme.accent.withOpacity( 0.22),
                         blurRadius: 28,
                         spreadRadius: 2,
                       ),
@@ -533,9 +533,9 @@ class _LoadingPill extends StatelessWidget {
     final gameTheme = context.gameTheme;
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.14),
+        color: color.withOpacity( 0.14),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: color.withValues(alpha: 0.5)),
+        border: Border.all(color: color.withOpacity( 0.5)),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
