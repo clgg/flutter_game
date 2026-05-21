@@ -23,6 +23,45 @@ if (flutterVersionName == null) {
     flutterVersionName = "1.0"
 }
 
+def envOrLocalProperty = { String envName, String propertyName ->
+    def envValue = System.getenv(envName)
+    if (envValue != null && !envValue.isBlank()) {
+        return envValue
+    }
+    def localValue = localProperties.getProperty(propertyName)
+    return localValue == null || localValue.isBlank() ? null : localValue
+}
+
+def appSigningStoreFilePath = envOrLocalProperty(
+        "GRASS_GAME_STORE_FILE",
+        "grassGame.storeFile"
+) ?: rootProject.file("../app-release-key.jks").absolutePath
+def appSigningStoreFile = file(appSigningStoreFilePath)
+def appSigningStorePassword = envOrLocalProperty(
+        "GRASS_GAME_STORE_PASSWORD",
+        "grassGame.storePassword"
+) ?: "clg_app_sign"
+def appSigningKeyAlias = envOrLocalProperty(
+        "GRASS_GAME_KEY_ALIAS",
+        "grassGame.keyAlias"
+) ?: "app_sign"
+def appSigningKeyPassword = envOrLocalProperty(
+        "GRASS_GAME_KEY_PASSWORD",
+        "grassGame.keyPassword"
+) ?: "clg_app_sign"
+def hasAppSigning = appSigningStoreFile.exists() &&
+        appSigningStorePassword != null &&
+        appSigningKeyAlias != null &&
+        appSigningKeyPassword != null
+if (!hasAppSigning) {
+    throw new GradleException(
+            "App signing is required for debug and release. Check " +
+                    "app-release-key.jks, GRASS_GAME_STORE_FILE, " +
+                    "GRASS_GAME_STORE_PASSWORD, GRASS_GAME_KEY_ALIAS, " +
+                    "and GRASS_GAME_KEY_PASSWORD."
+    )
+}
+
 android {
     namespace = "com.odt.game"
     compileSdk = 35
@@ -48,11 +87,24 @@ android {
         versionName = flutterVersionName
     }
 
+    signingConfigs {
+        appReleaseKey {
+            storeFile = appSigningStoreFile
+            storePassword = appSigningStorePassword
+            keyAlias = appSigningKeyAlias
+            keyPassword = appSigningKeyPassword
+        }
+    }
+
     buildTypes {
+        debug {
+            signingConfig = signingConfigs.appReleaseKey
+        }
+        profile {
+            signingConfig = signingConfigs.appReleaseKey
+        }
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.debug
+            signingConfig = signingConfigs.appReleaseKey
         }
     }
 }

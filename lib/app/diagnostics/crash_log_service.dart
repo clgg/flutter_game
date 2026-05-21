@@ -23,7 +23,7 @@ class CrashLogService {
 
   static final CrashLogService instance = CrashLogService._();
   static const MethodChannel _channel =
-      MethodChannel('com.clgg.flutter_game/crash_logs');
+      MethodChannel('com.odt.game/crash_logs');
 
   Directory? _logDirectory;
 

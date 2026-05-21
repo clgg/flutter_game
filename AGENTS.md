@@ -11,6 +11,7 @@
 
 ## 2. 必读文档
 
+- 文档总索引：`doc/README.md`
 - 技术设计：`doc/ideas/割草类小游戏_Flutter_Flame技术设计.md`
 - 阶段计划：`doc/ideas/割草类小游戏_Flutter_Flame逐步开发计划.md`
 - 素材规范：`doc/ideas/割草类小游戏_角色敌人武器素材设计规范.md`

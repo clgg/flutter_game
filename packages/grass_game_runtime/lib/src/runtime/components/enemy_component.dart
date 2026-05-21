@@ -35,14 +35,14 @@ class EnemyAnimationSet {
   Map<EnemyFacing, SpriteAnimation> createWalkAnimations() {
     if (_rowCount >= _rows) {
       return {
-        EnemyFacing.front: _createAnimation(0),
-        EnemyFacing.frontRight: _createAnimation(1),
-        EnemyFacing.right: _createAnimation(2),
-        EnemyFacing.backRight: _createAnimation(3),
-        EnemyFacing.back: _createAnimation(4),
-        EnemyFacing.backLeft: _createAnimation(5),
+        EnemyFacing.front: _createAnimation(4),
+        EnemyFacing.frontRight: _createAnimation(7),
+        EnemyFacing.right: _createAnimation(7),
+        EnemyFacing.backRight: _createAnimation(7),
+        EnemyFacing.back: _createAnimation(5),
+        EnemyFacing.backLeft: _createAnimation(6),
         EnemyFacing.left: _createAnimation(6),
-        EnemyFacing.frontLeft: _createAnimation(7),
+        EnemyFacing.frontLeft: _createAnimation(6),
       };
     }
     return {
@@ -58,6 +58,18 @@ class EnemyAnimationSet {
   }
 
   Map<EnemyFacing, SpriteAnimation> createAttackAnimations() {
+    if (_rowCount >= _rows) {
+      return {
+        EnemyFacing.front: _createAnimation(0),
+        EnemyFacing.frontRight: _createAnimation(3),
+        EnemyFacing.right: _createAnimation(3),
+        EnemyFacing.backRight: _createAnimation(3),
+        EnemyFacing.back: _createAnimation(1),
+        EnemyFacing.backLeft: _createAnimation(2),
+        EnemyFacing.left: _createAnimation(2),
+        EnemyFacing.frontLeft: _createAnimation(2),
+      };
+    }
     return const {};
   }
 

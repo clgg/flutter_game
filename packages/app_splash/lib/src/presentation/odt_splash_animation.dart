@@ -150,7 +150,6 @@ class _OdtLogoPainter extends CustomPainter {
     final height = size.height;
     final top = height * 0.2;
     final bottom = height * 0.82;
-    final centerY = (top + bottom) / 2;
     final letterHeight = bottom - top;
 
     final oRect = Rect.fromLTWH(
