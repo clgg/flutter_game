@@ -241,7 +241,7 @@ void main() {
 
       expect(deathmatch.isDeathmatch, isTrue);
       expect(deathmatch.chapter, 11);
-      expect(deathmatch.enemyTypes.length, 18);
+      expect(deathmatch.enemyTypes.length, 12);
       expect(deathmatch.enemyTypes.every((id) => id.startsWith('guaishou_')),
           isTrue);
       expect(controller.canSelectStage(deathmatch.id), isTrue);

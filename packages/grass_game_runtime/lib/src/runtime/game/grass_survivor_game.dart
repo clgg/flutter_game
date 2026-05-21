@@ -271,26 +271,14 @@ class GrassSurvivorGame extends FlameGame {
         'assets/game/grass_game/images/guaishou/guaishou_black_white_armor_walk_8dir_sheet.png',
     'guaishou_blue_antenna_alien':
         'assets/game/grass_game/images/guaishou/guaishou_blue_antenna_alien_walk_8dir_sheet.png',
-    'guaishou_feral_hound':
-        'assets/game/grass_game/images/guaishou/guaishou_feral_hound_walk_8dir_sheet.png',
-    'guaishou_feral_rooster':
-        'assets/game/grass_game/images/guaishou/guaishou_feral_rooster_walk_8dir_sheet.png',
     'guaishou_gold_snail_mouth':
         'assets/game/grass_game/images/guaishou/guaishou_gold_snail_mouth_walk_8dir_sheet.png',
     'guaishou_gray_block_head':
         'assets/game/grass_game/images/guaishou/guaishou_gray_block_head_walk_8dir_sheet.png',
     'guaishou_horned_brute':
         'assets/game/grass_game/images/guaishou/guaishou_horned_brute_walk_8dir_sheet.png',
-    'guaishou_horned_goat':
-        'assets/game/grass_game/images/guaishou/guaishou_horned_goat_walk_8dir_sheet.png',
     'guaishou_insect_claw':
         'assets/game/grass_game/images/guaishou/guaishou_insect_claw_walk_8dir_sheet.png',
-    'guaishou_iron_boar':
-        'assets/game/grass_game/images/guaishou/guaishou_iron_boar_walk_8dir_sheet.png',
-    'guaishou_mad_bull':
-        'assets/game/grass_game/images/guaishou/guaishou_mad_bull_walk_8dir_sheet.png',
-    'guaishou_marsh_duck':
-        'assets/game/grass_game/images/guaishou/guaishou_marsh_duck_walk_8dir_sheet.png',
     'guaishou_red_gold_spear_alien':
         'assets/game/grass_game/images/guaishou/guaishou_red_gold_spear_alien_walk_8dir_sheet.png',
     'guaishou_shell_kaiju':

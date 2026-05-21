@@ -98,7 +98,7 @@ void main() {
       displaySize: Vector2.all(32),
     );
     final enemy = EnemyComponent(
-      enemyId: 'guaishou_feral_hound',
+      enemyId: 'guaishou_black_armored_beetle',
       maxHp: 10,
       moveSpeed: 0,
       expDrop: 0,
