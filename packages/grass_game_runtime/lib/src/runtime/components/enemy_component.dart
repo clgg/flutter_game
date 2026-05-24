@@ -18,10 +18,12 @@ class EnemyAnimationSet {
   EnemyAnimationSet({
     required ui.Image image,
     required this.displaySize,
+    Map<EnemyFacing, int>? facingRows,
   })  : _image = image,
         _columns = math.max(1, (image.width / _cellSize).round()),
         _rowCount = (image.height / _cellSize).round(),
-        _frameSize = Vector2.all(_cellSize);
+        _frameSize = Vector2.all(_cellSize),
+        _facingRows = facingRows;
 
   static const double _cellSize = 128;
   static const int _rows = 8;
@@ -30,9 +32,17 @@ class EnemyAnimationSet {
   final int _columns;
   final int _rowCount;
   final Vector2 _frameSize;
+  final Map<EnemyFacing, int>? _facingRows;
   final Vector2 displaySize;
 
   Map<EnemyFacing, SpriteAnimation> createWalkAnimations() {
+    final facingRows = _facingRows;
+    if (facingRows != null) {
+      return {
+        for (final entry in facingRows.entries)
+          entry.key: _createAnimation(entry.value),
+      };
+    }
     if (_rowCount >= _rows) {
       return {
         EnemyFacing.front: _createAnimation(0),
@@ -271,15 +281,22 @@ class EnemyComponent extends SpriteAnimationComponent {
     final hpRatio = (hp / maxHp).clamp(0, 1).toDouble();
     final bgPaint = ui.Paint()..color = const ui.Color(0x66000000);
     final hpPaint = ui.Paint()..color = const ui.Color(0xFFE8FFF2);
+    final barWidth = math.min(size.x * 0.48, collisionRadius * 1.45);
+    const barHeight = 2.0;
     final barRect = ui.Rect.fromLTWH(
-      size.x / 2 - collisionRadius,
-      -8,
-      collisionRadius * 2,
-      3,
+      size.x / 2 - barWidth / 2,
+      -6,
+      barWidth,
+      barHeight,
     );
     canvas.drawRect(barRect, bgPaint);
     canvas.drawRect(
-      ui.Rect.fromLTWH(barRect.left, barRect.top, barRect.width * hpRatio, 3),
+      ui.Rect.fromLTWH(
+        barRect.left,
+        barRect.top,
+        barRect.width * hpRatio,
+        barHeight,
+      ),
       hpPaint,
     );
   }

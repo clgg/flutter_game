@@ -19,6 +19,7 @@ import 'grass_game_runtime_state.dart';
 
 class WeaponRuntimeStats {
   const WeaponRuntimeStats({
+    required this.weaponId,
     required this.attackPattern,
     required this.damage,
     required this.attacksPerSecond,
@@ -29,6 +30,7 @@ class WeaponRuntimeStats {
     required this.effectId,
   });
 
+  final String weaponId;
   final String attackPattern;
   final int damage;
   final double attacksPerSecond;
@@ -61,6 +63,7 @@ class GrassSurvivorGame extends FlameGame {
     this.stageName = 'Chapter 1-1',
     this.stageChapter = 1,
     this.stageIndex = 1,
+    this.bossId = 'random_guaishou',
     this.bossTimeSeconds = 300,
     this.bossMaxHp = 420,
     this.stageRewardExp = 0,
@@ -68,8 +71,10 @@ class GrassSurvivorGame extends FlameGame {
     this.stageEnemyCount = 100,
     this.stageEnemyStrengthMultiplier = 1,
     this.stageEnemyTypes = const ['basic', 'fast', 'tank'],
+    this.stageBackgroundAssetPath,
     this.isDeathmatch = false,
-  }) : state = GrassGameRuntimeState.initial(
+  })  : _stageMapTheme = _StageMapTheme.forChapter(stageChapter),
+        state = GrassGameRuntimeState.initial(
           configVersion: config.version,
         );
 
@@ -92,6 +97,7 @@ class GrassSurvivorGame extends FlameGame {
   final String stageName;
   final int stageChapter;
   final int stageIndex;
+  final String bossId;
   final int bossTimeSeconds;
   final int bossMaxHp;
   final int stageRewardExp;
@@ -99,6 +105,7 @@ class GrassSurvivorGame extends FlameGame {
   final int stageEnemyCount;
   final double stageEnemyStrengthMultiplier;
   final List<String> stageEnemyTypes;
+  final String? stageBackgroundAssetPath;
   final bool isDeathmatch;
   GrassGameRuntimeState state;
   String languageCode = 'en';
@@ -142,9 +149,11 @@ class GrassSurvivorGame extends FlameGame {
   Image? _ultimateBeamEffectImage;
   Image? _projectileImage;
   Image? _muzzleFlashImage;
+  Image? _stageBackgroundImage;
   String? _fireSoundFileName;
   AudioPool? _fireAudioPool;
   final List<StopFunction> _activeFireSoundStops = [];
+  final _StageMapTheme _stageMapTheme;
 
   final Paint _backgroundPaint = Paint()..color = const Color(0xFF183622);
   final Paint _groundPaint = Paint()..color = const Color(0xFF1F472D);
@@ -152,6 +161,15 @@ class GrassSurvivorGame extends FlameGame {
   final Paint _fieldLinePaint = Paint()
     ..color = const Color(0x183B7A4D)
     ..strokeWidth = 1;
+  final Paint _stageBackgroundPaint = Paint()
+    ..isAntiAlias = true
+    ..filterQuality = FilterQuality.low;
+  final Paint _stageTintPaint = Paint();
+  final Paint _obstaclePaint = Paint()..isAntiAlias = true;
+  final Paint _obstacleStrokePaint = Paint()
+    ..isAntiAlias = true
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 2;
   final Paint _spawnZonePaint = Paint()
     ..color = const Color(0x1AFFD36E)
     ..style = PaintingStyle.fill;
@@ -170,6 +188,7 @@ class GrassSurvivorGame extends FlameGame {
   static const double _spawnZoneDisappearSeconds = 5;
   static const int _deathmatchInitialLevelUps = 5;
   static const int _chargedUltimateRequiredCharge = 10;
+  static const int _weaponUltimateRequiredCharge = 8;
   static const double _expHighDropChance = 0.14;
   static const double _expRareDropChance = 0.04;
   static const double _basicCoinDropChance = 0.18;
@@ -226,6 +245,8 @@ class GrassSurvivorGame extends FlameGame {
   final List<_GroundEffectField> _groundFields = [];
   final List<_ExpandingRing> _expandingRings = [];
   final List<_ChargedUltimateBeam> _chargedUltimateBeams = [];
+  final List<_WeaponUltimateImage> _weaponUltimateImages = [];
+  final List<_DelayedWeaponBlast> _delayedWeaponBlasts = [];
   final List<_MeleeSweepEffect> _meleeSweeps = [];
   final List<CompanionComponent> _companions = [];
   final Set<EnemyComponent> _poisonedEnemies = {};
@@ -253,6 +274,7 @@ class GrassSurvivorGame extends FlameGame {
   double _gemMaintenanceTimer = 0;
   double _enemySeparationTimer = 0;
   int _chargedUltimateCharge = 0;
+  int _weaponUltimateCharge = 0;
   Vector2 _lastAimDirection = Vector2(0, 1);
   int _deathmatchBuffTier = 0;
   bool _isReleased = false;
@@ -289,6 +311,10 @@ class GrassSurvivorGame extends FlameGame {
         'assets/game/grass_game/images/guaishou/guaishou_spiked_mane_beast_walk_8dir_sheet.png',
     'guaishou_winged_dragon':
         'assets/game/grass_game/images/guaishou/guaishou_winged_dragon_walk_8dir_sheet.png',
+  };
+  static const Map<String, String> _bossSpriteSheets = {
+    'guaishou_cyber_crocodile_boss':
+        'assets/game/grass_game/images/guaishou/guaishou_cyber_crocodile_boss_walk_8dir_sheet.png',
   };
   static const Map<String, String> _animalSpriteSheets = {
     'basic':
@@ -351,6 +377,8 @@ class GrassSurvivorGame extends FlameGame {
   @override
   Future<void> onLoad() async {
     await super.onLoad();
+    _applyStageTheme();
+    await _loadStageBackground();
     await _loadPlayerAnimation();
     await _loadEnemyAnimations();
     await _loadCompanionAnimations();
@@ -372,6 +400,21 @@ class GrassSurvivorGame extends FlameGame {
 
     await add(player);
     _syncHud(force: true);
+  }
+
+  void _applyStageTheme() {
+    _backgroundPaint.color = _stageMapTheme.screenBackground;
+    _groundPaint.color = _stageMapTheme.ground;
+    _groundAltPaint.color = _stageMapTheme.groundAlt;
+    _fieldLinePaint.color = _stageMapTheme.gridLine;
+  }
+
+  Future<void> _loadStageBackground() async {
+    final assetPath = stageBackgroundAssetPath;
+    if (assetPath == null || assetPath.isEmpty) {
+      return;
+    }
+    _stageBackgroundImage = await _loadImage(assetPath);
   }
 
   void releaseRuntimeResources() {
@@ -405,6 +448,8 @@ class GrassSurvivorGame extends FlameGame {
     _thunderStrikes.clear();
     _blackHoles.clear();
     _chargedUltimateBeams.clear();
+    _weaponUltimateImages.clear();
+    _delayedWeaponBlasts.clear();
     _meleeSweeps.clear();
     _companions.clear();
   }
@@ -426,6 +471,12 @@ class GrassSurvivorGame extends FlameGame {
         displaySize: Vector2.all(isDeathmatch ? _deathmatchEnemySize : 42),
       );
     }
+    for (final entry in _bossSpriteSheets.entries) {
+      _enemyAnimations[entry.key] = EnemyAnimationSet(
+        image: await _loadImage(entry.value),
+        displaySize: Vector2.all(104),
+      );
+    }
   }
 
   Future<Map<String, EnemyAnimationSet>> _loadAnimalEnemyAnimations() async {
@@ -434,6 +485,7 @@ class GrassSurvivorGame extends FlameGame {
       animations[entry.key] = EnemyAnimationSet(
         image: await _loadImage(entry.value),
         displaySize: _animalEnemyDisplaySize(entry.key),
+        facingRows: _animalEnemyFacingRows(entry.key),
       );
     }
     return animations;
@@ -442,14 +494,30 @@ class GrassSurvivorGame extends FlameGame {
   Vector2 _animalEnemyDisplaySize(String enemyId) {
     return Vector2.all(
       switch (enemyId) {
-        'chick' || 'fast' || 'rooster' => 30,
-        'dog' => 32,
-        'lamb' || 'piglet' || 'sheep' => 34,
-        'calf' => 42,
-        'tank' || 'bull' => 54,
-        _ => 32,
+        'chick' || 'fast' || 'rooster' => 38,
+        'dog' => 40,
+        'lamb' || 'piglet' || 'sheep' => 42,
+        'calf' => 50,
+        'tank' || 'bull' => 62,
+        _ => 40,
       },
     );
+  }
+
+  Map<EnemyFacing, int>? _animalEnemyFacingRows(String enemyId) {
+    return switch (enemyId) {
+      'lamb' || 'sheep' || 'calf' || 'bull' => const {
+          EnemyFacing.front: 0,
+          EnemyFacing.frontRight: 3,
+          EnemyFacing.right: 3,
+          EnemyFacing.backRight: 3,
+          EnemyFacing.back: 1,
+          EnemyFacing.backLeft: 2,
+          EnemyFacing.left: 2,
+          EnemyFacing.frontLeft: 2,
+        },
+      _ => null,
+    };
   }
 
   Future<void> _loadCompanionAnimations() async {
@@ -547,6 +615,7 @@ class GrassSurvivorGame extends FlameGame {
     }
 
     super.update(scaledDt);
+    _resolveCircleObstacleCollisions(player.position, player.collisionRadius);
     _elapsed += scaledDt;
     _spawnTimer += scaledDt;
     _weaponTimer += scaledDt;
@@ -555,11 +624,13 @@ class GrassSurvivorGame extends FlameGame {
     _updateDeathmatchBuffs();
     _spawnEnemies();
     _moveEnemies(scaledDt);
+    _resolveEnemyObstacleCollisions();
     _rebuildEnemyCells();
     _enemySeparationTimer += scaledDt;
     if (_enemySeparationTimer >= 0.08) {
       _enemySeparationTimer = 0;
       _resolveEnemySeparation();
+      _resolveEnemyObstacleCollisions();
       _rebuildEnemyCells();
     }
     _resolveEnemyPlayerSeparation();
@@ -597,23 +668,94 @@ class GrassSurvivorGame extends FlameGame {
     final right = player.position.x + size.x / 2;
     final top = player.position.y - size.y / 2;
     final bottom = player.position.y + size.y / 2;
+    _drawStageBackground(canvas,
+        left: left, right: right, top: top, bottom: bottom);
     final startX = (left / cellSize).floor() * cellSize;
     final startY = (top / cellSize).floor() * cellSize;
+
+    _stageTintPaint.color = _stageMapTheme.groundOverlay;
+    canvas.drawRect(Rect.fromLTRB(left, top, right, bottom), _stageTintPaint);
 
     for (var x = startX; x <= right; x += cellSize) {
       for (var y = startY; y <= bottom; y += cellSize) {
         final cellX = (x / cellSize).floor();
         final cellY = (y / cellSize).floor();
         final rect = Rect.fromLTWH(x, y, cellSize, cellSize);
-        canvas.drawRect(
-          rect,
-          (cellX + cellY).isEven ? _groundPaint : _groundAltPaint,
-        );
+        if (_stageBackgroundImage == null) {
+          canvas.drawRect(
+            rect,
+            (cellX + cellY).isEven ? _groundPaint : _groundAltPaint,
+          );
+        }
         canvas.drawRect(rect, _fieldLinePaint);
       }
     }
 
+    _drawStageObstacles(canvas);
     _drawSpawnZone(canvas);
+  }
+
+  void _drawStageBackground(
+    Canvas canvas, {
+    required double left,
+    required double right,
+    required double top,
+    required double bottom,
+  }) {
+    final image = _stageBackgroundImage;
+    if (image == null) {
+      return;
+    }
+
+    const tileWidth = 960.0;
+    const tileHeight = 540.0;
+    final src = Rect.fromLTWH(
+      0,
+      0,
+      image.width.toDouble(),
+      image.height.toDouble(),
+    );
+    final startX = (left / tileWidth).floor() * tileWidth;
+    final startY = (top / tileHeight).floor() * tileHeight;
+    _stageBackgroundPaint.color = const Color(0xCCFFFFFF);
+    for (var x = startX; x <= right; x += tileWidth) {
+      for (var y = startY; y <= bottom; y += tileHeight) {
+        canvas.drawImageRect(
+          image,
+          src,
+          Rect.fromLTWH(x, y, tileWidth, tileHeight),
+          _stageBackgroundPaint,
+        );
+      }
+    }
+  }
+
+  void _drawStageObstacles(Canvas canvas) {
+    for (final obstacle in _stageMapTheme.obstacles) {
+      _obstaclePaint.color = obstacle.color;
+      _obstacleStrokePaint.color = obstacle.strokeColor;
+      final rrect = RRect.fromRectAndRadius(
+        obstacle.rect,
+        Radius.circular(obstacle.radius),
+      );
+      canvas.drawRRect(rrect, _obstaclePaint);
+      canvas.drawRRect(rrect, _obstacleStrokePaint);
+      if (obstacle.detailColor != null) {
+        _obstaclePaint.color = obstacle.detailColor!;
+        final inset = math.min(
+              obstacle.rect.width,
+              obstacle.rect.height,
+            ) *
+            0.18;
+        canvas.drawRRect(
+          RRect.fromRectAndRadius(
+            obstacle.rect.deflate(inset),
+            Radius.circular(math.max(2, obstacle.radius * 0.5)),
+          ),
+          _obstaclePaint,
+        );
+      }
+    }
   }
 
   void _drawSpawnZone(Canvas canvas) {
@@ -911,7 +1053,7 @@ class GrassSurvivorGame extends FlameGame {
     _bossSpawned = true;
     _bossBannerTimer = 3;
     final spawnPosition = _randomSpawnPosition();
-    final bossVisualId = _randomGuaishouEnemyId();
+    final bossVisualId = _bossVisualId;
     final hash = bossVisualId.hashCode.abs();
     _playHaptic(_GameHaptic.medium);
     final boss = EnemyComponent(
@@ -921,13 +1063,37 @@ class GrassSurvivorGame extends FlameGame {
       expDrop: _bossExpDrop,
       position: spawnPosition,
       animationSet: _enemyAnimations[bossVisualId],
-      collisionRadiusOverride: 34,
-      sizeOverride: Vector2.all(104),
+      collisionRadiusOverride: _bossCollisionRadius(bossVisualId),
+      sizeOverride: Vector2.all(_bossDisplaySize(bossVisualId)),
       meleeDamageMin: 14 + hash % 5,
       meleeDamageMax: 22 + hash % 8,
     );
     _enemies.add(boss);
     add(boss);
+  }
+
+  String get _bossVisualId {
+    if (bossId == 'random_guaishou') {
+      return _randomGuaishouEnemyId();
+    }
+    if (_enemyAnimations.containsKey(bossId)) {
+      return bossId;
+    }
+    return _randomGuaishouEnemyId();
+  }
+
+  double _bossDisplaySize(String bossVisualId) {
+    return switch (bossVisualId) {
+      'guaishou_cyber_crocodile_boss' => 122,
+      _ => 104,
+    };
+  }
+
+  double _bossCollisionRadius(String bossVisualId) {
+    return switch (bossVisualId) {
+      'guaishou_cyber_crocodile_boss' => 40,
+      _ => 34,
+    };
   }
 
   WaveConfig? _activeWave() {
@@ -1451,11 +1617,92 @@ class GrassSurvivorGame extends FlameGame {
     }
   }
 
+  void _resolveEnemyObstacleCollisions() {
+    for (final enemy in _enemies) {
+      if (enemy.isDead) {
+        continue;
+      }
+      _resolveCircleObstacleCollisions(enemy.position, enemy.collisionRadius);
+    }
+  }
+
+  void _resolveCircleObstacleCollisions(Vector2 center, double radius) {
+    for (final obstacle in _stageMapTheme.obstacles) {
+      final rect = obstacle.rect;
+      final closestX = center.x.clamp(rect.left, rect.right).toDouble();
+      final closestY = center.y.clamp(rect.top, rect.bottom).toDouble();
+      final deltaX = center.x - closestX;
+      final deltaY = center.y - closestY;
+      final distanceSquared = deltaX * deltaX + deltaY * deltaY;
+      if (distanceSquared > radius * radius) {
+        continue;
+      }
+
+      if (distanceSquared > 0.0001) {
+        final distance = math.sqrt(distanceSquared);
+        final push = radius - distance + 0.5;
+        center.x += deltaX / distance * push;
+        center.y += deltaY / distance * push;
+        continue;
+      }
+
+      final leftPush = (center.x - rect.left).abs();
+      final rightPush = (rect.right - center.x).abs();
+      final topPush = (center.y - rect.top).abs();
+      final bottomPush = (rect.bottom - center.y).abs();
+      final minPush = math.min(
+        math.min(leftPush, rightPush),
+        math.min(topPush, bottomPush),
+      );
+      if (minPush == leftPush) {
+        center.x = rect.left - radius - 0.5;
+      } else if (minPush == rightPush) {
+        center.x = rect.right + radius + 0.5;
+      } else if (minPush == topPush) {
+        center.y = rect.top - radius - 0.5;
+      } else {
+        center.y = rect.bottom + radius + 0.5;
+      }
+    }
+  }
+
   void _updateWeaponEffects(double dt) {
     for (final sweep in _meleeSweeps) {
       sweep.age += dt;
     }
     _meleeSweeps.removeWhere((sweep) => sweep.isDone);
+    for (final image in _weaponUltimateImages) {
+      image.age += dt;
+    }
+    _weaponUltimateImages.removeWhere((image) => image.isDone);
+    for (final blast in _delayedWeaponBlasts) {
+      blast.delay -= dt;
+      blast.age += dt;
+      if (blast.delay > 0 || blast.hasExploded) {
+        continue;
+      }
+      blast.hasExploded = true;
+      _damageEnemiesInRadius(
+        origin: blast.center,
+        radius: blast.radius,
+        damage: blast.damage,
+        color: blast.color,
+        bossDamageMultiplier: blast.bossDamageMultiplier,
+        slowMultiplier: blast.slowMultiplier,
+        slowDuration: blast.slowDuration,
+        knockback: blast.knockback,
+      );
+      _weaponUltimateImages.add(
+        _WeaponUltimateImage(
+          center: blast.center.clone(),
+          size: blast.imageSize,
+          color: blast.color,
+          duration: 0.48,
+          spinTurns: 0.35,
+        ),
+      );
+    }
+    _delayedWeaponBlasts.removeWhere((blast) => blast.isDone);
   }
 
   void _updateProjectileWorldBounds() {
@@ -2374,12 +2621,84 @@ class GrassSurvivorGame extends FlameGame {
 
   void _drawSkillEffects(Canvas canvas) {
     _drawMeleeSweepEffects(canvas);
+    _drawDelayedWeaponBlastWarnings(canvas);
+    _drawWeaponUltimateImages(canvas);
     _drawGroundFieldEffects(canvas);
     _drawOrbitBladeEffects(canvas);
     _drawThunderEffects(canvas);
     _drawBlackHoleEffects(canvas);
     _drawExpandingRings(canvas);
     _drawChargedUltimateBeams(canvas);
+  }
+
+  void _drawDelayedWeaponBlastWarnings(Canvas canvas) {
+    for (final blast in _delayedWeaponBlasts) {
+      if (blast.hasExploded) {
+        continue;
+      }
+      final progress = blast.warningProgress;
+      final center = Offset(blast.center.x, blast.center.y);
+      final radius = blast.radius * (0.72 + progress * 0.28);
+      final fillPaint = Paint()
+        ..color = blast.color.withOpacity(0.10 + progress * 0.10)
+        ..style = PaintingStyle.fill;
+      final strokePaint = Paint()
+        ..color = blast.color.withOpacity(0.45 + progress * 0.32)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.4 + progress * 2.2;
+      canvas.drawCircle(center, radius, fillPaint);
+      canvas.drawCircle(center, radius, strokePaint);
+    }
+  }
+
+  void _drawWeaponUltimateImages(Canvas canvas) {
+    final image = _projectileImage;
+    for (final effect in _weaponUltimateImages) {
+      final progress = effect.progress;
+      final opacity = math.sin(progress * math.pi).clamp(0, 1).toDouble();
+      final center = Offset(effect.center.x, effect.center.y);
+      final size = effect.size * (0.82 + progress * 0.36);
+      if (image == null) {
+        canvas.drawCircle(
+          center,
+          size * 0.32,
+          Paint()
+            ..color = effect.color.withOpacity(0.64 * opacity)
+            ..style = PaintingStyle.fill,
+        );
+        canvas.drawCircle(
+          center,
+          size * 0.46,
+          Paint()
+            ..color = effect.color.withOpacity(0.52 * opacity)
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 3,
+        );
+        continue;
+      }
+
+      canvas.save();
+      canvas.translate(center.dx, center.dy);
+      canvas.rotate(effect.angle);
+      canvas.drawImageRect(
+        image,
+        Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble()),
+        Rect.fromCenter(center: Offset.zero, width: size, height: size),
+        Paint()
+          ..filterQuality = FilterQuality.medium
+          ..blendMode = BlendMode.screen
+          ..color = Color.fromRGBO(255, 255, 255, opacity),
+      );
+      canvas.restore();
+      canvas.drawCircle(
+        center,
+        size * 0.52,
+        Paint()
+          ..color = effect.color.withOpacity(0.30 * opacity)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 3.2,
+      );
+    }
   }
 
   void _drawMeleeSweepEffects(Canvas canvas) {
@@ -4058,15 +4377,28 @@ class GrassSurvivorGame extends FlameGame {
   }
 
   void _addChargedUltimateFromDrop(ExpGemComponent gem) {
-    if (gem.rareExpChargeUnits <= 0 ||
-        _chargedUltimateCharge >= _chargedUltimateRequiredCharge) {
+    if (gem.rareExpChargeUnits <= 0) {
       return;
     }
-    _chargedUltimateCharge = math.min(
-      _chargedUltimateRequiredCharge,
-      _chargedUltimateCharge + gem.rareExpChargeUnits,
-    );
-    _syncHud(force: true);
+    var changed = false;
+    if (_chargedUltimateCharge < _chargedUltimateRequiredCharge) {
+      _chargedUltimateCharge = math.min(
+        _chargedUltimateRequiredCharge,
+        _chargedUltimateCharge + gem.rareExpChargeUnits,
+      );
+      changed = true;
+    }
+    if (_hasWeaponUltimate &&
+        _weaponUltimateCharge < _weaponUltimateRequiredCharge) {
+      _weaponUltimateCharge = math.min(
+        _weaponUltimateRequiredCharge,
+        _weaponUltimateCharge + gem.rareExpChargeUnits,
+      );
+      changed = true;
+    }
+    if (changed) {
+      _syncHud(force: true);
+    }
   }
 
   void openLevelUpChoices() {
@@ -4350,8 +4682,6 @@ class GrassSurvivorGame extends FlameGame {
     switch (playerCharacterId) {
       case 'guard':
         _triggerGuardUltimate();
-      case 'scout':
-        _triggerScoutUltimate(direction);
       case 'aotuman':
         _triggerAotumanUltimate(direction);
       case 'aomeijia':
@@ -4426,32 +4756,6 @@ class GrassSurvivorGame extends FlameGame {
       position: origin,
       color: const Color(0xFFFF8AB8),
       maxRadius: 226,
-    );
-  }
-
-  void _triggerScoutUltimate(Vector2 direction) {
-    for (final angle in const [-0.16, 0.0, 0.16]) {
-      _chargedUltimateBeams.add(
-        _ChargedUltimateBeam(
-          baseDirection: _rotated(direction, angle),
-          length: math.max(size.x, size.y) * 1.18,
-          width: 24,
-          duration: 1.05,
-          damageInterval: 0.12,
-          spinTurns: 0,
-          flatDamage: math.max(3, (_weaponDamage * 1.18).ceil()),
-          bossFlatDamageMultiplier: 0.34,
-          glowColor: const Color(0xFF54D7FF),
-          bodyColor: const Color(0xFF89F2FF),
-          coreColor: const Color(0xFFFFFFFF),
-          pulseColor: const Color(0xFF54D7FF),
-        ),
-      );
-    }
-    _addWorldPulse(
-      position: player.position.clone(),
-      color: const Color(0xFF54D7FF),
-      maxRadius: 165,
     );
   }
 
@@ -4635,6 +4939,266 @@ class GrassSurvivorGame extends FlameGame {
     );
   }
 
+  bool get _hasWeaponUltimate {
+    return switch (weaponRuntimeStats?.weaponId) {
+      'wooden_stick' ||
+      'bounce_ball' ||
+      'frost_staff' ||
+      'mini_grenade' ||
+      'star_core_cannon' =>
+        true,
+      _ => false,
+    };
+  }
+
+  void triggerWeaponUltimate() {
+    if (_finished ||
+        !_hasWeaponUltimate ||
+        _weaponUltimateCharge < _weaponUltimateRequiredCharge ||
+        controller.isLevelUpVisible) {
+      return;
+    }
+
+    _weaponUltimateCharge = 0;
+    final direction = _currentChargedUltimateDirection();
+    switch (weaponRuntimeStats?.weaponId) {
+      case 'wooden_stick':
+        _triggerWoodenStickUltimate(direction);
+      case 'bounce_ball':
+        _triggerBounceBallUltimate(direction);
+      case 'frost_staff':
+        _triggerFrostStaffUltimate();
+      case 'mini_grenade':
+        _triggerMiniGrenadeUltimate(direction);
+      case 'star_core_cannon':
+        _triggerStarCoreCannonUltimate();
+    }
+    _playHaptic(_GameHaptic.heavy);
+    _syncHud(force: true);
+  }
+
+  void _triggerWoodenStickUltimate(Vector2 direction) {
+    final origin = player.position.clone();
+    _damageEnemiesInRadius(
+      origin: origin,
+      radius: 170,
+      damage: math.max(4, (_weaponDamage * 2.2).ceil()),
+      bossDamageMultiplier: 0.48,
+      color: const Color(0xFFD9A441),
+      knockback: 76,
+    );
+    for (var i = 0; i < 6; i++) {
+      final angle = math.pi * 2 * i / 6;
+      final nextDirection = Vector2(math.cos(angle), math.sin(angle));
+      _meleeSweeps.add(
+        _MeleeSweepEffect(
+          origin: origin + nextDirection * 20,
+          direction: nextDirection,
+          radius: 124,
+          arc: 1.35,
+          color: const Color(0xFFD9A441),
+        ),
+      );
+      _weaponUltimateImages.add(
+        _WeaponUltimateImage(
+          center: origin + nextDirection * 62,
+          size: 48,
+          color: const Color(0xFFD9A441),
+          direction: nextDirection,
+        ),
+      );
+    }
+    _expandingRings.add(
+      _ExpandingRing(
+        center: origin.clone(),
+        radius: 180,
+        color: const Color(0xFFFFD36E),
+        strokeWidth: 5,
+      ),
+    );
+    _addWorldPulse(
+      position: origin,
+      color: const Color(0xFFFFD36E),
+      maxRadius: 190,
+    );
+  }
+
+  void _triggerBounceBallUltimate(Vector2 direction) {
+    const projectileCount = 8;
+    final baseAngle = math.atan2(direction.y, direction.x);
+    for (var i = 0; i < projectileCount; i++) {
+      final angle = baseAngle + math.pi * 2 * i / projectileCount;
+      final nextDirection = Vector2(math.cos(angle), math.sin(angle));
+      _spawnProjectile(
+        direction: nextDirection,
+        position: player.position + nextDirection * 36,
+        damage: math.max(2, (_weaponDamage * 1.28).ceil()),
+        speed: 500,
+        range: math.max(_weaponRange * 3.6, 620),
+        style: ProjectileVisualStyle.forKind('weapon_bounce'),
+        image: _projectileImage,
+        skillTag: 'weapon_bounce',
+        motionType: ProjectileMotionType.bouncing,
+        bouncesRemaining: 6,
+      );
+      _weaponUltimateImages.add(
+        _WeaponUltimateImage(
+          center: player.position + nextDirection * 44,
+          size: 34,
+          color: const Color(0xFFFFC857),
+          direction: nextDirection,
+          duration: 0.34,
+        ),
+      );
+    }
+    _addWorldPulse(
+      position: player.position.clone(),
+      color: const Color(0xFFFFC857),
+      maxRadius: 142,
+    );
+  }
+
+  void _triggerFrostStaffUltimate() {
+    final origin = player.position.clone();
+    _damageEnemiesInRadius(
+      origin: origin,
+      radius: 205,
+      damage: math.max(3, (_weaponDamage * 1.85).ceil()),
+      bossDamageMultiplier: 0.42,
+      color: const Color(0xFF9BD3FF),
+      slowMultiplier: 0.34,
+      slowDuration: 2.6,
+      knockback: 20,
+    );
+    for (var i = 0; i < 10; i++) {
+      final angle = math.pi * 2 * i / 10;
+      final nextDirection = Vector2(math.cos(angle), math.sin(angle));
+      _spawnProjectile(
+        direction: nextDirection,
+        position: origin + nextDirection * 34,
+        damage: math.max(1, (_weaponDamage * 0.78).ceil()),
+        speed: 430,
+        range: 260,
+        style: ProjectileVisualStyle.forKind('控制'),
+        image: _projectileImage,
+        skillTag: 'weapon_frost_ultimate',
+        pierceRemaining: 1,
+      );
+    }
+    _addGroundField(
+      _GroundEffectField(
+        type: _GroundEffectType.frostInferno,
+        center: origin.clone(),
+        radius: 132,
+        duration: 2.2,
+        tickInterval: 0.36,
+        damage: math.max(1, (_weaponDamage * 0.42).ceil()),
+        bossDamageMultiplier: 0.30,
+        color: const Color(0xFF9BD3FF),
+        slowMultiplier: 0.46,
+      ),
+    );
+    for (final radius in const [112.0, 166.0, 214.0]) {
+      _expandingRings.add(
+        _ExpandingRing(
+          center: origin.clone(),
+          radius: radius,
+          color: const Color(0xFFC7F7FF),
+          strokeWidth: 4,
+        ),
+      );
+    }
+  }
+
+  void _triggerMiniGrenadeUltimate(Vector2 direction) {
+    final targets = _pickThunderTargets(count: 5);
+    final centers = <Vector2>[
+      for (final target in targets) target.position.clone(),
+    ];
+    if (centers.isEmpty) {
+      final baseAngle = math.atan2(direction.y, direction.x);
+      for (var i = 0; i < 5; i++) {
+        final offsetAngle = baseAngle - 0.74 + 0.37 * i;
+        centers.add(
+          player.position +
+              Vector2(math.cos(offsetAngle), math.sin(offsetAngle)) *
+                  (128 + i * 18),
+        );
+      }
+    }
+
+    for (var i = 0; i < centers.length; i++) {
+      _delayedWeaponBlasts.add(
+        _DelayedWeaponBlast(
+          center: centers[i],
+          radius: math.max(94, _weaponAreaRadius * 1.22),
+          damage: math.max(5, (_weaponDamage * 1.95).ceil()),
+          color: const Color(0xFFFF8A4C),
+          delay: 0.18 + i * 0.13,
+          warningDuration: 0.18 + i * 0.13,
+          bossDamageMultiplier: 0.44,
+          knockback: 44,
+          imageSize: 54,
+        ),
+      );
+    }
+    _addWorldPulse(
+      position: player.position.clone(),
+      color: const Color(0xFFFF8A4C),
+      maxRadius: 124,
+    );
+  }
+
+  void _triggerStarCoreCannonUltimate() {
+    final clusterTargets = _pickThunderTargets(count: 1);
+    final target = clusterTargets.isEmpty ? null : clusterTargets.first;
+    final center = target?.position.clone() ??
+        _nearestEnemy(maxDistance: math.max(size.x, size.y) * 0.9)
+            ?.position
+            .clone() ??
+        player.position.clone();
+    _blackHoles.add(
+      _BlackHoleField(
+        center: center.clone(),
+        radius: 215,
+        duration: 1.65,
+        damage: math.max(2, (_weaponDamage * 0.72).ceil()),
+        explosionDamage: math.max(10, (_weaponDamage * 3.75).ceil()),
+        pull: 190,
+        color: const Color(0xFFFFD166),
+      ),
+    );
+    _delayedWeaponBlasts.add(
+      _DelayedWeaponBlast(
+        center: center.clone(),
+        radius: 188,
+        damage: math.max(8, (_weaponDamage * 2.25).ceil()),
+        color: const Color(0xFFFFD166),
+        delay: 1.0,
+        warningDuration: 1.0,
+        bossDamageMultiplier: 0.38,
+        slowMultiplier: 0.62,
+        slowDuration: 0.9,
+        knockback: 28,
+        imageSize: 76,
+      ),
+    );
+    _weaponUltimateImages.add(
+      _WeaponUltimateImage(
+        center: center,
+        size: 82,
+        color: const Color(0xFFFFD166),
+        duration: 1.05,
+        spinTurns: 1.8,
+      ),
+    );
+    _addWorldPulse(
+      position: center,
+      color: const Color(0xFFFFD166),
+      maxRadius: 220,
+    );
+  }
+
   Vector2 _currentChargedUltimateDirection() {
     final moveDirection = controller.moveDirection;
     if (moveDirection.length2 > 0.01) {
@@ -4681,6 +5245,9 @@ class GrassSurvivorGame extends FlameGame {
         isBossSpawned: _bossSpawned,
         ultimateCharge: _chargedUltimateCharge,
         ultimateChargeRequired: _chargedUltimateRequiredCharge,
+        weaponUltimateCharge: _weaponUltimateCharge,
+        weaponUltimateChargeRequired: _weaponUltimateRequiredCharge,
+        hasWeaponUltimate: _hasWeaponUltimate,
       ),
     );
   }
@@ -4747,6 +5314,71 @@ class _ChargedUltimateBeam {
   }
 
   bool get isDone => age >= duration;
+}
+
+class _WeaponUltimateImage {
+  _WeaponUltimateImage({
+    required this.center,
+    required this.size,
+    required this.color,
+    Vector2? direction,
+    this.duration = 0.42,
+    this.spinTurns = 0.75,
+  }) : _baseAngle =
+            direction == null ? 0 : math.atan2(direction.y, direction.x);
+
+  final Vector2 center;
+  final double size;
+  final Color color;
+  final double duration;
+  final double spinTurns;
+  final double _baseAngle;
+  double age = 0;
+
+  double get progress => (age / duration).clamp(0, 1).toDouble();
+
+  double get angle => _baseAngle + progress * math.pi * 2 * spinTurns;
+
+  bool get isDone => age >= duration;
+}
+
+class _DelayedWeaponBlast {
+  _DelayedWeaponBlast({
+    required this.center,
+    required this.radius,
+    required this.damage,
+    required this.color,
+    required this.delay,
+    required this.warningDuration,
+    required this.imageSize,
+    this.bossDamageMultiplier = 0.45,
+    this.slowMultiplier = 1,
+    this.slowDuration = 0,
+    this.knockback = 0,
+  });
+
+  final Vector2 center;
+  final double radius;
+  final int damage;
+  final Color color;
+  final double warningDuration;
+  final double imageSize;
+  final double bossDamageMultiplier;
+  final double slowMultiplier;
+  final double slowDuration;
+  final double knockback;
+  double delay;
+  double age = 0;
+  bool hasExploded = false;
+
+  double get warningProgress {
+    if (warningDuration <= 0) {
+      return 1;
+    }
+    return (age / warningDuration).clamp(0, 1).toDouble();
+  }
+
+  bool get isDone => hasExploded && age >= warningDuration + 0.7;
 }
 
 class _ThunderStrike {
@@ -4887,6 +5519,369 @@ class _MeleeSweepEffect {
   double get progress => (age / _duration).clamp(0, 1).toDouble();
 
   bool get isDone => age >= _duration;
+}
+
+class _StageMapTheme {
+  const _StageMapTheme({
+    required this.screenBackground,
+    required this.ground,
+    required this.groundAlt,
+    required this.gridLine,
+    required this.groundOverlay,
+    required this.obstacles,
+  });
+
+  final Color screenBackground;
+  final Color ground;
+  final Color groundAlt;
+  final Color gridLine;
+  final Color groundOverlay;
+  final List<_StageObstacle> obstacles;
+
+  static _StageMapTheme forChapter(int chapter) {
+    return switch (chapter.clamp(1, 10)) {
+      1 => farm,
+      2 => highway,
+      3 => city,
+      4 => cave,
+      5 => forest,
+      6 => ocean,
+      7 => infected,
+      8 => skeleton,
+      9 => alien,
+      _ => cosmos,
+    };
+  }
+
+  static const farm = _StageMapTheme(
+    screenBackground: Color(0xFF172315),
+    ground: Color(0xFF2F4D27),
+    groundAlt: Color(0xFF37592D),
+    gridLine: Color(0x263E7A38),
+    groundOverlay: Color(0x77132012),
+    obstacles: [
+      _StageObstacle(
+        rect: Rect.fromLTWH(-420, -250, 220, 54),
+        color: Color(0xCC6C4B2A),
+        strokeColor: Color(0xAAE0B36B),
+        detailColor: Color(0x66442D18),
+      ),
+      _StageObstacle(
+        rect: Rect.fromLTWH(230, -250, 170, 122),
+        color: Color(0xCC79452F),
+        strokeColor: Color(0xAAE27B56),
+        detailColor: Color(0x665A2418),
+      ),
+      _StageObstacle(
+        rect: Rect.fromLTWH(-360, 160, 150, 62),
+        color: Color(0xCC8B7340),
+        strokeColor: Color(0xAAE2CE7E),
+      ),
+      _StageObstacle(
+        rect: Rect.fromLTWH(190, 170, 250, 52),
+        color: Color(0xCC5C4329),
+        strokeColor: Color(0xAAE0B36B),
+      ),
+    ],
+  );
+
+  static const highway = _StageMapTheme(
+    screenBackground: Color(0xFF171817),
+    ground: Color(0xFF2E3334),
+    groundAlt: Color(0xFF363B3C),
+    gridLine: Color(0x263E4547),
+    groundOverlay: Color(0x8820201B),
+    obstacles: [
+      _StageObstacle(
+        rect: Rect.fromLTWH(-440, -260, 210, 74),
+        color: Color(0xCC51565A),
+        strokeColor: Color(0xAAAEB6BA),
+        detailColor: Color(0x6640474B),
+      ),
+      _StageObstacle(
+        rect: Rect.fromLTWH(210, -220, 260, 62),
+        color: Color(0xCC7D4A24),
+        strokeColor: Color(0xAAFFB06D),
+      ),
+      _StageObstacle(
+        rect: Rect.fromLTWH(-320, 150, 190, 74),
+        color: Color(0xCC4F5960),
+        strokeColor: Color(0xAAAEB6BA),
+      ),
+      _StageObstacle(
+        rect: Rect.fromLTWH(170, 170, 160, 95),
+        color: Color(0xCC7E3127),
+        strokeColor: Color(0xAAFF8B6C),
+        detailColor: Color(0x665A1F19),
+      ),
+    ],
+  );
+
+  static const city = _StageMapTheme(
+    screenBackground: Color(0xFF12171B),
+    ground: Color(0xFF242B31),
+    groundAlt: Color(0xFF2B333A),
+    gridLine: Color(0x263D596C),
+    groundOverlay: Color(0x8820262B),
+    obstacles: [
+      _StageObstacle(
+        rect: Rect.fromLTWH(-430, -270, 190, 118),
+        color: Color(0xCC4C555C),
+        strokeColor: Color(0xAA9EB1BD),
+      ),
+      _StageObstacle(
+        rect: Rect.fromLTWH(250, -260, 145, 145),
+        color: Color(0xCC38424A),
+        strokeColor: Color(0xAA8CA3B4),
+        detailColor: Color(0x66303A42),
+      ),
+      _StageObstacle(
+        rect: Rect.fromLTWH(-330, 170, 235, 72),
+        color: Color(0xCC50312C),
+        strokeColor: Color(0xAAA86155),
+      ),
+      _StageObstacle(
+        rect: Rect.fromLTWH(170, 160, 245, 76),
+        color: Color(0xCC4B5054),
+        strokeColor: Color(0xAA9EB1BD),
+      ),
+    ],
+  );
+
+  static const cave = _StageMapTheme(
+    screenBackground: Color(0xFF11151A),
+    ground: Color(0xFF222A30),
+    groundAlt: Color(0xFF283238),
+    gridLine: Color(0x244B6680),
+    groundOverlay: Color(0x99101418),
+    obstacles: [
+      _StageObstacle(
+        rect: Rect.fromLTWH(-430, -230, 245, 88),
+        color: Color(0xCC3D3F44),
+        strokeColor: Color(0xAA8293A0),
+        detailColor: Color(0x664B6D78),
+      ),
+      _StageObstacle(
+        rect: Rect.fromLTWH(220, -255, 165, 165),
+        color: Color(0xCC30343A),
+        strokeColor: Color(0xAA7D8FA0),
+      ),
+      _StageObstacle(
+        rect: Rect.fromLTWH(-320, 150, 160, 135),
+        color: Color(0xCC33373D),
+        strokeColor: Color(0xAA7D8FA0),
+      ),
+      _StageObstacle(
+        rect: Rect.fromLTWH(170, 180, 285, 62),
+        color: Color(0xCC47545B),
+        strokeColor: Color(0xAA87C6D2),
+      ),
+    ],
+  );
+
+  static const forest = _StageMapTheme(
+    screenBackground: Color(0xFF111F18),
+    ground: Color(0xFF1F3B2A),
+    groundAlt: Color(0xFF264533),
+    gridLine: Color(0x253A7C56),
+    groundOverlay: Color(0x88131F16),
+    obstacles: [
+      _StageObstacle(
+        rect: Rect.fromLTWH(-420, -250, 170, 150),
+        color: Color(0xCC3A2B1E),
+        strokeColor: Color(0xAA8DA56B),
+        detailColor: Color(0x664E7B4A),
+      ),
+      _StageObstacle(
+        rect: Rect.fromLTWH(230, -245, 190, 135),
+        color: Color(0xCC2D442A),
+        strokeColor: Color(0xAA8ED46F),
+      ),
+      _StageObstacle(
+        rect: Rect.fromLTWH(-360, 175, 270, 64),
+        color: Color(0xCC3A2B1E),
+        strokeColor: Color(0xAA8DA56B),
+      ),
+      _StageObstacle(
+        rect: Rect.fromLTWH(150, 155, 160, 150),
+        color: Color(0xCC263C27),
+        strokeColor: Color(0xAA8ED46F),
+        detailColor: Color(0x665FCB70),
+      ),
+    ],
+  );
+
+  static const ocean = _StageMapTheme(
+    screenBackground: Color(0xFF0D1F24),
+    ground: Color(0xFF183D45),
+    groundAlt: Color(0xFF204B55),
+    gridLine: Color(0x2652A8B4),
+    groundOverlay: Color(0x88102024),
+    obstacles: [
+      _StageObstacle(
+        rect: Rect.fromLTWH(-435, -250, 245, 58),
+        color: Color(0xCC5B4933),
+        strokeColor: Color(0xAAC4A36B),
+      ),
+      _StageObstacle(
+        rect: Rect.fromLTWH(220, -250, 170, 130),
+        color: Color(0xCC37515B),
+        strokeColor: Color(0xAA83D6E2),
+        detailColor: Color(0x66337C88),
+      ),
+      _StageObstacle(
+        rect: Rect.fromLTWH(-310, 165, 170, 95),
+        color: Color(0xCC5B4933),
+        strokeColor: Color(0xAAC4A36B),
+      ),
+      _StageObstacle(
+        rect: Rect.fromLTWH(160, 170, 250, 68),
+        color: Color(0xCC284E57),
+        strokeColor: Color(0xAA83D6E2),
+      ),
+    ],
+  );
+
+  static const infected = _StageMapTheme(
+    screenBackground: Color(0xFF1B1717),
+    ground: Color(0xFF34292A),
+    groundAlt: Color(0xFF3B3031),
+    gridLine: Color(0x265F3B3B),
+    groundOverlay: Color(0x991B1212),
+    obstacles: [
+      _StageObstacle(
+        rect: Rect.fromLTWH(-430, -250, 195, 90),
+        color: Color(0xCCDDD5BE),
+        strokeColor: Color(0xAAFFEEE0),
+        detailColor: Color(0x66B84040),
+      ),
+      _StageObstacle(
+        rect: Rect.fromLTWH(230, -240, 220, 70),
+        color: Color(0xCC8C2F2B),
+        strokeColor: Color(0xAAFF7A6C),
+      ),
+      _StageObstacle(
+        rect: Rect.fromLTWH(-330, 165, 250, 70),
+        color: Color(0xCC4F4F55),
+        strokeColor: Color(0xAAAEB0B8),
+      ),
+      _StageObstacle(
+        rect: Rect.fromLTWH(150, 155, 170, 130),
+        color: Color(0xCC34363A),
+        strokeColor: Color(0xAAAEB0B8),
+        detailColor: Color(0x66B84040),
+      ),
+    ],
+  );
+
+  static const skeleton = _StageMapTheme(
+    screenBackground: Color(0xFF1E1B16),
+    ground: Color(0xFF4A3E2A),
+    groundAlt: Color(0xFF554833),
+    gridLine: Color(0x267D6F52),
+    groundOverlay: Color(0x88201912),
+    obstacles: [
+      _StageObstacle(
+        rect: Rect.fromLTWH(-430, -240, 220, 80),
+        color: Color(0xCCB9AC86),
+        strokeColor: Color(0xAAE7D9AF),
+      ),
+      _StageObstacle(
+        rect: Rect.fromLTWH(230, -245, 165, 150),
+        color: Color(0xCC6E654E),
+        strokeColor: Color(0xAAD9CFAF),
+        detailColor: Color(0x667BDAFF),
+      ),
+      _StageObstacle(
+        rect: Rect.fromLTWH(-320, 165, 180, 115),
+        color: Color(0xCCB9AC86),
+        strokeColor: Color(0xAAE7D9AF),
+      ),
+      _StageObstacle(
+        rect: Rect.fromLTWH(170, 170, 250, 62),
+        color: Color(0xCC615846),
+        strokeColor: Color(0xAAD9CFAF),
+      ),
+    ],
+  );
+
+  static const alien = _StageMapTheme(
+    screenBackground: Color(0xFF131625),
+    ground: Color(0xFF252842),
+    groundAlt: Color(0xFF2E3150),
+    gridLine: Color(0x265E64B6),
+    groundOverlay: Color(0x9910182A),
+    obstacles: [
+      _StageObstacle(
+        rect: Rect.fromLTWH(-430, -245, 205, 110),
+        color: Color(0xCC353A59),
+        strokeColor: Color(0xAA8BA1FF),
+        detailColor: Color(0x667C4DFF),
+      ),
+      _StageObstacle(
+        rect: Rect.fromLTWH(230, -250, 180, 128),
+        color: Color(0xCC4B3560),
+        strokeColor: Color(0xAACE8BFF),
+      ),
+      _StageObstacle(
+        rect: Rect.fromLTWH(-330, 175, 240, 66),
+        color: Color(0xCC2E405A),
+        strokeColor: Color(0xAA7FE7FF),
+      ),
+      _StageObstacle(
+        rect: Rect.fromLTWH(170, 165, 150, 145),
+        color: Color(0xCC4B3560),
+        strokeColor: Color(0xAACE8BFF),
+        detailColor: Color(0x667FE7FF),
+      ),
+    ],
+  );
+
+  static const cosmos = _StageMapTheme(
+    screenBackground: Color(0xFF0D1020),
+    ground: Color(0xFF20243B),
+    groundAlt: Color(0xFF292D49),
+    gridLine: Color(0x265F6BFF),
+    groundOverlay: Color(0xAA0B0E20),
+    obstacles: [
+      _StageObstacle(
+        rect: Rect.fromLTWH(-420, -250, 220, 70),
+        color: Color(0xCC2E345F),
+        strokeColor: Color(0xAA8EA1FF),
+        detailColor: Color(0x668B4DFF),
+      ),
+      _StageObstacle(
+        rect: Rect.fromLTWH(230, -245, 170, 150),
+        color: Color(0xCC4B2E5F),
+        strokeColor: Color(0xAAD98BFF),
+      ),
+      _StageObstacle(
+        rect: Rect.fromLTWH(-330, 170, 170, 135),
+        color: Color(0xCC293D57),
+        strokeColor: Color(0xAA7FE7FF),
+      ),
+      _StageObstacle(
+        rect: Rect.fromLTWH(155, 175, 290, 58),
+        color: Color(0xCC383D66),
+        strokeColor: Color(0xAA8EA1FF),
+      ),
+    ],
+  );
+}
+
+class _StageObstacle {
+  const _StageObstacle({
+    required this.rect,
+    required this.color,
+    required this.strokeColor,
+    this.detailColor,
+  });
+
+  final Rect rect;
+  final Color color;
+  final Color strokeColor;
+  final Color? detailColor;
+  double get radius => 8;
 }
 
 class _DropRoll {

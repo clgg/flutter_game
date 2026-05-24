@@ -171,6 +171,38 @@ void main() {
           [60, 85, 115, 155, 210]);
       expect(earlyStages.map((stage) => stage.rewardExp),
           [90, 115, 145, 180, 225]);
+      expect(earlyStages.map((stage) => stage.themeId),
+          ['farm', 'farm', 'farm', 'farm', 'farm']);
+      expect(earlyStages.map((stage) => stage.themeName), [
+        'Infected Farm',
+        'Infected Farm',
+        'Infected Farm',
+        'Infected Farm',
+        'Infected Farm'
+      ]);
+      expect(
+        earlyStages.every(
+          (stage) =>
+              File(stage.sceneAssetPath).existsSync() &&
+              File(stage.battlefieldAssetPath).existsSync(),
+        ),
+        isTrue,
+      );
+      expect(earlyStages.take(4).map((stage) => stage.bossId), [
+        'random_guaishou',
+        'random_guaishou',
+        'random_guaishou',
+        'random_guaishou'
+      ]);
+      expect(earlyStages.last.bossId, 'guaishou_cyber_crocodile_boss');
+      expect(earlyStages.last.bossName, 'Cyber Crocodile');
+      expect(
+        File(
+          'assets/game/grass_game/images/guaishou/'
+          'guaishou_cyber_crocodile_boss_walk_8dir_sheet.png',
+        ).existsSync(),
+        isTrue,
+      );
     });
 
     test('hero characters expose balance stats and assets', () async {
@@ -181,7 +213,6 @@ void main() {
       final expected = <String, (String, int, double, double)>{
         'runner': ('Male', 130, 1.0, 1.0),
         'guard': ('Female', 105, 1.125, 0.95),
-        'scout': ('Robot', 150, 0.875, 1.08),
         'aotuman': ('凹凸曼', 220, 1.125, 1.05),
         'aomeijia': ('奥美家', 170, 1.25, 0.96),
         'jingangman': ('金刚曼', 320, 1.0, 1.18),

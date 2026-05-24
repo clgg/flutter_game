@@ -107,7 +107,7 @@ assets/game/grass_game/images/guaishou/guaishou_<id>_walk_8dir_sheet.png
 
 当前怪兽运行图为 `768x1024 / 6列 x 8行 / 128x128`。8 行全部是移动行，不再混入攻击行；运行时按上面的 8 方向顺序读取。攻击时不切换怪兽动画，只保持当前移动方向。
 
-Boss 不再维护独立图片目录。Boss 外观从 `guaishou` 池随机选择并运行时强化。
+Boss 不再维护独立 `bosses/` 图片目录。默认 Boss 外观可以从 `guaishou` 池随机选择并运行时强化；关卡如果有明确主题，也可以通过配置指定固定 Boss 外观，仍然放在 `assets/game/grass_game/images/guaishou/`，例如第一章农场主题最终 Boss 使用 `guaishou_cyber_crocodile_boss_walk_8dir_sheet.png`。
 
 ## 6. 旧 4 方向素材兼容
 

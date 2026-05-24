@@ -117,7 +117,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('选择关卡'), findsOneWidget);
-    expect(find.text('战役'), findsOneWidget);
+    expect(find.text('末日生存战役'), findsOneWidget);
+    expect(find.text('感染农场'), findsWidgets);
     expect(find.text('第 1 章'), findsOneWidget);
     expect(find.text('继续'), findsOneWidget);
     expect(find.textContaining('个敌人'), findsWidgets);

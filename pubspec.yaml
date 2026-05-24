@@ -80,6 +80,7 @@ flutter:
   assets:
     - assets/game/grass_game/images/effects/
     - assets/game/grass_game/images/skills/
+    - assets/game/grass_game/images/stages/
     - assets/game/grass_game/images/coins/
     - assets/game/grass_game/images/exp/
     - assets/game/grass_game/images/player/

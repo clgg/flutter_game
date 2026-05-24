@@ -97,6 +97,7 @@ class _GrassGamePageState extends State<GrassGamePage> {
       stageName: loadout.stage.name,
       stageChapter: loadout.stage.chapter,
       stageIndex: loadout.stage.stage,
+      bossId: loadout.stage.bossId,
       bossTimeSeconds: loadout.stage.bossTimeSeconds,
       bossMaxHp: 420 + loadout.stage.difficulty * 13,
       stageRewardExp: loadout.stage.rewardExp,
@@ -104,6 +105,7 @@ class _GrassGamePageState extends State<GrassGamePage> {
       stageEnemyCount: loadout.stage.enemyCount,
       stageEnemyStrengthMultiplier: loadout.stage.enemyStrengthMultiplier,
       stageEnemyTypes: loadout.stage.enemyTypes,
+      stageBackgroundAssetPath: loadout.stage.battlefieldAssetPath,
       isDeathmatch: loadout.stage.isDeathmatch,
     );
   }
@@ -203,6 +205,7 @@ class _GrassGamePageState extends State<GrassGamePage> {
                   onExit: _confirmExit,
                   onLevelUp: _game.openLevelUpChoices,
                   onUltimate: _game.triggerChargedUltimate,
+                  onWeaponUltimate: _game.triggerWeaponUltimate,
                 ),
               ),
             ),
@@ -443,7 +446,7 @@ class _DeathmatchLoadingPage extends StatelessWidget {
                     border: Border.all(color: gameTheme.accent, width: 2),
                     boxShadow: [
                       BoxShadow(
-                        color: gameTheme.accent.withOpacity( 0.22),
+                        color: gameTheme.accent.withOpacity(0.22),
                         blurRadius: 28,
                         spreadRadius: 2,
                       ),
@@ -533,9 +536,9 @@ class _LoadingPill extends StatelessWidget {
     final gameTheme = context.gameTheme;
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: color.withOpacity( 0.14),
+        color: color.withOpacity(0.14),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: color.withOpacity( 0.5)),
+        border: Border.all(color: color.withOpacity(0.5)),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -688,6 +691,7 @@ class _LeftRunControls extends StatelessWidget {
     required this.onExit,
     required this.onLevelUp,
     required this.onUltimate,
+    required this.onWeaponUltimate,
   });
 
   final GrassGameRuntimeController controller;
@@ -695,6 +699,7 @@ class _LeftRunControls extends StatelessWidget {
   final VoidCallback onExit;
   final VoidCallback onLevelUp;
   final VoidCallback onUltimate;
+  final VoidCallback onWeaponUltimate;
 
   @override
   Widget build(BuildContext context) {
@@ -722,6 +727,12 @@ class _LeftRunControls extends StatelessWidget {
             _ChargedUltimateButton(
               snapshot: controller.hud,
               onPressed: onUltimate,
+            ),
+            const SizedBox(height: 10),
+            _ChargedUltimateButton(
+              snapshot: controller.hud,
+              onPressed: onWeaponUltimate,
+              isWeapon: true,
             ),
           ],
         );
@@ -940,10 +951,12 @@ class _ChargedUltimateButton extends StatefulWidget {
   const _ChargedUltimateButton({
     required this.snapshot,
     required this.onPressed,
+    this.isWeapon = false,
   });
 
   final HudSnapshot snapshot;
   final VoidCallback onPressed;
+  final bool isWeapon;
 
   @override
   State<_ChargedUltimateButton> createState() => _ChargedUltimateButtonState();
@@ -976,7 +989,10 @@ class _ChargedUltimateButtonState extends State<_ChargedUltimateButton>
   }
 
   void _syncGlow() {
-    if (widget.snapshot.isUltimateReady) {
+    final isReady = widget.isWeapon
+        ? widget.snapshot.isWeaponUltimateReady
+        : widget.snapshot.isUltimateReady;
+    if (isReady) {
       if (!_glowController.isAnimating) {
         _glowController.repeat(reverse: true);
       }
@@ -992,24 +1008,39 @@ class _ChargedUltimateButtonState extends State<_ChargedUltimateButton>
   Widget build(BuildContext context) {
     final gameTheme = context.gameTheme;
     final snapshot = widget.snapshot;
-    final isReady = snapshot.isUltimateReady;
+    final isReady = widget.isWeapon
+        ? snapshot.isWeaponUltimateReady
+        : snapshot.isUltimateReady;
     final isZh = Localizations.localeOf(context).languageCode == 'zh';
-    final chargeText =
-        '${snapshot.ultimateCharge}/${snapshot.ultimateChargeRequired}';
+    final chargeText = widget.isWeapon
+        ? '${snapshot.weaponUltimateCharge}/${snapshot.weaponUltimateChargeRequired}'
+        : '${snapshot.ultimateCharge}/${snapshot.ultimateChargeRequired}';
+    final tooltip = widget.isWeapon
+        ? snapshot.hasWeaponUltimate
+            ? isZh
+                ? '武器大招 $chargeText'
+                : 'Weapon ultimate $chargeText'
+            : isZh
+                ? '当前武器暂无大招'
+                : 'No weapon ultimate'
+        : isZh
+            ? '角色大招 $chargeText'
+            : 'Character ultimate $chargeText';
+    final readyColor =
+        widget.isWeapon ? const Color(0xFF90DBF4) : const Color(0xFFFFF2A6);
     return AnimatedBuilder(
       animation: _glowController,
       builder: (context, _) {
         final glow = isReady ? _glowController.value : 0.0;
         return Tooltip(
-          message: isZh ? '大招 $chargeText' : 'Ultimate $chargeText',
+          message: tooltip,
           child: DecoratedBox(
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               boxShadow: isReady
                   ? [
                       BoxShadow(
-                        color: const Color(0xFFFFF2A6)
-                            .withOpacity(0.28 + glow * 0.32),
+                        color: readyColor.withOpacity(0.28 + glow * 0.32),
                         blurRadius: 10 + glow * 12,
                         spreadRadius: 1 + glow * 3,
                       ),
@@ -1020,13 +1051,14 @@ class _ChargedUltimateButtonState extends State<_ChargedUltimateButton>
               onPressed: isReady ? widget.onPressed : null,
               style: IconButton.styleFrom(
                 backgroundColor: isReady
-                    ? const Color(0x44FFD36E)
+                    ? (widget.isWeapon
+                        ? const Color(0x3330D5C8)
+                        : const Color(0x44FFD36E))
                     : gameTheme.glass.withOpacity(0.30),
                 disabledBackgroundColor: gameTheme.glass.withOpacity(0.22),
                 side: BorderSide(
-                  color: isReady
-                      ? const Color(0xFFFFF2A6)
-                      : gameTheme.line.withOpacity(0.72),
+                  color:
+                      isReady ? readyColor : gameTheme.line.withOpacity(0.72),
                   width: isReady ? 2 : 1,
                 ),
                 padding: EdgeInsets.zero,
@@ -1034,8 +1066,10 @@ class _ChargedUltimateButtonState extends State<_ChargedUltimateButton>
               ),
               icon: CustomPaint(
                 foregroundPainter: _UltimateChargeRingPainter(
-                  progress: snapshot.ultimateChargeProgress,
-                  color: isReady ? const Color(0xFFFFF2A6) : gameTheme.accent2,
+                  progress: widget.isWeapon
+                      ? snapshot.weaponUltimateChargeProgress
+                      : snapshot.ultimateChargeProgress,
+                  color: isReady ? readyColor : gameTheme.accent2,
                 ),
                 child: SizedBox(
                   width: 42,
@@ -1044,9 +1078,11 @@ class _ChargedUltimateButtonState extends State<_ChargedUltimateButton>
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
-                        Icons.offline_bolt_rounded,
+                        widget.isWeapon
+                            ? Icons.auto_awesome_rounded
+                            : Icons.offline_bolt_rounded,
                         color: isReady
-                            ? const Color(0xFFFFF2A6)
+                            ? readyColor
                             : gameTheme.foreground.withOpacity(0.55),
                         size: 19,
                       ),

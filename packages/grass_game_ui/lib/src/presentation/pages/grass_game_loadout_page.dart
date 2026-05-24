@@ -4,6 +4,11 @@ import 'package:flutter/material.dart';
 import '../../application/progression/grass_game_progress_controller.dart';
 import '../widgets/animated_character_sprite.dart';
 
+abstract final class _LoadoutAssets {
+  static const fusionIcon =
+      'assets/game/grass_game/images/skills/skill_weapon_fusion_icon.png';
+}
+
 class GrassGameLoadoutPage extends StatefulWidget {
   const GrassGameLoadoutPage({
     super.key,
@@ -456,8 +461,8 @@ class _CharacterCard extends StatelessWidget {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: character.isOwned
-                        ? color.withOpacity( 0.28)
-                        : gameTheme.muted.withOpacity( 0.22),
+                        ? color.withOpacity(0.28)
+                        : gameTheme.muted.withOpacity(0.22),
                     border: Border.all(
                       color: character.isOwned ? color : gameTheme.line,
                     ),
@@ -764,6 +769,557 @@ class _SkillGuideEntry extends StatelessWidget {
   }
 }
 
+class _WeaponFusionTreeSection extends StatelessWidget {
+  const _WeaponFusionTreeSection({
+    required this.progressController,
+  });
+
+  final GrassGameProgressController progressController;
+
+  @override
+  Widget build(BuildContext context) {
+    final gameTheme = context.gameTheme;
+    final strings = _LoadoutStrings.of(context);
+    final weaponsById = {
+      for (final weapon in progressController.weapons) weapon.id: weapon,
+    };
+    final recipes = progressController.weapons
+        .where((weapon) => weapon.recipe != null)
+        .where(
+          (weapon) => weapon.recipe!.materialWeaponIds.every(
+            weaponsById.containsKey,
+          ),
+        )
+        .toList(growable: false);
+    if (recipes.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: gameTheme.deep,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: gameTheme.accent2.withOpacity(0.7)),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 14, 14, 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Image.asset(
+                    _LoadoutAssets.fusionIcon,
+                    width: 34,
+                    height: 34,
+                    filterQuality: FilterQuality.medium,
+                    errorBuilder: (_, __, ___) => Icon(
+                      Icons.account_tree_rounded,
+                      color: gameTheme.accent2,
+                      size: 26,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      strings.fusionTitle,
+                      style: TextStyle(
+                        color: gameTheme.foreground,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                strings.fusionSubtitle,
+                style: TextStyle(
+                  color: gameTheme.muted,
+                  fontSize: 12,
+                  height: 1.3,
+                  letterSpacing: 0,
+                ),
+              ),
+              const SizedBox(height: 14),
+              for (final weapon in recipes) ...[
+                _WeaponFusionRecipeRow(
+                  resultWeapon: weapon,
+                  progressController: progressController,
+                  weaponsById: weaponsById,
+                ),
+                if (weapon != recipes.last) const SizedBox(height: 10),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _WeaponFusionRecipeRow extends StatelessWidget {
+  const _WeaponFusionRecipeRow({
+    required this.resultWeapon,
+    required this.progressController,
+    required this.weaponsById,
+  });
+
+  final WeaponDefinition resultWeapon;
+  final GrassGameProgressController progressController;
+  final Map<String, WeaponDefinition> weaponsById;
+
+  @override
+  Widget build(BuildContext context) {
+    final gameTheme = context.gameTheme;
+    final strings = _LoadoutStrings.of(context);
+    final recipe = resultWeapon.recipe!;
+    final materials = recipe.materialWeaponIds
+        .map((id) => weaponsById[id]!)
+        .toList(growable: false);
+    final color = Color(resultWeapon.baseColorValue);
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: gameTheme.panel,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: gameTheme.line),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              for (var index = 0; index < materials.length; index++) ...[
+                Expanded(
+                  child: _FusionWeaponNode(
+                    weapon: materials[index],
+                    progressController: progressController,
+                  ),
+                ),
+                if (index != materials.length - 1) const SizedBox(width: 12),
+              ],
+            ],
+          ),
+          SizedBox(
+            height: 34,
+            child: CustomPaint(
+              painter: _FusionConnectorPainter(
+                color: color,
+                inputCount: materials.length,
+              ),
+              child: const SizedBox.expand(),
+            ),
+          ),
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 250),
+              child: _FusionWeaponNode(
+                weapon: resultWeapon,
+                progressController: progressController,
+                isResult: true,
+                subtitle:
+                    materials.map((weapon) => strings.weaponName(weapon)).join(
+                          ' + ',
+                        ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FusionWeaponNode extends StatelessWidget {
+  const _FusionWeaponNode({
+    required this.weapon,
+    required this.progressController,
+    this.isResult = false,
+    this.subtitle,
+  });
+
+  final WeaponDefinition weapon;
+  final GrassGameProgressController progressController;
+  final bool isResult;
+  final String? subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = _LoadoutStrings.of(context);
+    final gameTheme = context.gameTheme;
+    final progress = progressController.progressFor(weapon.id);
+    final currentStats = progressController.weaponStatsFor(weapon.id);
+    final nextStats = progress.isOwned && progress.level < weapon.maxLevel
+        ? progressController.weaponStatsFor(
+            weapon.id,
+            level: progress.level + 1,
+          )
+        : null;
+    final accent = isResult ? gameTheme.accent2 : Color(weapon.baseColorValue);
+    final actionLabel = _fusionActionLabel(
+      strings: strings,
+      weapon: weapon,
+      progress: progress,
+    );
+    final actionCost = _fusionActionCost(
+      progressController: progressController,
+      weapon: weapon,
+      progress: progress,
+    );
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: gameTheme.glass,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: progress.isOwned || isResult
+              ? accent.withOpacity(0.58)
+              : gameTheme.line,
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              _FusionIcon(
+                assetPath: weapon.iconAssetPath,
+                color: progress.isOwned || isResult ? accent : gameTheme.muted,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      strings.weaponName(weapon),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: gameTheme.foreground,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      subtitle ??
+                          (progress.isOwned
+                              ? 'Lv ${progress.level}/${weapon.maxLevel}'
+                              : strings.weaponUnlockMethod(weapon)),
+                      maxLines: isResult ? 2 : 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: progress.isOwned
+                            ? gameTheme.accent
+                            : gameTheme.muted,
+                        fontSize: 10,
+                        height: 1.25,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          _FusionStatsLine(
+            current: currentStats,
+            next: nextStats,
+            strings: strings,
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 34,
+            child: FilledButton.tonal(
+              onPressed: () => _handleFusionWeaponAction(
+                context: context,
+                progressController: progressController,
+                weapon: weapon,
+              ),
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                textStyle: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: _CostButtonLabel(label: actionLabel, cost: actionCost),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FusionStatsLine extends StatelessWidget {
+  const _FusionStatsLine({
+    required this.current,
+    required this.next,
+    required this.strings,
+  });
+
+  final WeaponDisplayStats current;
+  final WeaponDisplayStats? next;
+  final _LoadoutStrings strings;
+
+  @override
+  Widget build(BuildContext context) {
+    final gameTheme = context.gameTheme;
+    return Wrap(
+      spacing: 6,
+      runSpacing: 4,
+      children: [
+        _FusionStatChip(
+          label: strings.damage,
+          value: current.damage.toString(),
+          nextValue: next?.damage.toString(),
+        ),
+        _FusionStatChip(
+          label: strings.attackSpeed,
+          value: strings.perSecond(current.attacksPerSecond),
+          nextValue:
+              next == null ? null : strings.perSecond(next!.attacksPerSecond),
+        ),
+        _FusionStatChip(
+          label: strings.range,
+          value: current.range.round().toString(),
+          nextValue: next?.range.round().toString(),
+        ),
+        if (next == null)
+          Text(
+            strings.currentStatsTitle(current.level),
+            style: TextStyle(
+              color: gameTheme.muted,
+              fontSize: 10,
+              height: 1.2,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0,
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _FusionStatChip extends StatelessWidget {
+  const _FusionStatChip({
+    required this.label,
+    required this.value,
+    required this.nextValue,
+  });
+
+  final String label;
+  final String value;
+  final String? nextValue;
+
+  @override
+  Widget build(BuildContext context) {
+    final gameTheme = context.gameTheme;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: gameTheme.panel,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: gameTheme.line),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+        child: Text(
+          nextValue == null ? '$label $value' : '$label $value>$nextValue',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: nextValue == null ? gameTheme.muted : gameTheme.accent,
+            fontSize: 10,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+String _fusionActionLabel({
+  required _LoadoutStrings strings,
+  required WeaponDefinition weapon,
+  required WeaponProgress progress,
+}) {
+  if (!progress.isOwned) {
+    return weapon.isCraftWeapon ? strings.craft : strings.buy;
+  }
+  if (progress.level >= weapon.maxLevel) {
+    return strings.select;
+  }
+  return strings.upgrade;
+}
+
+int _fusionActionCost({
+  required GrassGameProgressController progressController,
+  required WeaponDefinition weapon,
+  required WeaponProgress progress,
+}) {
+  if (!progress.isOwned) {
+    return weapon.isCraftWeapon
+        ? progressController.craftCost(weapon.id)
+        : weapon.buyCost;
+  }
+  if (progress.level >= weapon.maxLevel) {
+    return 0;
+  }
+  return progressController.upgradeCost(weapon.id);
+}
+
+void _handleFusionWeaponAction({
+  required BuildContext context,
+  required GrassGameProgressController progressController,
+  required WeaponDefinition weapon,
+}) {
+  final strings = _LoadoutStrings.of(context);
+  final progress = progressController.progressFor(weapon.id);
+  if (!progress.isOwned) {
+    final ok = weapon.isCraftWeapon
+        ? progressController.craftWeapon(weapon.id)
+        : progressController.buyWeapon(weapon.id);
+    if (!ok) {
+      final missing = weapon.isCraftWeapon
+          ? progressController.missingCraftMaterialIds(weapon.id)
+          : const <String>[];
+      _showFusionMessage(
+        context,
+        missing.isEmpty ? strings.notEnoughCoins : strings.missingMaterials,
+      );
+      return;
+    }
+    _showFusionMessage(
+      context,
+      weapon.isCraftWeapon
+          ? strings.crafted(strings.weaponName(weapon))
+          : strings.bought(strings.weaponName(weapon)),
+    );
+    return;
+  }
+
+  if (progress.level >= weapon.maxLevel) {
+    progressController.selectWeapon(weapon.id);
+    _showFusionMessage(
+      context,
+      strings.selected(strings.weaponName(weapon)),
+    );
+    return;
+  }
+
+  final before = progressController.weaponStatsFor(weapon.id);
+  final ok = progressController.upgradeWeapon(weapon.id);
+  if (!ok) {
+    _showFusionMessage(context, strings.notEnoughCoins);
+    return;
+  }
+  final after = progressController.weaponStatsFor(weapon.id);
+  _showFusionMessage(
+    context,
+    strings.upgradeResult(before: before, after: after),
+  );
+}
+
+void _showFusionMessage(BuildContext context, String text) {
+  ScaffoldMessenger.of(context)
+    ..hideCurrentSnackBar()
+    ..showSnackBar(SnackBar(content: Text(text)));
+}
+
+class _FusionConnectorPainter extends CustomPainter {
+  const _FusionConnectorPainter({
+    required this.color,
+    required this.inputCount,
+  });
+
+  final Color color;
+  final int inputCount;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (inputCount == 0) {
+      return;
+    }
+    final paint = Paint()
+      ..color = color.withOpacity(0.85)
+      ..strokeWidth = 2
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+    final centerX = size.width / 2;
+    final joinY = size.height * 0.48;
+    final inputWidth = size.width / inputCount;
+    for (var index = 0; index < inputCount; index++) {
+      final x = inputWidth * index + inputWidth / 2;
+      canvas.drawLine(Offset(x, 0), Offset(x, joinY), paint);
+      canvas.drawLine(Offset(x, joinY), Offset(centerX, joinY), paint);
+    }
+    canvas.drawLine(
+      Offset(centerX, joinY),
+      Offset(centerX, size.height),
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_FusionConnectorPainter oldDelegate) {
+    return oldDelegate.color != color || oldDelegate.inputCount != inputCount;
+  }
+}
+
+class _FusionIcon extends StatelessWidget {
+  const _FusionIcon({
+    required this.assetPath,
+    required this.color,
+  });
+
+  final String assetPath;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final gameTheme = context.gameTheme;
+    return Container(
+      width: 42,
+      height: 42,
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.9),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: gameTheme.line),
+      ),
+      child: Center(
+        child: Image.asset(
+          assetPath,
+          width: 34,
+          height: 34,
+          fit: BoxFit.contain,
+          filterQuality: FilterQuality.none,
+          errorBuilder: (_, __, ___) => Icon(
+            Icons.auto_awesome_rounded,
+            color: gameTheme.ink,
+            size: 22,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _LoadoutActionBar extends StatelessWidget {
   const _LoadoutActionBar({
     required this.startLabel,
@@ -786,7 +1342,7 @@ class _LoadoutActionBar extends StatelessWidget {
         border: Border(top: BorderSide(color: gameTheme.line)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity( 0.24),
+            color: Colors.black.withOpacity(0.24),
             blurRadius: 18,
             offset: const Offset(0, -8),
           ),
@@ -1171,7 +1727,7 @@ class _WeaponRecipeConnectorPainter extends CustomPainter {
       return;
     }
     final paint = Paint()
-      ..color = color.withOpacity( 0.8)
+      ..color = color.withOpacity(0.8)
       ..strokeWidth = 2
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
@@ -1353,9 +1909,9 @@ class _WeaponCostPill extends StatelessWidget {
     final gameTheme = context.gameTheme;
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: gameTheme.accent2.withOpacity( 0.16),
+        color: gameTheme.accent2.withOpacity(0.16),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: gameTheme.accent2.withOpacity( 0.42)),
+        border: Border.all(color: gameTheme.accent2.withOpacity(0.42)),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
@@ -1582,6 +2138,12 @@ class _WeaponShopPageState extends State<_WeaponShopPage> {
                     ],
                   ),
                 ),
+                SliverToBoxAdapter(
+                  child: _WeaponFusionTreeSection(
+                    progressController: widget.progressController,
+                  ),
+                ),
+                const SliverToBoxAdapter(child: SizedBox(height: 20)),
               ],
             );
           },
@@ -2031,7 +2593,7 @@ class _WeaponIcon extends StatelessWidget {
       decoration: BoxDecoration(
         color: isOwned
             ? Color(weapon.baseColorValue)
-            : Color(weapon.baseColorValue).withOpacity( 0.18),
+            : Color(weapon.baseColorValue).withOpacity(0.18),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Stack(
@@ -2123,6 +2685,10 @@ class _LoadoutStrings {
       isZh ? '查看技能树、核心进化与终极大招' : 'Skill trees, evolutions, and ultimates';
   String get weaponLoadout => isZh ? '武器配置' : 'Weapon Loadout';
   String get weaponShop => isZh ? '武器商店' : 'Weapon Shop';
+  String get fusionTitle => isZh ? '武器合成路线' : 'Weapon Fusion Tree';
+  String get fusionSubtitle => isZh
+      ? '收集配方武器并消耗金币，合成更高阶的武器。'
+      : 'Combine recipe weapons and coins to craft higher-tier weapons.';
   String get startRun => isZh ? '开始作战' : 'Start Run';
   String get deathmatch => isZh ? '死斗模式' : 'Deathmatch';
   String get lockedLabel => isZh ? '未拥有' : 'Locked';
@@ -2150,6 +2716,12 @@ class _LoadoutStrings {
   String locked(String name) => isZh ? '$name 尚未解锁' : '$name is locked';
 
   String notOwned(String name) => isZh ? '$name 尚未拥有' : '$name is not owned';
+
+  String bought(String name) => isZh ? '已购买 $name' : '$name purchased';
+
+  String crafted(String name) => isZh ? '已合成 $name' : '$name crafted';
+
+  String selected(String name) => isZh ? '已选择 $name' : '$name selected';
 
   String weaponName(WeaponDefinition weapon) {
     if (isZh) {

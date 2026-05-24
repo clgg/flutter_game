@@ -17,6 +17,10 @@ class GameStageDefinition {
     required this.stage,
     required this.name,
     required this.description,
+    required this.themeId,
+    required this.themeName,
+    required this.sceneAssetPath,
+    required this.battlefieldAssetPath,
     required this.difficulty,
     required this.enemyCount,
     required this.enemyStrengthMultiplier,
@@ -34,6 +38,10 @@ class GameStageDefinition {
   final int stage;
   final String name;
   final String description;
+  final String themeId;
+  final String themeName;
+  final String sceneAssetPath;
+  final String battlefieldAssetPath;
   final int difficulty;
   final int enemyCount;
   final double enemyStrengthMultiplier;
@@ -44,6 +52,20 @@ class GameStageDefinition {
   final String bossId;
   final String bossName;
   final bool isDeathmatch;
+}
+
+class StageThemeDefinition {
+  const StageThemeDefinition({
+    required this.id,
+    required this.name,
+    required this.bossId,
+    required this.bossName,
+  });
+
+  final String id;
+  final String name;
+  final String bossId;
+  final String bossName;
 }
 
 class CharacterDefinition {
@@ -198,6 +220,7 @@ class GameLoadoutSnapshot {
 
   WeaponRuntimeStats get weaponRuntimeStats {
     return WeaponRuntimeStats(
+      weaponId: weapon.id,
       attackPattern: weapon.attackPattern.name,
       damage: weaponDamage,
       attacksPerSecond: weaponAttacksPerSecond,
@@ -262,22 +285,6 @@ class GrassGameProgressController extends ChangeNotifier {
               'assets/game/grass_game/images/player/preview_female_walk.gif',
           gameSpriteSheetAssetPath:
               'assets/game/grass_game/images/player/player_female_walk_8dir_sheet.png',
-          isOwned: true,
-        ),
-        CharacterDefinition(
-          id: 'scout',
-          name: 'Robot',
-          role: 'HP 150 · SPD 7 · ATK 1.08',
-          baseHp: 150,
-          baseSpeedMultiplier: 0.875,
-          baseAttackMultiplier: 1.08,
-          colorValue: 0xFFFFC857,
-          avatarAssetPath:
-              'assets/game/grass_game/images/player/avatar_robot.png',
-          walkPreviewAssetPath:
-              'assets/game/grass_game/images/player/preview_robot_walk.gif',
-          gameSpriteSheetAssetPath:
-              'assets/game/grass_game/images/player/player_robot_walk_8dir_sheet.png',
           isOwned: true,
         ),
         CharacterDefinition(
@@ -397,6 +404,7 @@ class GrassGameProgressController extends ChangeNotifier {
   static const _weaponUpgradeMinBaseCost = 70;
   static const _weaponUpgradeBuyCostRatio = 0.12;
   static const _weaponUpgradeCostGrowth = 1.16;
+  static const _stageImageRoot = 'assets/game/grass_game/images/stages';
 
   static final List<GameStageDefinition> _stages = [
     for (var chapter = 1; chapter <= 10; chapter++)
@@ -420,6 +428,20 @@ class GrassGameProgressController extends ChangeNotifier {
     'guaishou_winged_dragon',
   ];
 
+  static const StageThemeDefinition _farmTheme = StageThemeDefinition(
+    id: 'farm',
+    name: 'Infected Farm',
+    bossId: 'guaishou_cyber_crocodile_boss',
+    bossName: 'Cyber Crocodile',
+  );
+
+  static const StageThemeDefinition _mixedGuaishouTheme = StageThemeDefinition(
+    id: 'mixed_guaishou',
+    name: 'Mutant Outbreak',
+    bossId: 'random_guaishou',
+    bossName: 'Random Guaishou',
+  );
+
   static const GameStageDefinition _deathmatchStage = GameStageDefinition(
     id: deathmatchStageId,
     chapter: 11,
@@ -427,6 +449,10 @@ class GrassGameProgressController extends ChangeNotifier {
     name: '死斗模式',
     description:
         'Endless melee survival. Guaishou become stronger every minute.',
+    themeId: 'deathmatch',
+    themeName: 'Cosmic Rift',
+    sceneAssetPath: '$_stageImageRoot/stage_10_cosmos.webp',
+    battlefieldAssetPath: '$_stageImageRoot/stage_10_cosmos.webp',
     difficulty: 99,
     enemyCount: 0,
     enemyStrengthMultiplier: 1.25,
@@ -464,8 +490,11 @@ class GrassGameProgressController extends ChangeNotifier {
       chapter: chapter,
       stage: stage,
       name: 'Chapter $chapter-$stage',
-      description:
-          'Clear wave ${chapter * 10 + stage} and defeat a random Guaishou.',
+      description: _stageBrief(chapter, stage),
+      themeId: _themeIdForChapter(chapter),
+      themeName: _themeNameForChapter(chapter),
+      sceneAssetPath: _sceneAssetForChapter(chapter),
+      battlefieldAssetPath: _sceneAssetForChapter(chapter),
       difficulty: chapter * 10 + stage,
       enemyCount: (56 + chapter * 13 + stage * 6) * 4,
       enemyStrengthMultiplier: double.parse(
@@ -475,8 +504,8 @@ class GrassGameProgressController extends ChangeNotifier {
       bossTimeSeconds: bossTimeSeconds,
       rewardExp: 135 + chapter * 26 + stage * 10,
       rewardCoins: 65 + chapter * 13 + stage * 8,
-      bossId: 'random_guaishou',
-      bossName: 'Random Guaishou',
+      bossId: _mixedGuaishouTheme.bossId,
+      bossName: _mixedGuaishouTheme.bossName,
     );
   }
 
@@ -508,12 +537,18 @@ class GrassGameProgressController extends ChangeNotifier {
       name: 'Chapter 1-$stage',
       description: switch (stage) {
         1 =>
-          'Learn movement, collect EXP, and defeat the first random Guaishou.',
-        2 => 'Fast enemies enter the field. Keep moving.',
-        3 => 'Weapon upgrades begin to matter against denser waves.',
-        4 => 'Tank enemies test your damage and spacing.',
-        _ => 'First real challenge before Chapter 2 unlocks.',
+          'The farm fence is down. Clear the infected animals before the barn lights go out.',
+        2 => 'Tracks in the mud show faster mutants circling the corn rows.',
+        3 =>
+          'The well is contaminated. Hold the yard and collect crystalized samples.',
+        4 =>
+          'Heavy beasts break through the silo line and force tighter movement.',
+        _ => 'Destroy the farm nest before the outbreak reaches the highway.',
       },
+      themeId: _farmTheme.id,
+      themeName: _farmTheme.name,
+      sceneAssetPath: _sceneAssetForChapter(1),
+      battlefieldAssetPath: _sceneAssetForChapter(1),
       difficulty: 10 + stage,
       enemyCount: enemyCounts[index],
       enemyStrengthMultiplier: strength[index],
@@ -521,9 +556,134 @@ class GrassGameProgressController extends ChangeNotifier {
       bossTimeSeconds: bossTimes[index],
       rewardExp: rewardExp[index],
       rewardCoins: rewardCoins[index],
-      bossId: 'random_guaishou',
-      bossName: 'Random Guaishou',
+      bossId: stage == 5 ? _farmTheme.bossId : _mixedGuaishouTheme.bossId,
+      bossName: stage == 5 ? _farmTheme.bossName : _mixedGuaishouTheme.bossName,
     );
+  }
+
+  static String _themeIdForChapter(int chapter) {
+    return switch (chapter.clamp(1, 10)) {
+      1 => 'farm',
+      2 => 'highway',
+      3 => 'city',
+      4 => 'cave',
+      5 => 'forest',
+      6 => 'ocean',
+      7 => 'infected',
+      8 => 'skeleton',
+      9 => 'alien',
+      _ => 'cosmos',
+    };
+  }
+
+  static String _themeNameForChapter(int chapter) {
+    return switch (chapter.clamp(1, 10)) {
+      1 => 'Infected Farm',
+      2 => 'Broken Highway',
+      3 => 'Ruined City',
+      4 => 'Mutation Cave',
+      5 => 'Spore Forest',
+      6 => 'Toxic Ocean',
+      7 => 'Quarantine Dead Zone',
+      8 => 'Bone Wasteland',
+      9 => 'Alien Landing Site',
+      _ => 'Cosmic Rift',
+    };
+  }
+
+  static String _sceneAssetForChapter(int chapter) {
+    return switch (chapter.clamp(1, 10)) {
+      1 => '$_stageImageRoot/stage_01_farm.webp',
+      2 => '$_stageImageRoot/stage_02_highway.webp',
+      3 => '$_stageImageRoot/stage_03_city.webp',
+      4 => '$_stageImageRoot/stage_04_cave.webp',
+      5 => '$_stageImageRoot/stage_05_forest.webp',
+      6 => '$_stageImageRoot/stage_06_ocean.webp',
+      7 => '$_stageImageRoot/stage_07_infected.webp',
+      8 => '$_stageImageRoot/stage_08_skeleton.webp',
+      9 => '$_stageImageRoot/stage_09_alien.webp',
+      _ => '$_stageImageRoot/stage_10_cosmos.webp',
+    };
+  }
+
+  static String _stageBrief(int chapter, int stage) {
+    return switch (chapter.clamp(2, 10)) {
+      2 => switch (stage) {
+          1 =>
+            'Reach the first highway barricade and punch through the car pileup.',
+          2 =>
+            'Fuel leaks split the road into narrow lanes while fast mutants flank.',
+          3 => 'Escort the signal beacon past the abandoned bus convoy.',
+          4 => 'Hold the overpass choke point against armored highway beasts.',
+          _ => 'Break the tanker nest and open the route toward the city.',
+        },
+      3 => switch (stage) {
+          1 =>
+            'Search the outer blocks while alley mutants answer every sound.',
+          2 => 'Power up the emergency grid before the streets close in.',
+          3 => 'Cross the market ruins and survive the rooftop ambushes.',
+          4 => 'Push through the subway entrance where heavy mutants gather.',
+          _ =>
+            'Defeat the city core guardian and recover the evacuation codes.',
+        },
+      4 => switch (stage) {
+          1 => 'Descend into the cave mouth and secure a light chain.',
+          2 =>
+            'Crystal dust distorts movement while burrowers strike from side tunnels.',
+          3 => 'Break the slime vents before they flood the lower path.',
+          4 => 'Hold a narrow cavern bridge against thick-shelled mutants.',
+          _ => 'Crack the underground mutation chamber and climb out alive.',
+        },
+      5 => switch (stage) {
+          1 => 'Enter the spore forest and cut a path through twisted roots.',
+          2 => 'Glowing spores attract faster beasts from both flanks.',
+          3 => 'Burn through the ranger station and recover survival supplies.',
+          4 => 'Ancient roots split the arena into dangerous pockets.',
+          _ =>
+            'Destroy the forest heart before the spores spread to the coast.',
+        },
+      6 => switch (stage) {
+          1 =>
+            'Secure the broken pier while toxic waves push creatures ashore.',
+          2 => 'Mutated sea life surges through the flooded road.',
+          3 => 'Recover distress beacons from the stranded shipyard.',
+          4 => 'Hold the lighthouse base against armored coastal beasts.',
+          _ => 'Sink the ocean nest and follow the signal inland.',
+        },
+      7 => switch (stage) {
+          1 =>
+            'Enter the quarantine district and silence the first infected wave.',
+          2 =>
+            'Hospital tents collapse as infected crowds surround the street.',
+          3 => 'Protect the vaccine crate while alarms draw more bodies in.',
+          4 => 'Fight through ambulance wreckage and narrow emergency lanes.',
+          _ =>
+            'Purge the quarantine command center before the dead zone expands.',
+        },
+      8 => switch (stage) {
+          1 => 'Cross the bone field where old remains begin to move.',
+          2 => 'Blue fire marks cursed lanes that funnel skeletal attackers.',
+          3 => 'Recover relic fragments before the ground cracks open.',
+          4 => 'Armored skeleton beasts guard the ruined shrine approach.',
+          _ => 'Shatter the bone altar and stop the endless reassembly.',
+        },
+      9 => switch (stage) {
+          1 => 'Investigate the first alien pod and survive the scout swarm.',
+          2 =>
+            'Strange gravity bends the base lanes around broken radar dishes.',
+          3 => 'Disable the beacon towers before more invaders land.',
+          4 => 'Alien armor units advance from the hangar wreckage.',
+          _ => 'Destroy the landing core and open the final cosmic route.',
+        },
+      _ => switch (stage) {
+          1 => 'Board the broken orbital platform as the sky tears open.',
+          2 => 'Cosmic storms split the arena into shifting danger lanes.',
+          3 => 'Cut through alien biomass wrapped around the station spine.',
+          4 => 'Hold the reactor ring while endgame mutants converge.',
+          _ =>
+            'Break the cosmic rift core and decide whether the world survives.',
+        },
+    };
   }
 
   final List<CharacterDefinition> characters;

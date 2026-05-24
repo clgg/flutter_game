@@ -17,6 +17,9 @@ class HudSnapshot {
     required this.isBossSpawned,
     required this.ultimateCharge,
     required this.ultimateChargeRequired,
+    required this.weaponUltimateCharge,
+    required this.weaponUltimateChargeRequired,
+    required this.hasWeaponUltimate,
   });
 
   final int hp;
@@ -36,6 +39,9 @@ class HudSnapshot {
   final bool isBossSpawned;
   final int ultimateCharge;
   final int ultimateChargeRequired;
+  final int weaponUltimateCharge;
+  final int weaponUltimateChargeRequired;
+  final bool hasWeaponUltimate;
 
   int get bossSecondsRemaining {
     return (bossTimeSeconds - elapsedSeconds).clamp(0, bossTimeSeconds);
@@ -45,11 +51,23 @@ class HudSnapshot {
 
   bool get isUltimateReady => ultimateCharge >= ultimateChargeRequired;
 
+  bool get isWeaponUltimateReady =>
+      hasWeaponUltimate && weaponUltimateCharge >= weaponUltimateChargeRequired;
+
   double get ultimateChargeProgress {
     if (ultimateChargeRequired <= 0) {
       return 0;
     }
     return (ultimateCharge / ultimateChargeRequired).clamp(0, 1).toDouble();
+  }
+
+  double get weaponUltimateChargeProgress {
+    if (weaponUltimateChargeRequired <= 0) {
+      return 0;
+    }
+    return (weaponUltimateCharge / weaponUltimateChargeRequired)
+        .clamp(0, 1)
+        .toDouble();
   }
 
   double get enemyProgress {
@@ -77,5 +95,8 @@ class HudSnapshot {
     isBossSpawned: false,
     ultimateCharge: 0,
     ultimateChargeRequired: 10,
+    weaponUltimateCharge: 0,
+    weaponUltimateChargeRequired: 8,
+    hasWeaponUltimate: false,
   );
 }
