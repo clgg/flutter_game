@@ -319,7 +319,7 @@ class _CoinPill extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Image.asset(
-              'assets/game/grass_game/images/coins/coin_drop_small.png',
+              'assets/game/grass_game/images/coins/coin_drop_small.webp',
               width: 20,
               height: 20,
             ),
@@ -357,7 +357,7 @@ class _CoinAmount extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Image.asset(
-          'assets/game/grass_game/images/coins/coin_drop_small.png',
+          'assets/game/grass_game/images/coins/coin_drop_small.webp',
           width: iconSize,
           height: iconSize,
           filterQuality: FilterQuality.none,

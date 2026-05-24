@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
@@ -264,11 +264,11 @@ class GrassGameProgressController extends ChangeNotifier {
           baseAttackMultiplier: 1,
           colorValue: 0xFF49D17D,
           avatarAssetPath:
-              'assets/game/grass_game/images/player/avatar_soldier.png',
+              'assets/game/grass_game/images/player/avatar_soldier.webp',
           walkPreviewAssetPath:
               'assets/game/grass_game/images/player/preview_male_walk.gif',
           gameSpriteSheetAssetPath:
-              'assets/game/grass_game/images/player/player_soldier_walk_8dir_sheet.png',
+              'assets/game/grass_game/images/player/player_soldier_walk_8dir_sheet.webp',
           isOwned: true,
         ),
         CharacterDefinition(
@@ -280,11 +280,11 @@ class GrassGameProgressController extends ChangeNotifier {
           baseAttackMultiplier: 0.95,
           colorValue: 0xFFFF6B6B,
           avatarAssetPath:
-              'assets/game/grass_game/images/player/avatar_female.png',
+              'assets/game/grass_game/images/player/avatar_female.webp',
           walkPreviewAssetPath:
               'assets/game/grass_game/images/player/preview_female_walk.gif',
           gameSpriteSheetAssetPath:
-              'assets/game/grass_game/images/player/player_female_walk_8dir_sheet.png',
+              'assets/game/grass_game/images/player/player_female_walk_8dir_sheet.webp',
           isOwned: true,
         ),
         CharacterDefinition(
@@ -296,11 +296,11 @@ class GrassGameProgressController extends ChangeNotifier {
           baseAttackMultiplier: 1.05,
           colorValue: 0xFFE63946,
           avatarAssetPath:
-              'assets/game/grass_game/images/player/avatar_aotuman.png',
+              'assets/game/grass_game/images/player/avatar_aotuman.webp',
           walkPreviewAssetPath:
               'assets/game/grass_game/images/player/preview_aotuman_walk.gif',
           gameSpriteSheetAssetPath:
-              'assets/game/grass_game/images/player/player_aotuman_walk_8dir_sheet.png',
+              'assets/game/grass_game/images/player/player_aotuman_walk_8dir_sheet.webp',
           isOwned: true,
         ),
         CharacterDefinition(
@@ -312,11 +312,11 @@ class GrassGameProgressController extends ChangeNotifier {
           baseAttackMultiplier: 0.96,
           colorValue: 0xFF27D6FF,
           avatarAssetPath:
-              'assets/game/grass_game/images/player/avatar_aomeijia.png',
+              'assets/game/grass_game/images/player/avatar_aomeijia.webp',
           walkPreviewAssetPath:
               'assets/game/grass_game/images/player/preview_aomeijia_walk.gif',
           gameSpriteSheetAssetPath:
-              'assets/game/grass_game/images/player/player_aomeijia_sword_walk_8dir_sheet.png',
+              'assets/game/grass_game/images/player/player_aomeijia_sword_walk_8dir_sheet.webp',
           isOwned: true,
         ),
         CharacterDefinition(
@@ -328,11 +328,11 @@ class GrassGameProgressController extends ChangeNotifier {
           baseAttackMultiplier: 1.18,
           colorValue: 0xFFB65B4A,
           avatarAssetPath:
-              'assets/game/grass_game/images/player/avatar_jingangman.png',
+              'assets/game/grass_game/images/player/avatar_jingangman.webp',
           walkPreviewAssetPath:
               'assets/game/grass_game/images/player/preview_jingangman_walk.gif',
           gameSpriteSheetAssetPath:
-              'assets/game/grass_game/images/player/player_dark_cosmic_knight_walk_8dir_sheet.png',
+              'assets/game/grass_game/images/player/player_dark_cosmic_knight_walk_8dir_sheet.webp',
           isOwned: true,
         ),
         CharacterDefinition(
@@ -344,11 +344,11 @@ class GrassGameProgressController extends ChangeNotifier {
           baseAttackMultiplier: 1.12,
           colorValue: 0xFFFF3B4F,
           avatarAssetPath:
-              'assets/game/grass_game/images/player/avatar_beliya.png',
+              'assets/game/grass_game/images/player/avatar_beliya.webp',
           walkPreviewAssetPath:
               'assets/game/grass_game/images/player/preview_beliya_walk.gif',
           gameSpriteSheetAssetPath:
-              'assets/game/grass_game/images/player/player_beliya_dark_cape_walk_8dir_sheet.png',
+              'assets/game/grass_game/images/player/player_beliya_dark_cape_walk_8dir_sheet.webp',
           isOwned: true,
         ),
         CharacterDefinition(
@@ -360,11 +360,11 @@ class GrassGameProgressController extends ChangeNotifier {
           baseAttackMultiplier: 1.28,
           colorValue: 0xFFB8C2CC,
           avatarAssetPath:
-              'assets/game/grass_game/images/player/avatar_sevengar.png',
+              'assets/game/grass_game/images/player/avatar_sevengar.webp',
           walkPreviewAssetPath:
               'assets/game/grass_game/images/player/preview_sevengar_walk.gif',
           gameSpriteSheetAssetPath:
-              'assets/game/grass_game/images/player/player_round_robot_walk_8dir_sheet.png',
+              'assets/game/grass_game/images/player/player_round_robot_walk_8dir_sheet.webp',
           isOwned: true,
         ),
       ],

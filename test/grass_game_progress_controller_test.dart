@@ -199,7 +199,7 @@ void main() {
       expect(
         File(
           'assets/game/grass_game/images/guaishou/'
-          'guaishou_cyber_crocodile_boss_walk_8dir_sheet.png',
+          'guaishou_cyber_crocodile_boss_walk_8dir_sheet.webp',
         ).existsSync(),
         isTrue,
       );
@@ -281,7 +281,7 @@ void main() {
 
       for (final id in deathmatch.enemyTypes) {
         final walkSheet = File(
-          'assets/game/grass_game/images/guaishou/${id}_walk_8dir_sheet.png',
+          'assets/game/grass_game/images/guaishou/${id}_walk_8dir_sheet.webp',
         );
         expect(walkSheet.existsSync(), isTrue);
       }

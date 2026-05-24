@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui';
 
@@ -49,7 +49,7 @@ class GrassSurvivorGame extends FlameGame {
     this.playerMoveSpeedMultiplier = 1,
     this.playerCharacterId = 'runner',
     this.playerSpriteSheetAssetPath =
-        'assets/game/grass_game/images/player/player_soldier_walk_8dir_sheet.png',
+        'assets/game/grass_game/images/player/player_soldier_walk_8dir_sheet.webp',
     this.weaponDamage = 1,
     this.weaponCooldownMultiplier = 1,
     this.weaponFireIntervalSeconds = 0.8,
@@ -122,6 +122,14 @@ class GrassSurvivorGame extends FlameGame {
     'flameStream',
     'orbitSlash',
   };
+
+  static const _fireEffectGrid = _EffectFrameGrid(columns: 6, rows: 6);
+  static const _iceEffectGrid = _EffectFrameGrid(columns: 6, rows: 5);
+  static const _thunderEffectGrid = _EffectFrameGrid(columns: 6, rows: 5);
+  static const _poisonEffectGrid = _EffectFrameGrid(columns: 6, rows: 5);
+  static const _blackHoleEffectGrid = _EffectFrameGrid(columns: 6, rows: 5);
+  static const _orbitBladeEffectGrid = _EffectFrameGrid(columns: 8, rows: 1);
+  static const _ultimateBeamEffectGrid = _EffectFrameGrid(columns: 8, rows: 1);
 
   late final PlayerComponent player;
 
@@ -288,33 +296,33 @@ class GrassSurvivorGame extends FlameGame {
   static const double _gemMaxAgeSeconds = 14;
   static const Map<String, String> _guaishouSpriteSheets = {
     'guaishou_black_armored_beetle':
-        'assets/game/grass_game/images/guaishou/guaishou_black_armored_beetle_walk_8dir_sheet.png',
+        'assets/game/grass_game/images/guaishou/guaishou_black_armored_beetle_walk_8dir_sheet.webp',
     'guaishou_black_white_armor':
-        'assets/game/grass_game/images/guaishou/guaishou_black_white_armor_walk_8dir_sheet.png',
+        'assets/game/grass_game/images/guaishou/guaishou_black_white_armor_walk_8dir_sheet.webp',
     'guaishou_blue_antenna_alien':
-        'assets/game/grass_game/images/guaishou/guaishou_blue_antenna_alien_walk_8dir_sheet.png',
+        'assets/game/grass_game/images/guaishou/guaishou_blue_antenna_alien_walk_8dir_sheet.webp',
     'guaishou_gold_snail_mouth':
-        'assets/game/grass_game/images/guaishou/guaishou_gold_snail_mouth_walk_8dir_sheet.png',
+        'assets/game/grass_game/images/guaishou/guaishou_gold_snail_mouth_walk_8dir_sheet.webp',
     'guaishou_gray_block_head':
-        'assets/game/grass_game/images/guaishou/guaishou_gray_block_head_walk_8dir_sheet.png',
+        'assets/game/grass_game/images/guaishou/guaishou_gray_block_head_walk_8dir_sheet.webp',
     'guaishou_horned_brute':
-        'assets/game/grass_game/images/guaishou/guaishou_horned_brute_walk_8dir_sheet.png',
+        'assets/game/grass_game/images/guaishou/guaishou_horned_brute_walk_8dir_sheet.webp',
     'guaishou_insect_claw':
-        'assets/game/grass_game/images/guaishou/guaishou_insect_claw_walk_8dir_sheet.png',
+        'assets/game/grass_game/images/guaishou/guaishou_insect_claw_walk_8dir_sheet.webp',
     'guaishou_red_gold_spear_alien':
-        'assets/game/grass_game/images/guaishou/guaishou_red_gold_spear_alien_walk_8dir_sheet.png',
+        'assets/game/grass_game/images/guaishou/guaishou_red_gold_spear_alien_walk_8dir_sheet.webp',
     'guaishou_shell_kaiju':
-        'assets/game/grass_game/images/guaishou/guaishou_shell_kaiju_walk_8dir_sheet.png',
+        'assets/game/grass_game/images/guaishou/guaishou_shell_kaiju_walk_8dir_sheet.webp',
     'guaishou_silver_mask_rifle':
-        'assets/game/grass_game/images/guaishou/guaishou_silver_mask_rifle_walk_8dir_sheet.png',
+        'assets/game/grass_game/images/guaishou/guaishou_silver_mask_rifle_walk_8dir_sheet.webp',
     'guaishou_spiked_mane_beast':
-        'assets/game/grass_game/images/guaishou/guaishou_spiked_mane_beast_walk_8dir_sheet.png',
+        'assets/game/grass_game/images/guaishou/guaishou_spiked_mane_beast_walk_8dir_sheet.webp',
     'guaishou_winged_dragon':
-        'assets/game/grass_game/images/guaishou/guaishou_winged_dragon_walk_8dir_sheet.png',
+        'assets/game/grass_game/images/guaishou/guaishou_winged_dragon_walk_8dir_sheet.webp',
   };
   static const Map<String, String> _bossSpriteSheets = {
     'guaishou_cyber_crocodile_boss':
-        'assets/game/grass_game/images/guaishou/guaishou_cyber_crocodile_boss_walk_8dir_sheet.png',
+        'assets/game/grass_game/images/guaishou/guaishou_cyber_crocodile_boss_walk_8dir_sheet.webp',
   };
   static const Map<String, String> _animalSpriteSheets = {
     'basic':
@@ -532,47 +540,47 @@ class GrassSurvivorGame extends FlameGame {
   Future<void> _loadDropIcons() async {
     _dropIcons = DropIconSet(
       expLow: await _loadImage(
-        'assets/game/grass_game/images/exp/exp_drop_low.png',
+        'assets/game/grass_game/images/exp/exp_drop_low.webp',
       ),
       expMid: await _loadImage(
-        'assets/game/grass_game/images/exp/exp_drop_mid.png',
+        'assets/game/grass_game/images/exp/exp_drop_mid.webp',
       ),
       expHigh: await _loadImage(
-        'assets/game/grass_game/images/exp/exp_drop_high.png',
+        'assets/game/grass_game/images/exp/exp_drop_high.webp',
       ),
       coinSmall: await _loadImage(
-        'assets/game/grass_game/images/coins/coin_drop_small.png',
+        'assets/game/grass_game/images/coins/coin_drop_small.webp',
       ),
       coinMedium: await _loadImage(
-        'assets/game/grass_game/images/coins/coin_drop_medium.png',
+        'assets/game/grass_game/images/coins/coin_drop_medium.webp',
       ),
       coinLarge: await _loadImage(
-        'assets/game/grass_game/images/coins/coin_drop_large.png',
+        'assets/game/grass_game/images/coins/coin_drop_large.webp',
       ),
     );
   }
 
   Future<void> _loadSkillEffectImages() async {
     _fireEffectImage = await _loadImage(
-      'assets/game/grass_game/images/effects/skill_fire_flame_sheet.png',
+      'assets/game/grass_game/images/effects/skill_fire_flame_sheet.webp',
     );
     _iceEffectImage = await _loadImage(
-      'assets/game/grass_game/images/effects/skill_ice_crystal_sheet.png',
+      'assets/game/grass_game/images/effects/skill_ice_crystal_sheet.webp',
     );
     _thunderEffectImage = await _loadImage(
-      'assets/game/grass_game/images/effects/skill_thunder_lightning_sheet.png',
+      'assets/game/grass_game/images/effects/skill_thunder_lightning_sheet.webp',
     );
     _poisonEffectImage = await _loadImage(
-      'assets/game/grass_game/images/effects/skill_poison_spore_sheet.png',
+      'assets/game/grass_game/images/effects/skill_poison_spore_sheet.webp',
     );
     _blackHoleEffectImage = await _loadImage(
-      'assets/game/grass_game/images/effects/skill_void_black_hole_sheet.png',
+      'assets/game/grass_game/images/effects/skill_void_black_hole_sheet.webp',
     );
     _orbitBladeEffectImage = await _loadImage(
-      'assets/game/grass_game/images/effects/skill_orbit_blade_sheet.png',
+      'assets/game/grass_game/images/effects/skill_orbit_blade_sheet.webp',
     );
     _ultimateBeamEffectImage = await _loadImage(
-      'assets/game/grass_game/images/effects/skill_ultimate_beam_sheet.png',
+      'assets/game/grass_game/images/effects/skill_ultimate_beam_sheet.webp',
     );
   }
 
@@ -2797,15 +2805,11 @@ class GrassSurvivorGame extends FlameGame {
     required double opacity,
     required double progress,
   }) {
-    const columns = 4;
-    final frame = (progress * columns).floor().clamp(0, columns - 1);
-    final frameWidth = image.width / columns;
-    final source = Rect.fromLTWH(
-      frame * frameWidth,
-      0,
-      frameWidth,
-      image.height.toDouble(),
+    final frame = _effectFrameForProgress(
+      progress,
+      _ultimateBeamEffectGrid.frameCount,
     );
+    final source = _effectFrameSource(image, _ultimateBeamEffectGrid, frame);
     final angle = math.atan2(direction.y, direction.x);
     canvas.save();
     canvas.translate(start.dx, start.dy);
@@ -2915,19 +2919,9 @@ class GrassSurvivorGame extends FlameGame {
     required double seed,
     required bool isEvolved,
   }) {
-    const columns = 6;
-    const rows = 6;
-    const frameCount = columns * rows;
-    final frame =
-        (_elapsed * (isEvolved ? 15 : 10) + seed).floor() % frameCount;
-    final frameWidth = image.width / columns;
-    final frameHeight = image.height / rows;
-    final source = Rect.fromLTWH(
-      (frame % columns) * frameWidth,
-      (frame ~/ columns) * frameHeight,
-      frameWidth,
-      frameHeight,
-    );
+    final frame = (_elapsed * (isEvolved ? 15 : 10) + seed).floor() %
+        _fireEffectGrid.frameCount;
+    final source = _effectFrameSource(image, _fireEffectGrid, frame);
     final side = radius * (isEvolved ? 2.55 : 2.25);
     final destination = Rect.fromCenter(
       center: center.translate(0, -radius * 0.08),
@@ -3010,18 +3004,9 @@ class GrassSurvivorGame extends FlameGame {
     required double opacity,
     required double seed,
   }) {
-    const columns = 6;
-    const rows = 6;
-    const frameCount = columns * rows;
-    final frame = ((_elapsed * 11 + seed) * 1.4).floor() % frameCount;
-    final frameWidth = image.width / columns;
-    final frameHeight = image.height / rows;
-    final source = Rect.fromLTWH(
-      (frame % columns) * frameWidth,
-      (frame ~/ columns) * frameHeight,
-      frameWidth,
-      frameHeight,
-    );
+    final frame =
+        ((_elapsed * 11 + seed) * 1.4).floor() % _poisonEffectGrid.frameCount;
+    final source = _effectFrameSource(image, _poisonEffectGrid, frame);
     final side = radius * 2.5;
     canvas.drawImageRect(
       image,
@@ -3117,20 +3102,13 @@ class GrassSurvivorGame extends FlameGame {
     required double progress,
     required bool isField,
   }) {
-    const columns = 3;
-    const rows = 3;
-    const frameOrder = [0, 1, 2, 3, 4, 5, 8];
-    final frameIndex = ((progress * frameOrder.length + seed).floor())
-        .clamp(0, frameOrder.length - 1);
-    final frame = frameOrder[frameIndex];
-    final frameWidth = image.width / columns;
-    final frameHeight = image.height / rows;
-    final source = Rect.fromLTWH(
-      (frame % columns) * frameWidth,
-      (frame ~/ columns) * frameHeight,
-      frameWidth,
-      frameHeight,
-    );
+    final frame =
+        (progress.clamp(0, 1) * _iceEffectGrid.frameCount + seed.floor())
+                .floor() %
+            _iceEffectGrid.frameCount;
+    final source = _effectFrameSource(image, _iceEffectGrid, frame);
+    final frameWidth = source.width;
+    final frameHeight = source.height;
     final side = radius * (isField ? 2.55 : 2.25);
     final destination = Rect.fromCenter(
       center: center.translate(0, -radius * (isField ? 0.16 : 0.08)),
@@ -3181,6 +3159,34 @@ class GrassSurvivorGame extends FlameGame {
   double _visualSeed(_GroundEffectField field) {
     return (field.center.x * 0.013 + field.center.y * 0.017 + field.radius)
         .abs();
+  }
+
+  int _effectFrameForProgress(double progress, int frameCount) {
+    return (progress.clamp(0, 1) * frameCount)
+        .floor()
+        .clamp(0, frameCount - 1)
+        .toInt();
+  }
+
+  Rect _effectFrameSource(
+    Image image,
+    _EffectFrameGrid grid,
+    int frame,
+  ) {
+    final safeFrame = frame.clamp(0, grid.frameCount - 1).toInt();
+    final column = safeFrame % grid.columns;
+    final row = safeFrame ~/ grid.columns;
+    final frameWidth = image.width / grid.columns;
+    final frameHeight = image.height / grid.rows;
+    final left = column * frameWidth;
+    final top = row * frameHeight;
+    final right = column == grid.columns - 1
+        ? image.width.toDouble()
+        : (column + 1) * frameWidth;
+    final bottom = row == grid.rows - 1
+        ? image.height.toDouble()
+        : (row + 1) * frameHeight;
+    return Rect.fromLTRB(left, top, right, bottom);
   }
 
   void _drawExpandingRings(Canvas canvas) {
@@ -3291,15 +3297,8 @@ class GrassSurvivorGame extends FlameGame {
     required double size,
     required double opacity,
   }) {
-    const columns = 4;
-    final frame = ((_elapsed * 18).floor()) % columns;
-    final frameWidth = image.width / columns;
-    final source = Rect.fromLTWH(
-      frame * frameWidth,
-      0,
-      frameWidth,
-      image.height.toDouble(),
-    );
+    final frame = ((_elapsed * 18).floor()) % _orbitBladeEffectGrid.frameCount;
+    final source = _effectFrameSource(image, _orbitBladeEffectGrid, frame);
     final position = center + Offset(math.cos(angle), math.sin(angle)) * radius;
     canvas.save();
     canvas.translate(position.dx, position.dy);
@@ -3352,15 +3351,11 @@ class GrassSurvivorGame extends FlameGame {
     required _ThunderStrike strike,
     required double opacity,
   }) {
-    const columns = 8;
-    const firstCleanColumn = 4;
-    const cleanFrameCount = 4;
-    final frame = firstCleanColumn +
-        ((_elapsed * 18 + strike.radius).floor() % cleanFrameCount);
-    final frameWidth = image.width / columns;
-    final frameHeight = image.height.toDouble();
-    final source =
-        Rect.fromLTWH(frame * frameWidth, 0, frameWidth, frameHeight);
+    final frame = _effectFrameForProgress(
+      strike.progress,
+      _thunderEffectGrid.frameCount,
+    );
+    final source = _effectFrameSource(image, _thunderEffectGrid, frame);
     final height = 180.0 + strike.radius * 0.65;
     final width = math.max(58.0, strike.radius * 1.2);
     final center = Offset(strike.position.x, strike.position.y - height * 0.42);
@@ -3469,19 +3464,10 @@ class GrassSurvivorGame extends FlameGame {
     required double progress,
     required double opacity,
   }) {
-    const columns = 6;
-    const rows = 6;
-    const frameCount = columns * rows;
     final frame =
-        ((_elapsed * 16 + progress * frameCount).floor()) % frameCount;
-    final frameWidth = image.width / columns;
-    final frameHeight = image.height / rows;
-    final source = Rect.fromLTWH(
-      (frame % columns) * frameWidth,
-      (frame ~/ columns) * frameHeight,
-      frameWidth,
-      frameHeight,
-    );
+        ((_elapsed * 16 + progress * _blackHoleEffectGrid.frameCount).floor()) %
+            _blackHoleEffectGrid.frameCount;
+    final source = _effectFrameSource(image, _blackHoleEffectGrid, frame);
     final side = radius * 2.35;
     canvas.drawImageRect(
       image,
@@ -5395,6 +5381,18 @@ class _ThunderStrike {
   double get progress => (age / _duration).clamp(0, 1).toDouble();
 
   bool get isDone => age >= _duration;
+}
+
+class _EffectFrameGrid {
+  const _EffectFrameGrid({
+    required this.columns,
+    required this.rows,
+  });
+
+  final int columns;
+  final int rows;
+
+  int get frameCount => columns * rows;
 }
 
 class _ThunderTargetScore implements Comparable<_ThunderTargetScore> {
