@@ -1,5 +1,8 @@
 import 'dart:io';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
 
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:grass_game_domain/grass_game_domain.dart';
 import 'package:grass_game_runtime/grass_game_runtime.dart';
@@ -7,6 +10,8 @@ import 'package:grass_game_ui/grass_game_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('GrassGameProgressController', () {
     test('locks the next stage until the current stage is cleared', () async {
       SharedPreferences.setMockInitialValues({});
@@ -199,10 +204,44 @@ void main() {
       expect(
         File(
           'assets/game/grass_game/images/guaishou/'
-          'guaishou_cyber_crocodile_boss_walk_8dir_sheet.webp',
+          'guaishou_cyber_crocodile_boss_walk_8dir_sheet.png',
         ).existsSync(),
         isTrue,
       );
+    });
+
+    test('chapter finale stages use themed boss sprites', () async {
+      SharedPreferences.setMockInitialValues({});
+      final controller = GrassGameProgressController.defaults();
+      await controller.loadSavedProgress();
+
+      const expectedBossIds = {
+        1: 'guaishou_cyber_crocodile_boss',
+        2: 'guaishou_highway_juggernaut_boss',
+        3: 'guaishou_city_core_guardian_boss',
+        4: 'guaishou_cave_crystal_brute_boss',
+        5: 'guaishou_forest_spore_titan_boss',
+        6: 'guaishou_ocean_shell_leviathan_boss',
+        7: 'guaishou_infected_plague_beetle_boss',
+        8: 'guaishou_bone_wasteland_reaper_boss',
+        9: 'guaishou_alien_landing_overlord_boss',
+        10: 'guaishou_cosmic_rift_dragon_boss',
+      };
+
+      for (final entry in expectedBossIds.entries) {
+        final chapterStages = controller.stagesForChapter(entry.key);
+        final finale = chapterStages.reduce(
+          (value, element) => value.stage > element.stage ? value : element,
+        );
+        expect(finale.bossId, entry.value);
+        expect(
+          File(
+            'assets/game/grass_game/images/guaishou/'
+            '${entry.value}_walk_8dir_sheet.png',
+          ).existsSync(),
+          isTrue,
+        );
+      }
     });
 
     test('hero characters expose balance stats and assets', () async {
@@ -232,6 +271,138 @@ void main() {
         expect(File(character.avatarAssetPath).existsSync(), isTrue);
         expect(File(character.walkPreviewAssetPath).existsSync(), isTrue);
         expect(File(character.gameSpriteSheetAssetPath).existsSync(), isTrue);
+      }
+    });
+
+    test('hero walk sheets use 8 direction 6 frame fixed grid', () async {
+      SharedPreferences.setMockInitialValues({});
+      final controller = GrassGameProgressController.defaults();
+      await controller.loadSavedProgress();
+
+      for (final character in controller.characters) {
+        final bytes = await rootBundle.load(character.gameSpriteSheetAssetPath);
+        final codec = await ui.instantiateImageCodec(
+          bytes.buffer.asUint8List(),
+        );
+        final frame = await codec.getNextFrame();
+        addTearDown(frame.image.dispose);
+
+        expect(
+          frame.image.width,
+          768,
+          reason: '${character.id} must be 6 columns x 128px',
+        );
+        expect(
+          frame.image.height,
+          1024,
+          reason: '${character.id} must be 8 rows x 128px',
+        );
+        expect(
+          await _maxHorizontalFrameCenterDrift(frame.image),
+          lessThanOrEqualTo(2),
+          reason: '${character.id} walk frames must stay centered in each cell',
+        );
+        expect(
+          await _whitePixelRatio(frame.image),
+          lessThanOrEqualTo(0.035),
+          reason:
+              '${character.id} walk sheet must not keep white background noise',
+        );
+      }
+    });
+
+    test('skill effect sheets use transparent padded fixed grids', () async {
+      const effects = {
+        'assets/game/grass_game/images/effects/skill_fire_flame_sheet.png': (
+          6,
+          6
+        ),
+        'assets/game/grass_game/images/effects/skill_ice_crystal_sheet.png': (
+          6,
+          5
+        ),
+        'assets/game/grass_game/images/effects/'
+            'skill_thunder_lightning_sheet.png': (6, 5),
+        'assets/game/grass_game/images/effects/skill_poison_spore_sheet.png': (
+          6,
+          5
+        ),
+        'assets/game/grass_game/images/effects/'
+            'skill_void_black_hole_sheet.png': (6, 5),
+        'assets/game/grass_game/images/effects/skill_orbit_blade_sheet.png': (
+          8,
+          1
+        ),
+        'assets/game/grass_game/images/effects/skill_ultimate_beam_sheet.png': (
+          8,
+          1
+        ),
+      };
+
+      for (final entry in effects.entries) {
+        final bytes = await rootBundle.load(entry.key);
+        final codec = await ui.instantiateImageCodec(
+          bytes.buffer.asUint8List(),
+        );
+        final frame = await codec.getNextFrame();
+        addTearDown(frame.image.dispose);
+
+        final columns = entry.value.$1;
+        final rows = entry.value.$2;
+        expect(frame.image.width % columns, 0, reason: entry.key);
+        expect(frame.image.height % rows, 0, reason: entry.key);
+        expect(
+          await _fixedGridFrameEdgesAreTransparent(
+            frame.image,
+            columns: columns,
+            rows: rows,
+          ),
+          isTrue,
+          reason: '$entry must keep transparent padding around each frame',
+        );
+      }
+    });
+
+    test('themed boss walk sheets use transparent 8 direction grids', () async {
+      const bossIds = [
+        'guaishou_cyber_crocodile_boss',
+        'guaishou_highway_juggernaut_boss',
+        'guaishou_city_core_guardian_boss',
+        'guaishou_cave_crystal_brute_boss',
+        'guaishou_forest_spore_titan_boss',
+        'guaishou_ocean_shell_leviathan_boss',
+        'guaishou_infected_plague_beetle_boss',
+        'guaishou_bone_wasteland_reaper_boss',
+        'guaishou_alien_landing_overlord_boss',
+        'guaishou_cosmic_rift_dragon_boss',
+      ];
+
+      for (final bossId in bossIds) {
+        final assetPath =
+            'assets/game/grass_game/images/guaishou/${bossId}_walk_8dir_sheet.png';
+        final bytes = await rootBundle.load(assetPath);
+        final codec = await ui.instantiateImageCodec(
+          bytes.buffer.asUint8List(),
+        );
+        final frame = await codec.getNextFrame();
+        addTearDown(frame.image.dispose);
+
+        expect(frame.image.width, 768, reason: bossId);
+        expect(frame.image.height, 1024, reason: bossId);
+        expect(
+          await _maxHorizontalFrameCenterDrift(frame.image),
+          lessThanOrEqualTo(2),
+          reason: '$bossId walk frames must stay centered in each cell',
+        );
+        expect(
+          await _fixedGridFrameEdgesAreTransparent(
+            frame.image,
+            columns: 6,
+            rows: 8,
+          ),
+          isTrue,
+          reason: '$bossId must keep transparent cell edges',
+        );
       }
     });
 
@@ -338,4 +509,120 @@ void main() {
       );
     });
   });
+}
+
+Future<double> _maxHorizontalFrameCenterDrift(ui.Image image) async {
+  const cellSize = 128;
+  const columns = 6;
+  const rows = 8;
+  final bytes = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+  if (bytes == null) {
+    return double.infinity;
+  }
+
+  var maxDrift = 0.0;
+  for (var row = 0; row < rows; row++) {
+    final centers = <double>[];
+    for (var column = 0; column < columns; column++) {
+      var minX = cellSize;
+      var maxX = -1;
+      for (var y = row * cellSize; y < (row + 1) * cellSize; y++) {
+        for (var x = column * cellSize; x < (column + 1) * cellSize; x++) {
+          final offset = (y * image.width + x) * 4;
+          final alpha = bytes.getUint8(offset + 3);
+          if (alpha <= 16) {
+            continue;
+          }
+          final localX = x - column * cellSize;
+          if (localX < minX) {
+            minX = localX;
+          }
+          if (localX > maxX) {
+            maxX = localX;
+          }
+        }
+      }
+      if (maxX >= 0) {
+        centers.add((minX + maxX) / 2);
+      }
+    }
+    if (centers.isEmpty) {
+      continue;
+    }
+    centers.sort();
+    final drift = centers.last - centers.first;
+    if (drift > maxDrift) {
+      maxDrift = drift;
+    }
+  }
+  return maxDrift;
+}
+
+Future<bool> _fixedGridFrameEdgesAreTransparent(
+  ui.Image image, {
+  required int columns,
+  required int rows,
+}) async {
+  final bytes = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+  if (bytes == null) {
+    return false;
+  }
+  final cellWidth = image.width ~/ columns;
+  final cellHeight = image.height ~/ rows;
+
+  for (var row = 0; row < rows; row++) {
+    for (var column = 0; column < columns; column++) {
+      final left = column * cellWidth;
+      final right = (column + 1) * cellWidth - 1;
+      final top = row * cellHeight;
+      final bottom = (row + 1) * cellHeight - 1;
+      for (var x = left; x <= right; x++) {
+        if (_alphaAt(bytes, image.width, x, top) > 0 ||
+            _alphaAt(bytes, image.width, x, bottom) > 0) {
+          return false;
+        }
+      }
+      for (var y = top + 1; y < bottom; y++) {
+        if (_alphaAt(bytes, image.width, left, y) > 0 ||
+            _alphaAt(bytes, image.width, right, y) > 0) {
+          return false;
+        }
+      }
+    }
+  }
+  return true;
+}
+
+int _alphaAt(ByteData bytes, int imageWidth, int x, int y) {
+  return bytes.getUint8((y * imageWidth + x) * 4 + 3);
+}
+
+Future<double> _whitePixelRatio(ui.Image image) async {
+  final bytes = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+  if (bytes == null) {
+    return 1;
+  }
+
+  var visiblePixels = 0;
+  var whitePixels = 0;
+  for (var y = 0; y < image.height; y++) {
+    for (var x = 0; x < image.width; x++) {
+      final offset = (y * image.width + x) * 4;
+      final red = bytes.getUint8(offset);
+      final green = bytes.getUint8(offset + 1);
+      final blue = bytes.getUint8(offset + 2);
+      final alpha = bytes.getUint8(offset + 3);
+      if (alpha <= 8) {
+        continue;
+      }
+      visiblePixels++;
+      if (red > 235 && green > 235 && blue > 235) {
+        whitePixels++;
+      }
+    }
+  }
+  if (visiblePixels == 0) {
+    return 1;
+  }
+  return whitePixels / visiblePixels;
 }

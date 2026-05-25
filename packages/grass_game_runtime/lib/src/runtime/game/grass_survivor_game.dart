@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui';
 
@@ -49,7 +49,7 @@ class GrassSurvivorGame extends FlameGame {
     this.playerMoveSpeedMultiplier = 1,
     this.playerCharacterId = 'runner',
     this.playerSpriteSheetAssetPath =
-        'assets/game/grass_game/images/player/player_soldier_walk_8dir_sheet.webp',
+        'assets/game/grass_game/images/player/player_soldier_walk_8dir_sheet.png',
     this.weaponDamage = 1,
     this.weaponCooldownMultiplier = 1,
     this.weaponFireIntervalSeconds = 0.8,
@@ -322,7 +322,25 @@ class GrassSurvivorGame extends FlameGame {
   };
   static const Map<String, String> _bossSpriteSheets = {
     'guaishou_cyber_crocodile_boss':
-        'assets/game/grass_game/images/guaishou/guaishou_cyber_crocodile_boss_walk_8dir_sheet.webp',
+        'assets/game/grass_game/images/guaishou/guaishou_cyber_crocodile_boss_walk_8dir_sheet.png',
+    'guaishou_highway_juggernaut_boss':
+        'assets/game/grass_game/images/guaishou/guaishou_highway_juggernaut_boss_walk_8dir_sheet.png',
+    'guaishou_city_core_guardian_boss':
+        'assets/game/grass_game/images/guaishou/guaishou_city_core_guardian_boss_walk_8dir_sheet.png',
+    'guaishou_cave_crystal_brute_boss':
+        'assets/game/grass_game/images/guaishou/guaishou_cave_crystal_brute_boss_walk_8dir_sheet.png',
+    'guaishou_forest_spore_titan_boss':
+        'assets/game/grass_game/images/guaishou/guaishou_forest_spore_titan_boss_walk_8dir_sheet.png',
+    'guaishou_ocean_shell_leviathan_boss':
+        'assets/game/grass_game/images/guaishou/guaishou_ocean_shell_leviathan_boss_walk_8dir_sheet.png',
+    'guaishou_infected_plague_beetle_boss':
+        'assets/game/grass_game/images/guaishou/guaishou_infected_plague_beetle_boss_walk_8dir_sheet.png',
+    'guaishou_bone_wasteland_reaper_boss':
+        'assets/game/grass_game/images/guaishou/guaishou_bone_wasteland_reaper_boss_walk_8dir_sheet.png',
+    'guaishou_alien_landing_overlord_boss':
+        'assets/game/grass_game/images/guaishou/guaishou_alien_landing_overlord_boss_walk_8dir_sheet.png',
+    'guaishou_cosmic_rift_dragon_boss':
+        'assets/game/grass_game/images/guaishou/guaishou_cosmic_rift_dragon_boss_walk_8dir_sheet.png',
   };
   static const Map<String, String> _animalSpriteSheets = {
     'basic':
@@ -531,7 +549,7 @@ class GrassSurvivorGame extends FlameGame {
   Future<void> _loadCompanionAnimations() async {
     _shadowGuardAnimation = CompanionAnimationSet(
       image: await _loadImage(
-        'assets/game/grass_game/images/companions/companion_shadow_guard_walk_8dir_sheet_runtime_128.png',
+        'assets/game/grass_game/images/companions/companion_shadow_guard_walk_8dir_sheet_runtime_128.webp',
       ),
       displaySize: Vector2.all(42),
     );
@@ -562,25 +580,25 @@ class GrassSurvivorGame extends FlameGame {
 
   Future<void> _loadSkillEffectImages() async {
     _fireEffectImage = await _loadImage(
-      'assets/game/grass_game/images/effects/skill_fire_flame_sheet.webp',
+      'assets/game/grass_game/images/effects/skill_fire_flame_sheet.png',
     );
     _iceEffectImage = await _loadImage(
-      'assets/game/grass_game/images/effects/skill_ice_crystal_sheet.webp',
+      'assets/game/grass_game/images/effects/skill_ice_crystal_sheet.png',
     );
     _thunderEffectImage = await _loadImage(
-      'assets/game/grass_game/images/effects/skill_thunder_lightning_sheet.webp',
+      'assets/game/grass_game/images/effects/skill_thunder_lightning_sheet.png',
     );
     _poisonEffectImage = await _loadImage(
-      'assets/game/grass_game/images/effects/skill_poison_spore_sheet.webp',
+      'assets/game/grass_game/images/effects/skill_poison_spore_sheet.png',
     );
     _blackHoleEffectImage = await _loadImage(
-      'assets/game/grass_game/images/effects/skill_void_black_hole_sheet.webp',
+      'assets/game/grass_game/images/effects/skill_void_black_hole_sheet.png',
     );
     _orbitBladeEffectImage = await _loadImage(
-      'assets/game/grass_game/images/effects/skill_orbit_blade_sheet.webp',
+      'assets/game/grass_game/images/effects/skill_orbit_blade_sheet.png',
     );
     _ultimateBeamEffectImage = await _loadImage(
-      'assets/game/grass_game/images/effects/skill_ultimate_beam_sheet.webp',
+      'assets/game/grass_game/images/effects/skill_ultimate_beam_sheet.png',
     );
   }
 
@@ -1093,6 +1111,15 @@ class GrassSurvivorGame extends FlameGame {
   double _bossDisplaySize(String bossVisualId) {
     return switch (bossVisualId) {
       'guaishou_cyber_crocodile_boss' => 122,
+      'guaishou_highway_juggernaut_boss' => 124,
+      'guaishou_city_core_guardian_boss' => 116,
+      'guaishou_cave_crystal_brute_boss' => 126,
+      'guaishou_forest_spore_titan_boss' => 126,
+      'guaishou_ocean_shell_leviathan_boss' => 126,
+      'guaishou_infected_plague_beetle_boss' => 118,
+      'guaishou_bone_wasteland_reaper_boss' => 118,
+      'guaishou_alien_landing_overlord_boss' => 120,
+      'guaishou_cosmic_rift_dragon_boss' => 132,
       _ => 104,
     };
   }
@@ -1100,6 +1127,15 @@ class GrassSurvivorGame extends FlameGame {
   double _bossCollisionRadius(String bossVisualId) {
     return switch (bossVisualId) {
       'guaishou_cyber_crocodile_boss' => 40,
+      'guaishou_highway_juggernaut_boss' => 42,
+      'guaishou_city_core_guardian_boss' => 38,
+      'guaishou_cave_crystal_brute_boss' => 42,
+      'guaishou_forest_spore_titan_boss' => 42,
+      'guaishou_ocean_shell_leviathan_boss' => 42,
+      'guaishou_infected_plague_beetle_boss' => 39,
+      'guaishou_bone_wasteland_reaper_boss' => 39,
+      'guaishou_alien_landing_overlord_boss' => 40,
+      'guaishou_cosmic_rift_dragon_boss' => 44,
       _ => 34,
     };
   }

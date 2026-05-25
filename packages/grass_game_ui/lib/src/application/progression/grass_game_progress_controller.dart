@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
@@ -268,7 +268,7 @@ class GrassGameProgressController extends ChangeNotifier {
           walkPreviewAssetPath:
               'assets/game/grass_game/images/player/preview_male_walk.gif',
           gameSpriteSheetAssetPath:
-              'assets/game/grass_game/images/player/player_soldier_walk_8dir_sheet.webp',
+              'assets/game/grass_game/images/player/player_soldier_walk_8dir_sheet.png',
           isOwned: true,
         ),
         CharacterDefinition(
@@ -284,7 +284,7 @@ class GrassGameProgressController extends ChangeNotifier {
           walkPreviewAssetPath:
               'assets/game/grass_game/images/player/preview_female_walk.gif',
           gameSpriteSheetAssetPath:
-              'assets/game/grass_game/images/player/player_female_walk_8dir_sheet.webp',
+              'assets/game/grass_game/images/player/player_female_walk_8dir_sheet.png',
           isOwned: true,
         ),
         CharacterDefinition(
@@ -300,7 +300,7 @@ class GrassGameProgressController extends ChangeNotifier {
           walkPreviewAssetPath:
               'assets/game/grass_game/images/player/preview_aotuman_walk.gif',
           gameSpriteSheetAssetPath:
-              'assets/game/grass_game/images/player/player_aotuman_walk_8dir_sheet.webp',
+              'assets/game/grass_game/images/player/player_aotuman_walk_8dir_sheet.png',
           isOwned: true,
         ),
         CharacterDefinition(
@@ -316,7 +316,7 @@ class GrassGameProgressController extends ChangeNotifier {
           walkPreviewAssetPath:
               'assets/game/grass_game/images/player/preview_aomeijia_walk.gif',
           gameSpriteSheetAssetPath:
-              'assets/game/grass_game/images/player/player_aomeijia_sword_walk_8dir_sheet.webp',
+              'assets/game/grass_game/images/player/player_aomeijia_sword_walk_8dir_sheet.png',
           isOwned: true,
         ),
         CharacterDefinition(
@@ -332,7 +332,7 @@ class GrassGameProgressController extends ChangeNotifier {
           walkPreviewAssetPath:
               'assets/game/grass_game/images/player/preview_jingangman_walk.gif',
           gameSpriteSheetAssetPath:
-              'assets/game/grass_game/images/player/player_dark_cosmic_knight_walk_8dir_sheet.webp',
+              'assets/game/grass_game/images/player/player_dark_cosmic_knight_walk_8dir_sheet.png',
           isOwned: true,
         ),
         CharacterDefinition(
@@ -348,7 +348,7 @@ class GrassGameProgressController extends ChangeNotifier {
           walkPreviewAssetPath:
               'assets/game/grass_game/images/player/preview_beliya_walk.gif',
           gameSpriteSheetAssetPath:
-              'assets/game/grass_game/images/player/player_beliya_dark_cape_walk_8dir_sheet.webp',
+              'assets/game/grass_game/images/player/player_beliya_dark_cape_walk_8dir_sheet.png',
           isOwned: true,
         ),
         CharacterDefinition(
@@ -364,7 +364,7 @@ class GrassGameProgressController extends ChangeNotifier {
           walkPreviewAssetPath:
               'assets/game/grass_game/images/player/preview_sevengar_walk.gif',
           gameSpriteSheetAssetPath:
-              'assets/game/grass_game/images/player/player_round_robot_walk_8dir_sheet.webp',
+              'assets/game/grass_game/images/player/player_round_robot_walk_8dir_sheet.png',
           isOwned: true,
         ),
       ],
@@ -485,6 +485,7 @@ class GrassGameProgressController extends ChangeNotifier {
       if (chapter >= 4 || stage >= 5) 'tank',
     ];
     final bossTimeSeconds = 220 + chapter * 9 + stage * 11;
+    final isFinalStage = _isChapterFinalStage(chapter, stage);
     return GameStageDefinition(
       id: 'c${chapter}_s$stage',
       chapter: chapter,
@@ -504,8 +505,12 @@ class GrassGameProgressController extends ChangeNotifier {
       bossTimeSeconds: bossTimeSeconds,
       rewardExp: 135 + chapter * 26 + stage * 10,
       rewardCoins: 65 + chapter * 13 + stage * 8,
-      bossId: _mixedGuaishouTheme.bossId,
-      bossName: _mixedGuaishouTheme.bossName,
+      bossId: isFinalStage
+          ? _bossIdForChapter(chapter)
+          : _mixedGuaishouTheme.bossId,
+      bossName: isFinalStage
+          ? _bossNameForChapter(chapter)
+          : _mixedGuaishouTheme.bossName,
     );
   }
 
@@ -603,6 +608,40 @@ class GrassGameProgressController extends ChangeNotifier {
       8 => '$_stageImageRoot/stage_08_skeleton.webp',
       9 => '$_stageImageRoot/stage_09_alien.webp',
       _ => '$_stageImageRoot/stage_10_cosmos.webp',
+    };
+  }
+
+  static bool _isChapterFinalStage(int chapter, int stage) {
+    return stage == 5 + (chapter % 4);
+  }
+
+  static String _bossIdForChapter(int chapter) {
+    return switch (chapter.clamp(1, 10)) {
+      1 => 'guaishou_cyber_crocodile_boss',
+      2 => 'guaishou_highway_juggernaut_boss',
+      3 => 'guaishou_city_core_guardian_boss',
+      4 => 'guaishou_cave_crystal_brute_boss',
+      5 => 'guaishou_forest_spore_titan_boss',
+      6 => 'guaishou_ocean_shell_leviathan_boss',
+      7 => 'guaishou_infected_plague_beetle_boss',
+      8 => 'guaishou_bone_wasteland_reaper_boss',
+      9 => 'guaishou_alien_landing_overlord_boss',
+      _ => 'guaishou_cosmic_rift_dragon_boss',
+    };
+  }
+
+  static String _bossNameForChapter(int chapter) {
+    return switch (chapter.clamp(1, 10)) {
+      1 => 'Cyber Crocodile',
+      2 => 'Highway Juggernaut',
+      3 => 'City Core Guardian',
+      4 => 'Crystal Cave Brute',
+      5 => 'Spore Forest Titan',
+      6 => 'Shell Leviathan',
+      7 => 'Plague Beetle',
+      8 => 'Bone Wasteland Reaper',
+      9 => 'Alien Landing Overlord',
+      _ => 'Cosmic Rift Dragon',
     };
   }
 
