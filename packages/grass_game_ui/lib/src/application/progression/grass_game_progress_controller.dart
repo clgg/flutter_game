@@ -271,102 +271,6 @@ class GrassGameProgressController extends ChangeNotifier {
               'assets/game/grass_game/images/player/player_soldier_walk_8dir_sheet.png',
           isOwned: true,
         ),
-        CharacterDefinition(
-          id: 'guard',
-          name: 'Female',
-          role: 'HP 105 · SPD 9 · ATK 0.95',
-          baseHp: 105,
-          baseSpeedMultiplier: 1.125,
-          baseAttackMultiplier: 0.95,
-          colorValue: 0xFFFF6B6B,
-          avatarAssetPath:
-              'assets/game/grass_game/images/player/avatar_female.webp',
-          walkPreviewAssetPath:
-              'assets/game/grass_game/images/player/preview_female_walk.gif',
-          gameSpriteSheetAssetPath:
-              'assets/game/grass_game/images/player/player_female_walk_8dir_sheet.png',
-          isOwned: true,
-        ),
-        CharacterDefinition(
-          id: 'aotuman',
-          name: '凹凸曼',
-          role: 'HP 220 · SPD 9 · ATK 1.05',
-          baseHp: 220,
-          baseSpeedMultiplier: 1.125,
-          baseAttackMultiplier: 1.05,
-          colorValue: 0xFFE63946,
-          avatarAssetPath:
-              'assets/game/grass_game/images/player/avatar_aotuman.webp',
-          walkPreviewAssetPath:
-              'assets/game/grass_game/images/player/preview_aotuman_walk.gif',
-          gameSpriteSheetAssetPath:
-              'assets/game/grass_game/images/player/player_aotuman_walk_8dir_sheet.png',
-          isOwned: true,
-        ),
-        CharacterDefinition(
-          id: 'aomeijia',
-          name: '奥美家',
-          role: 'HP 170 · SPD 10 · ATK 0.96',
-          baseHp: 170,
-          baseSpeedMultiplier: 1.25,
-          baseAttackMultiplier: 0.96,
-          colorValue: 0xFF27D6FF,
-          avatarAssetPath:
-              'assets/game/grass_game/images/player/avatar_aomeijia.webp',
-          walkPreviewAssetPath:
-              'assets/game/grass_game/images/player/preview_aomeijia_walk.gif',
-          gameSpriteSheetAssetPath:
-              'assets/game/grass_game/images/player/player_aomeijia_sword_walk_8dir_sheet.png',
-          isOwned: true,
-        ),
-        CharacterDefinition(
-          id: 'jingangman',
-          name: '金刚曼',
-          role: 'HP 320 · SPD 8 · ATK 1.18',
-          baseHp: 320,
-          baseSpeedMultiplier: 1,
-          baseAttackMultiplier: 1.18,
-          colorValue: 0xFFB65B4A,
-          avatarAssetPath:
-              'assets/game/grass_game/images/player/avatar_jingangman.webp',
-          walkPreviewAssetPath:
-              'assets/game/grass_game/images/player/preview_jingangman_walk.gif',
-          gameSpriteSheetAssetPath:
-              'assets/game/grass_game/images/player/player_dark_cosmic_knight_walk_8dir_sheet.png',
-          isOwned: true,
-        ),
-        CharacterDefinition(
-          id: 'beliya',
-          name: '贝利牙',
-          role: 'HP 260 · SPD 9 · ATK 1.12',
-          baseHp: 260,
-          baseSpeedMultiplier: 1.125,
-          baseAttackMultiplier: 1.12,
-          colorValue: 0xFFFF3B4F,
-          avatarAssetPath:
-              'assets/game/grass_game/images/player/avatar_beliya.webp',
-          walkPreviewAssetPath:
-              'assets/game/grass_game/images/player/preview_beliya_walk.gif',
-          gameSpriteSheetAssetPath:
-              'assets/game/grass_game/images/player/player_beliya_dark_cape_walk_8dir_sheet.png',
-          isOwned: true,
-        ),
-        CharacterDefinition(
-          id: 'sevengar',
-          name: '赛文加',
-          role: 'HP 430 · SPD 6 · ATK 1.28',
-          baseHp: 430,
-          baseSpeedMultiplier: 0.75,
-          baseAttackMultiplier: 1.28,
-          colorValue: 0xFFB8C2CC,
-          avatarAssetPath:
-              'assets/game/grass_game/images/player/avatar_sevengar.webp',
-          walkPreviewAssetPath:
-              'assets/game/grass_game/images/player/preview_sevengar_walk.gif',
-          gameSpriteSheetAssetPath:
-              'assets/game/grass_game/images/player/player_round_robot_walk_8dir_sheet.png',
-          isOwned: true,
-        ),
       ],
       weapons: weapons,
       weaponProgress: {
@@ -446,7 +350,7 @@ class GrassGameProgressController extends ChangeNotifier {
     id: deathmatchStageId,
     chapter: 11,
     stage: 1,
-    name: '死斗模式',
+    name: '姝绘枟妯″紡',
     description:
         'Endless melee survival. Guaishou become stronger every minute.',
     themeId: 'deathmatch',

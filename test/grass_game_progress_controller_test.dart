@@ -251,14 +251,9 @@ void main() {
 
       final expected = <String, (String, int, double, double)>{
         'runner': ('Male', 130, 1.0, 1.0),
-        'guard': ('Female', 105, 1.125, 0.95),
-        'aotuman': ('凹凸曼', 220, 1.125, 1.05),
-        'aomeijia': ('奥美家', 170, 1.25, 0.96),
-        'jingangman': ('金刚曼', 320, 1.0, 1.18),
-        'beliya': ('贝利牙', 260, 1.125, 1.12),
-        'sevengar': ('赛文加', 430, 0.75, 1.28),
       };
 
+      expect(controller.characters, hasLength(expected.length));
       for (final entry in expected.entries) {
         final character = controller.characters.firstWhere(
           (item) => item.id == entry.key,
