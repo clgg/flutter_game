@@ -106,6 +106,7 @@ class PlayerComponent extends SpriteAnimationComponent {
     ..style = ui.PaintingStyle.stroke
     ..strokeWidth = 1;
   double _hitCooldown = 0;
+  double _facingLockSeconds = 0;
   bool _hasInitialPosition = false;
   bool _isMoving = false;
   PlayerFacing _facing = PlayerFacing.front;
@@ -121,6 +122,10 @@ class PlayerComponent extends SpriteAnimationComponent {
 
   @override
   void update(double dt) {
+    if (_facingLockSeconds > 0) {
+      _facingLockSeconds -= dt;
+    }
+
     final moveDirection = controller.moveDirection;
     final isMoving = !moveDirection.isZero();
     if (isMoving) {
@@ -149,7 +154,11 @@ class PlayerComponent extends SpriteAnimationComponent {
     if (nextFacing == _facing) {
       return;
     }
+    if (_facingLockSeconds > 0) {
+      return;
+    }
     _facing = nextFacing;
+    _facingLockSeconds = 0.1;
     final nextAnimation = _animations?[nextFacing];
     if (nextAnimation != null) {
       animation = nextAnimation;

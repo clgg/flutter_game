@@ -16,6 +16,11 @@ $targetCell = 128
 $cropInset = 3
 $targetDrawInset = 5
 $targetDrawSize = 118
+# Build exact runtime rows: down, down-right, right, up-right, up, up-left,
+# left, down-left. The right-facing rows are mirrored from the left-facing
+# source rows so each horizontal pair is visually opposite.
+$sourceRowByTargetRow = @(0, 1, 2, 3, 4, 3, 2, 1)
+$flipTargetRow = @($false, $true, $true, $true, $false, $false, $false, $false)
 
 function New-TransparentBitmap {
   param([int]$Width, [int]$Height)
@@ -49,8 +54,8 @@ function Remove-GreenBackground {
       $b = [int]$color.B
       $greenScore = $g - [Math]::Max($r, $b)
       $isGreenBackground = $g -gt 120 -and $greenScore -gt 42
-      $isGridLine = $r -gt 235 -and $g -gt 235 -and $b -gt 235 -and
-        ([Math]::Max($r, [Math]::Max($g, $b)) - [Math]::Min($r, [Math]::Min($g, $b))) -lt 18
+      $channelSpread = [Math]::Max($r, [Math]::Max($g, $b)) - [Math]::Min($r, [Math]::Min($g, $b))
+      $isGridLine = $r -gt 180 -and $g -gt 180 -and $b -gt 180 -and $channelSpread -lt 75
       if ($isGreenBackground -or $isGridLine) {
         $Bitmap.SetPixel($x, $y, [System.Drawing.Color]::FromArgb(0, 0, 0, 0))
         continue
@@ -65,6 +70,15 @@ function Remove-GreenBackground {
         [System.Drawing.Color]::FromArgb($color.A, $r, [Math]::Min(255, $g), $b)
       )
     }
+  }
+
+  for ($i = 0; $i -lt $Bitmap.Width; $i++) {
+    $Bitmap.SetPixel($i, 0, [System.Drawing.Color]::FromArgb(0, 0, 0, 0))
+    $Bitmap.SetPixel($i, $Bitmap.Height - 1, [System.Drawing.Color]::FromArgb(0, 0, 0, 0))
+  }
+  for ($i = 0; $i -lt $Bitmap.Height; $i++) {
+    $Bitmap.SetPixel(0, $i, [System.Drawing.Color]::FromArgb(0, 0, 0, 0))
+    $Bitmap.SetPixel($Bitmap.Width - 1, $i, [System.Drawing.Color]::FromArgb(0, 0, 0, 0))
   }
 }
 
@@ -108,7 +122,8 @@ function Convert-Frame {
     [System.Drawing.Image]$Source,
     [int]$SourceCell,
     [int]$Column,
-    [int]$Row
+    [int]$Row,
+    [bool]$FlipHorizontal = $false
   )
 
   $frame = New-TransparentBitmap -Width $targetCell -Height $targetCell
@@ -128,6 +143,10 @@ function Convert-Frame {
     $graphics.DrawImage($Source, $targetRect, $sourceRect, [System.Drawing.GraphicsUnit]::Pixel)
   } finally {
     $graphics.Dispose()
+  }
+
+  if ($FlipHorizontal) {
+    $frame.RotateFlip([System.Drawing.RotateFlipType]::RotateNoneFlipX)
   }
 
   Remove-GreenBackground -Bitmap $frame
@@ -221,8 +240,10 @@ try {
     Get-ChildItem -Path $previewDir -Filter '*.png' | Remove-Item -Force
 
     for ($row = 0; $row -lt $rows; $row++) {
+      $sourceRow = $sourceRowByTargetRow[$row]
+      $flipHorizontal = $flipTargetRow[$row]
       for ($column = 0; $column -lt $columns; $column++) {
-        $frame = Convert-Frame -Source $source -SourceCell $sourceCell -Column $column -Row $row
+        $frame = Convert-Frame -Source $source -SourceCell $sourceCell -Column $column -Row $sourceRow -FlipHorizontal $flipHorizontal
         try {
           $sheetGraphics.DrawImageUnscaled($frame, $column * $targetCell, $row * $targetCell)
           if ($row -eq 0) {
