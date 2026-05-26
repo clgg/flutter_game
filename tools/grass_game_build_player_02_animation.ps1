@@ -17,10 +17,10 @@ $cropInset = 3
 $targetDrawInset = 5
 $targetDrawSize = 118
 # Build exact runtime rows: down, down-right, right, up-right, up, up-left,
-# left, down-left. The right-facing rows are mirrored from the left-facing
-# source rows so each horizontal pair is visually opposite.
-$sourceRowByTargetRow = @(0, 1, 2, 3, 4, 3, 2, 1)
-$flipTargetRow = @($false, $true, $true, $true, $false, $false, $false, $false)
+# left, down-left. The source has correct dedicated upper diagonals, while
+# the horizontal and lower-right rows need mirrored output.
+$sourceRowByTargetRow = @(0, 1, 2, 3, 4, 5, 2, 1)
+$flipTargetRow = @($false, $true, $true, $false, $false, $false, $false, $false)
 
 function New-TransparentBitmap {
   param([int]$Width, [int]$Height)
