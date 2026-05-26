@@ -49,7 +49,7 @@ class GrassSurvivorGame extends FlameGame {
     this.playerMoveSpeedMultiplier = 1,
     this.playerCharacterId = 'runner',
     this.playerSpriteSheetAssetPath =
-        'assets/game/grass_game/images/player/player_soldier_walk_8dir_sheet.png',
+        'assets/game/grass_game/images/player/player_02_walk_8dir_sheet.png',
     this.weaponDamage = 1,
     this.weaponCooldownMultiplier = 1,
     this.weaponFireIntervalSeconds = 0.8,
@@ -145,7 +145,7 @@ class GrassSurvivorGame extends FlameGame {
   final List<ExpGemComponent> _expiredGemBuffer = [];
   final List<_BlackHoleField> _finishedBlackHoleBuffer = [];
   final Map<String, EnemyAnimationSet> _enemyAnimations = {};
-  late final CompanionAnimationSet _shadowGuardAnimation;
+  late final List<_CompanionRuntimeVariant> _shadowGuardVariants;
   late final PlayerAnimationSet _playerAnimation;
   late final DropIconSet _dropIcons;
   Image? _fireEffectImage;
@@ -158,6 +158,7 @@ class GrassSurvivorGame extends FlameGame {
   Image? _projectileImage;
   Image? _muzzleFlashImage;
   Image? _stageBackgroundImage;
+  final Map<String, Image> _obstacleImages = {};
   String? _fireSoundFileName;
   AudioPool? _fireAudioPool;
   final List<StopFunction> _activeFireSoundStops = [];
@@ -172,6 +173,9 @@ class GrassSurvivorGame extends FlameGame {
   final Paint _stageBackgroundPaint = Paint()
     ..isAntiAlias = true
     ..filterQuality = FilterQuality.low;
+  final Paint _obstacleImagePaint = Paint()
+    ..isAntiAlias = true
+    ..filterQuality = FilterQuality.medium;
   final Paint _stageTintPaint = Paint();
   final Paint _obstaclePaint = Paint()..isAntiAlias = true;
   final Paint _obstacleStrokePaint = Paint()
@@ -405,6 +409,7 @@ class GrassSurvivorGame extends FlameGame {
     await super.onLoad();
     _applyStageTheme();
     await _loadStageBackground();
+    await _loadObstacleImages();
     await _loadPlayerAnimation();
     await _loadEnemyAnimations();
     await _loadCompanionAnimations();
@@ -443,6 +448,20 @@ class GrassSurvivorGame extends FlameGame {
     _stageBackgroundImage = await _loadImage(assetPath);
   }
 
+  Future<void> _loadObstacleImages() async {
+    final assetPaths = _stageMapTheme.obstacles
+        .map((obstacle) => obstacle.assetPath)
+        .whereType<String>()
+        .toSet();
+    for (final assetPath in assetPaths) {
+      try {
+        _obstacleImages[assetPath] = await _loadImage(assetPath);
+      } on Object {
+        // Keep the colored rectangle fallback if a prop asset is absent.
+      }
+    }
+  }
+
   void releaseRuntimeResources() {
     if (_isReleased) {
       return;
@@ -478,6 +497,7 @@ class GrassSurvivorGame extends FlameGame {
     _delayedWeaponBlasts.clear();
     _meleeSweeps.clear();
     _companions.clear();
+    _obstacleImages.clear();
   }
 
   Future<void> _loadPlayerAnimation() async {
@@ -547,12 +567,68 @@ class GrassSurvivorGame extends FlameGame {
   }
 
   Future<void> _loadCompanionAnimations() async {
-    _shadowGuardAnimation = CompanionAnimationSet(
-      image: await _loadImage(
-        'assets/game/grass_game/images/companions/companion_shadow_guard_walk_8dir_sheet_runtime_128.webp',
+    const variants = [
+      (
+        id: 'shadow_guard',
+        asset:
+            'assets/game/grass_game/images/companions/companion_shadow_guard_walk_8dir_sheet.png',
+        size: 42.0,
+        color: Color(0xFFB68CFF),
+        accent: Color(0xFF7B61FF),
       ),
-      displaySize: Vector2.all(42),
-    );
+      (
+        id: 'azure_drone',
+        asset:
+            'assets/game/grass_game/images/companions/companion_azure_drone_walk_8dir_sheet.png',
+        size: 38.0,
+        color: Color(0xFF7AD7FF),
+        accent: Color(0xFF3D8BFF),
+      ),
+      (
+        id: 'emerald_spirit_archer',
+        asset:
+            'assets/game/grass_game/images/companions/companion_emerald_spirit_archer_walk_8dir_sheet.png',
+        size: 40.0,
+        color: Color(0xFF70E06B),
+        accent: Color(0xFF32B86A),
+      ),
+      (
+        id: 'golden_shield_squire',
+        asset:
+            'assets/game/grass_game/images/companions/companion_golden_shield_squire_walk_8dir_sheet.png',
+        size: 43.0,
+        color: Color(0xFFFFD36E),
+        accent: Color(0xFFFF9F3D),
+      ),
+      (
+        id: 'silver_blade_puppet',
+        asset:
+            'assets/game/grass_game/images/companions/companion_silver_blade_puppet_walk_8dir_sheet.png',
+        size: 41.0,
+        color: Color(0xFFC7F7FF),
+        accent: Color(0xFF8FD7FF),
+      ),
+      (
+        id: 'violet_void_imp',
+        asset:
+            'assets/game/grass_game/images/companions/companion_violet_void_imp_walk_8dir_sheet.png',
+        size: 39.0,
+        color: Color(0xFFB68CFF),
+        accent: Color(0xFF5E4BFF),
+      ),
+    ];
+    _shadowGuardVariants = [
+      for (final variant in variants)
+        _CompanionRuntimeVariant(
+          id: variant.id,
+          animationSet: CompanionAnimationSet(
+            image: await _loadImage(variant.asset),
+            displaySize: Vector2.all(variant.size),
+          ),
+          color: variant.color,
+          accentColor: variant.accent,
+        ),
+    ];
   }
 
   Future<void> _loadDropIcons() async {
@@ -758,29 +834,61 @@ class GrassSurvivorGame extends FlameGame {
 
   void _drawStageObstacles(Canvas canvas) {
     for (final obstacle in _stageMapTheme.obstacles) {
-      _obstaclePaint.color = obstacle.color;
-      _obstacleStrokePaint.color = obstacle.strokeColor;
-      final rrect = RRect.fromRectAndRadius(
-        obstacle.rect,
-        Radius.circular(obstacle.radius),
-      );
-      canvas.drawRRect(rrect, _obstaclePaint);
-      canvas.drawRRect(rrect, _obstacleStrokePaint);
-      if (obstacle.detailColor != null) {
-        _obstaclePaint.color = obstacle.detailColor!;
-        final inset = math.min(
-              obstacle.rect.width,
-              obstacle.rect.height,
-            ) *
-            0.18;
-        canvas.drawRRect(
-          RRect.fromRectAndRadius(
-            obstacle.rect.deflate(inset),
-            Radius.circular(math.max(2, obstacle.radius * 0.5)),
-          ),
-          _obstaclePaint,
-        );
+      final assetPath = obstacle.assetPath;
+      final image = assetPath == null ? null : _obstacleImages[assetPath];
+      if (image != null) {
+        _drawStageObstacleImage(canvas, obstacle, image);
+      } else {
+        _drawStageObstacleFallback(canvas, obstacle);
       }
+    }
+  }
+
+  void _drawStageObstacleImage(
+    Canvas canvas,
+    _StageObstacle obstacle,
+    Image image,
+  ) {
+    final visualRect = obstacle.visualRect;
+    canvas.save();
+    if (obstacle.rotation != 0) {
+      final center = visualRect.center;
+      canvas.translate(center.dx, center.dy);
+      canvas.rotate(obstacle.rotation);
+      canvas.translate(-center.dx, -center.dy);
+    }
+    canvas.drawImageRect(
+      image,
+      Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble()),
+      visualRect,
+      _obstacleImagePaint,
+    );
+    canvas.restore();
+  }
+
+  void _drawStageObstacleFallback(Canvas canvas, _StageObstacle obstacle) {
+    _obstaclePaint.color = obstacle.color;
+    _obstacleStrokePaint.color = obstacle.strokeColor;
+    final rrect = RRect.fromRectAndRadius(
+      obstacle.rect,
+      Radius.circular(obstacle.radius),
+    );
+    canvas.drawRRect(rrect, _obstaclePaint);
+    canvas.drawRRect(rrect, _obstacleStrokePaint);
+    if (obstacle.detailColor != null) {
+      _obstaclePaint.color = obstacle.detailColor!;
+      final inset = math.min(
+            obstacle.rect.width,
+            obstacle.rect.height,
+          ) *
+          0.18;
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          obstacle.rect.deflate(inset),
+          Radius.circular(math.max(2, obstacle.radius * 0.5)),
+        ),
+        _obstaclePaint,
+      );
     }
   }
 
@@ -2030,7 +2138,7 @@ class GrassSurvivorGame extends FlameGame {
         continue;
       }
       final followPosition = _shadowGuardFollowPosition(
-        companion.slotIndex,
+        companion,
         _shadowGuardMaxActiveCount,
       );
       companion.moveToward(followPosition, dt);
@@ -2079,15 +2187,24 @@ class GrassSurvivorGame extends FlameGame {
 
     while (_companions.length < maxActive) {
       final slotIndex = _companions.length;
+      final variant =
+          _shadowGuardVariants[_random.nextInt(_shadowGuardVariants.length)];
       final companion = CompanionComponent(
-        companionId: 'shadow_guard',
+        companionId: variant.id,
         slotIndex: slotIndex,
-        moveSpeed: 245 + level * 12,
+        moveSpeed: 235 + level * 13 + _random.nextDouble() * 26,
         remainingLifetime: lifetime,
-        animationSet: _shadowGuardAnimation,
-        position: player.position + Vector2(0, 28 + slotIndex * 8),
+        formationPhase: _random.nextDouble() * math.pi * 2,
+        wanderRadius: 9 + _random.nextDouble() * 13,
+        animationSet: variant.animationSet,
+        position: player.position +
+            Vector2(
+              -14 + _random.nextDouble() * 28,
+              24 + slotIndex * 8 + _random.nextDouble() * 18,
+            ),
       );
-      companion.attackTimer = 0.18 + slotIndex * 0.28;
+      companion.attackTimer =
+          0.12 + slotIndex * 0.24 + _random.nextDouble() * 0.2;
       _companions.add(companion);
       add(companion);
     }
@@ -2099,17 +2216,25 @@ class GrassSurvivorGame extends FlameGame {
     );
   }
 
-  Vector2 _shadowGuardFollowPosition(int slotIndex, int count) {
+  Vector2 _shadowGuardFollowPosition(CompanionComponent companion, int count) {
     final aim = _lastAimDirection.length2 > 0.0001
         ? _lastAimDirection.normalized()
         : Vector2(0, 1);
     final back = -aim;
     final side = Vector2(-aim.y, aim.x);
+    final slotIndex = companion.slotIndex;
+    final phase =
+        companion.formationPhase + _elapsed * (0.9 + slotIndex * 0.17);
+    final drift = side * math.sin(phase) * companion.wanderRadius +
+        back * math.cos(phase * 0.73) * (companion.wanderRadius * 0.55);
     if (count <= 1) {
-      return player.position + back * 54;
+      return player.position + back * (50 + math.sin(phase * 0.61) * 8) + drift;
     }
     final sideSign = slotIndex.isEven ? -1.0 : 1.0;
-    return player.position + back * 46 + side * 38 * sideSign;
+    return player.position +
+        back * (44 + math.cos(phase * 0.47) * 7) +
+        side * (34 + companion.wanderRadius * 0.4) * sideSign +
+        drift;
   }
 
   void _tryShadowGuardAttack(CompanionComponent companion, int level) {
@@ -2125,9 +2250,22 @@ class GrassSurvivorGame extends FlameGame {
 
     companion.faceToward(target.position);
     final roll = _random.nextDouble();
-    if (level >= 5 && roll < 0.22) {
+    final id = companion.companionId;
+    final dashChance = switch (id) {
+      'silver_blade_puppet' => 0.34,
+      'violet_void_imp' => 0.30,
+      'golden_shield_squire' => 0.18,
+      _ => 0.22,
+    };
+    final clawChance = switch (id) {
+      'golden_shield_squire' => 0.64,
+      'shadow_guard' => 0.50,
+      'violet_void_imp' => 0.42,
+      _ => 0.34,
+    };
+    if (level >= 5 && roll < dashChance) {
       _shadowGuardDashSlash(companion, target, level);
-    } else if (level >= 2 && roll < 0.48) {
+    } else if (level >= 2 && roll < clawChance) {
       _shadowGuardClaw(companion, target, level);
     } else {
       _shadowGuardBlade(companion, target, level);
@@ -2141,15 +2279,16 @@ class GrassSurvivorGame extends FlameGame {
 
   EnemyComponent? _pickShadowGuardTarget(CompanionComponent companion) {
     EnemyComponent? best;
-    var bestDistance = double.infinity;
+    var bestScore = double.infinity;
     for (final enemy in _nearbyEnemies(companion.position, 360)) {
       if (enemy.isDead) {
         continue;
       }
       final distance = enemy.position.distanceToSquared(companion.position);
-      if (distance < bestDistance) {
+      final score = distance * (0.72 + _random.nextDouble() * 0.56);
+      if (score < bestScore) {
         best = enemy;
-        bestDistance = distance;
+        bestScore = score;
       }
     }
     if (best != null) {
@@ -2161,9 +2300,10 @@ class GrassSurvivorGame extends FlameGame {
         continue;
       }
       final distance = enemy.position.distanceToSquared(player.position);
-      if (distance < bestDistance) {
+      final score = distance * (0.82 + _random.nextDouble() * 0.42);
+      if (score < bestScore) {
         best = enemy;
-        bestDistance = distance;
+        bestScore = score;
       }
     }
     return best;
@@ -2182,9 +2322,11 @@ class GrassSurvivorGame extends FlameGame {
       direction: direction,
       position: companion.position + direction.normalized() * 24,
       damage: _shadowGuardDamage(level, 0.72),
-      speed: 480,
-      range: 370,
-      style: ProjectileVisualStyle.forKind('shadow_guard'),
+      speed: companion.companionId == 'azure_drone' ? 560 : 480,
+      range: companion.companionId == 'emerald_spirit_archer' ? 430 : 370,
+      style: ProjectileVisualStyle.forKind(
+        _shadowGuardProjectileKind(companion.companionId),
+      ),
       skillTag: 'shadow_guard',
       pierceRemaining: level >= 4 ? 1 : 0,
     );
@@ -2205,7 +2347,7 @@ class GrassSurvivorGame extends FlameGame {
       origin: origin,
       radius: level >= 3 ? 48 : 38,
       damage: _shadowGuardDamage(level, 0.92),
-      color: const Color(0xFFB68CFF),
+      color: _shadowGuardVariantFor(companion.companionId).color,
       bossDamageMultiplier: 0.38,
       slowMultiplier: level >= 4 ? 0.88 : 1,
       slowDuration: 0.45,
@@ -2217,7 +2359,7 @@ class GrassSurvivorGame extends FlameGame {
         direction: normalized,
         radius: level >= 3 ? 70 : 56,
         arc: 1.48,
-        color: const Color(0xFFB68CFF),
+        color: _shadowGuardVariantFor(companion.companionId).accentColor,
       ),
     );
   }
@@ -2235,9 +2377,9 @@ class GrassSurvivorGame extends FlameGame {
     companion.dash(normalized, speed: 520, time: 0.12);
     _damageEnemiesInRadius(
       origin: target.position.clone(),
-      radius: 62,
+      radius: companion.companionId == 'violet_void_imp' ? 72 : 62,
       damage: _shadowGuardDamage(level, 1.15),
-      color: const Color(0xFF7B61FF),
+      color: _shadowGuardVariantFor(companion.companionId).accentColor,
       bossDamageMultiplier: 0.40,
       slowMultiplier: 0.82,
       slowDuration: 0.55,
@@ -2247,10 +2389,30 @@ class GrassSurvivorGame extends FlameGame {
       _ExpandingRing(
         center: target.position.clone(),
         radius: 82,
-        color: const Color(0xFFB68CFF),
+        color: _shadowGuardVariantFor(companion.companionId).color,
         strokeWidth: 3,
       ),
     );
+  }
+
+  _CompanionRuntimeVariant _shadowGuardVariantFor(String companionId) {
+    for (final variant in _shadowGuardVariants) {
+      if (variant.id == companionId) {
+        return variant;
+      }
+    }
+    return _shadowGuardVariants.first;
+  }
+
+  String _shadowGuardProjectileKind(String companionId) {
+    return switch (companionId) {
+      'azure_drone' => 'shadow_guard_azure',
+      'emerald_spirit_archer' => 'shadow_guard_emerald',
+      'golden_shield_squire' => 'shadow_guard_golden',
+      'silver_blade_puppet' => 'shadow_guard_silver',
+      'violet_void_imp' => 'shadow_guard_violet',
+      _ => 'shadow_guard',
+    };
   }
 
   int _shadowGuardDamage(int level, double multiplier) {
@@ -5572,6 +5734,19 @@ class _StageMapTheme {
   final Color groundOverlay;
   final List<_StageObstacle> obstacles;
 
+  static const _carAsset =
+      'assets/game/grass_game/images/obstacles/obstacle_abandoned_car.png';
+  static const _barrierAsset =
+      'assets/game/grass_game/images/obstacles/obstacle_concrete_barrier.png';
+  static const _leafyTreeAsset =
+      'assets/game/grass_game/images/obstacles/obstacle_leafy_tree.png';
+  static const _deadTreeAsset =
+      'assets/game/grass_game/images/obstacles/obstacle_dead_tree.png';
+  static const _boulderAsset =
+      'assets/game/grass_game/images/obstacles/obstacle_mossy_boulders.png';
+  static const _crystalRockAsset =
+      'assets/game/grass_game/images/obstacles/obstacle_crystal_rock.png';
+
   static _StageMapTheme forChapter(int chapter) {
     return switch (chapter.clamp(1, 10)) {
       1 => farm,
@@ -5599,22 +5774,32 @@ class _StageMapTheme {
         color: Color(0xCC6C4B2A),
         strokeColor: Color(0xAAE0B36B),
         detailColor: Color(0x66442D18),
+        assetPath: _barrierAsset,
+        visualScale: 1.18,
       ),
       _StageObstacle(
         rect: Rect.fromLTWH(230, -250, 170, 122),
         color: Color(0xCC79452F),
         strokeColor: Color(0xAAE27B56),
         detailColor: Color(0x665A2418),
+        assetPath: _deadTreeAsset,
+        visualScale: 1.35,
+        visualOffsetY: -16,
       ),
       _StageObstacle(
         rect: Rect.fromLTWH(-360, 160, 150, 62),
         color: Color(0xCC8B7340),
         strokeColor: Color(0xAAE2CE7E),
+        assetPath: _boulderAsset,
+        visualScale: 1.25,
       ),
       _StageObstacle(
         rect: Rect.fromLTWH(190, 170, 250, 52),
         color: Color(0xCC5C4329),
         strokeColor: Color(0xAAE0B36B),
+        assetPath: _barrierAsset,
+        visualScale: 1.08,
+        rotation: -0.08,
       ),
     ],
   );
@@ -5631,22 +5816,33 @@ class _StageMapTheme {
         color: Color(0xCC51565A),
         strokeColor: Color(0xAAAEB6BA),
         detailColor: Color(0x6640474B),
+        assetPath: _barrierAsset,
+        visualScale: 1.14,
       ),
       _StageObstacle(
         rect: Rect.fromLTWH(210, -220, 260, 62),
         color: Color(0xCC7D4A24),
         strokeColor: Color(0xAAFFB06D),
+        assetPath: _carAsset,
+        visualScale: 1.26,
+        rotation: 0.05,
       ),
       _StageObstacle(
         rect: Rect.fromLTWH(-320, 150, 190, 74),
         color: Color(0xCC4F5960),
         strokeColor: Color(0xAAAEB6BA),
+        assetPath: _barrierAsset,
+        visualScale: 1.18,
+        rotation: -0.06,
       ),
       _StageObstacle(
         rect: Rect.fromLTWH(170, 170, 160, 95),
         color: Color(0xCC7E3127),
         strokeColor: Color(0xAAFF8B6C),
         detailColor: Color(0x665A1F19),
+        assetPath: _carAsset,
+        visualScale: 1.34,
+        rotation: -0.14,
       ),
     ],
   );
@@ -5662,22 +5858,32 @@ class _StageMapTheme {
         rect: Rect.fromLTWH(-430, -270, 190, 118),
         color: Color(0xCC4C555C),
         strokeColor: Color(0xAA9EB1BD),
+        assetPath: _carAsset,
+        visualScale: 1.28,
+        rotation: -0.1,
       ),
       _StageObstacle(
         rect: Rect.fromLTWH(250, -260, 145, 145),
         color: Color(0xCC38424A),
         strokeColor: Color(0xAA8CA3B4),
         detailColor: Color(0x66303A42),
+        assetPath: _boulderAsset,
+        visualScale: 1.22,
       ),
       _StageObstacle(
         rect: Rect.fromLTWH(-330, 170, 235, 72),
         color: Color(0xCC50312C),
         strokeColor: Color(0xAAA86155),
+        assetPath: _barrierAsset,
+        visualScale: 1.14,
       ),
       _StageObstacle(
         rect: Rect.fromLTWH(170, 160, 245, 76),
         color: Color(0xCC4B5054),
         strokeColor: Color(0xAA9EB1BD),
+        assetPath: _barrierAsset,
+        visualScale: 1.12,
+        rotation: 0.06,
       ),
     ],
   );
@@ -5694,21 +5900,30 @@ class _StageMapTheme {
         color: Color(0xCC3D3F44),
         strokeColor: Color(0xAA8293A0),
         detailColor: Color(0x664B6D78),
+        assetPath: _boulderAsset,
+        visualScale: 1.14,
       ),
       _StageObstacle(
         rect: Rect.fromLTWH(220, -255, 165, 165),
         color: Color(0xCC30343A),
         strokeColor: Color(0xAA7D8FA0),
+        assetPath: _crystalRockAsset,
+        visualScale: 1.24,
+        visualOffsetY: -8,
       ),
       _StageObstacle(
         rect: Rect.fromLTWH(-320, 150, 160, 135),
         color: Color(0xCC33373D),
         strokeColor: Color(0xAA7D8FA0),
+        assetPath: _boulderAsset,
+        visualScale: 1.2,
       ),
       _StageObstacle(
         rect: Rect.fromLTWH(170, 180, 285, 62),
         color: Color(0xCC47545B),
         strokeColor: Color(0xAA87C6D2),
+        assetPath: _barrierAsset,
+        visualScale: 1.08,
       ),
     ],
   );
@@ -5725,22 +5940,33 @@ class _StageMapTheme {
         color: Color(0xCC3A2B1E),
         strokeColor: Color(0xAA8DA56B),
         detailColor: Color(0x664E7B4A),
+        assetPath: _deadTreeAsset,
+        visualScale: 1.35,
+        visualOffsetY: -14,
       ),
       _StageObstacle(
         rect: Rect.fromLTWH(230, -245, 190, 135),
         color: Color(0xCC2D442A),
         strokeColor: Color(0xAA8ED46F),
+        assetPath: _leafyTreeAsset,
+        visualScale: 1.34,
+        visualOffsetY: -20,
       ),
       _StageObstacle(
         rect: Rect.fromLTWH(-360, 175, 270, 64),
         color: Color(0xCC3A2B1E),
         strokeColor: Color(0xAA8DA56B),
+        assetPath: _barrierAsset,
+        visualScale: 1.06,
       ),
       _StageObstacle(
         rect: Rect.fromLTWH(150, 155, 160, 150),
         color: Color(0xCC263C27),
         strokeColor: Color(0xAA8ED46F),
         detailColor: Color(0x665FCB70),
+        assetPath: _leafyTreeAsset,
+        visualScale: 1.38,
+        visualOffsetY: -22,
       ),
     ],
   );
@@ -5756,22 +5982,31 @@ class _StageMapTheme {
         rect: Rect.fromLTWH(-435, -250, 245, 58),
         color: Color(0xCC5B4933),
         strokeColor: Color(0xAAC4A36B),
+        assetPath: _deadTreeAsset,
+        visualScale: 1.08,
       ),
       _StageObstacle(
         rect: Rect.fromLTWH(220, -250, 170, 130),
         color: Color(0xCC37515B),
         strokeColor: Color(0xAA83D6E2),
         detailColor: Color(0x66337C88),
+        assetPath: _crystalRockAsset,
+        visualScale: 1.22,
       ),
       _StageObstacle(
         rect: Rect.fromLTWH(-310, 165, 170, 95),
         color: Color(0xCC5B4933),
         strokeColor: Color(0xAAC4A36B),
+        assetPath: _boulderAsset,
+        visualScale: 1.2,
       ),
       _StageObstacle(
         rect: Rect.fromLTWH(160, 170, 250, 68),
         color: Color(0xCC284E57),
         strokeColor: Color(0xAA83D6E2),
+        assetPath: _barrierAsset,
+        visualScale: 1.08,
+        rotation: 0.08,
       ),
     ],
   );
@@ -5788,22 +6023,31 @@ class _StageMapTheme {
         color: Color(0xCCDDD5BE),
         strokeColor: Color(0xAAFFEEE0),
         detailColor: Color(0x66B84040),
+        assetPath: _deadTreeAsset,
+        visualScale: 1.24,
       ),
       _StageObstacle(
         rect: Rect.fromLTWH(230, -240, 220, 70),
         color: Color(0xCC8C2F2B),
         strokeColor: Color(0xAAFF7A6C),
+        assetPath: _carAsset,
+        visualScale: 1.24,
+        rotation: -0.08,
       ),
       _StageObstacle(
         rect: Rect.fromLTWH(-330, 165, 250, 70),
         color: Color(0xCC4F4F55),
         strokeColor: Color(0xAAAEB0B8),
+        assetPath: _barrierAsset,
+        visualScale: 1.08,
       ),
       _StageObstacle(
         rect: Rect.fromLTWH(150, 155, 170, 130),
         color: Color(0xCC34363A),
         strokeColor: Color(0xAAAEB0B8),
         detailColor: Color(0x66B84040),
+        assetPath: _boulderAsset,
+        visualScale: 1.2,
       ),
     ],
   );
@@ -5819,22 +6063,30 @@ class _StageMapTheme {
         rect: Rect.fromLTWH(-430, -240, 220, 80),
         color: Color(0xCCB9AC86),
         strokeColor: Color(0xAAE7D9AF),
+        assetPath: _barrierAsset,
+        visualScale: 1.12,
       ),
       _StageObstacle(
         rect: Rect.fromLTWH(230, -245, 165, 150),
         color: Color(0xCC6E654E),
         strokeColor: Color(0xAAD9CFAF),
         detailColor: Color(0x667BDAFF),
+        assetPath: _crystalRockAsset,
+        visualScale: 1.2,
       ),
       _StageObstacle(
         rect: Rect.fromLTWH(-320, 165, 180, 115),
         color: Color(0xCCB9AC86),
         strokeColor: Color(0xAAE7D9AF),
+        assetPath: _boulderAsset,
+        visualScale: 1.2,
       ),
       _StageObstacle(
         rect: Rect.fromLTWH(170, 170, 250, 62),
         color: Color(0xCC615846),
         strokeColor: Color(0xAAD9CFAF),
+        assetPath: _deadTreeAsset,
+        visualScale: 1.08,
       ),
     ],
   );
@@ -5851,22 +6103,30 @@ class _StageMapTheme {
         color: Color(0xCC353A59),
         strokeColor: Color(0xAA8BA1FF),
         detailColor: Color(0x667C4DFF),
+        assetPath: _crystalRockAsset,
+        visualScale: 1.18,
       ),
       _StageObstacle(
         rect: Rect.fromLTWH(230, -250, 180, 128),
         color: Color(0xCC4B3560),
         strokeColor: Color(0xAACE8BFF),
+        assetPath: _boulderAsset,
+        visualScale: 1.2,
       ),
       _StageObstacle(
         rect: Rect.fromLTWH(-330, 175, 240, 66),
         color: Color(0xCC2E405A),
         strokeColor: Color(0xAA7FE7FF),
+        assetPath: _barrierAsset,
+        visualScale: 1.08,
       ),
       _StageObstacle(
         rect: Rect.fromLTWH(170, 165, 150, 145),
         color: Color(0xCC4B3560),
         strokeColor: Color(0xAACE8BFF),
         detailColor: Color(0x667FE7FF),
+        assetPath: _crystalRockAsset,
+        visualScale: 1.22,
       ),
     ],
   );
@@ -5883,21 +6143,29 @@ class _StageMapTheme {
         color: Color(0xCC2E345F),
         strokeColor: Color(0xAA8EA1FF),
         detailColor: Color(0x668B4DFF),
+        assetPath: _crystalRockAsset,
+        visualScale: 1.16,
       ),
       _StageObstacle(
         rect: Rect.fromLTWH(230, -245, 170, 150),
         color: Color(0xCC4B2E5F),
         strokeColor: Color(0xAAD98BFF),
+        assetPath: _boulderAsset,
+        visualScale: 1.2,
       ),
       _StageObstacle(
         rect: Rect.fromLTWH(-330, 170, 170, 135),
         color: Color(0xCC293D57),
         strokeColor: Color(0xAA7FE7FF),
+        assetPath: _crystalRockAsset,
+        visualScale: 1.2,
       ),
       _StageObstacle(
         rect: Rect.fromLTWH(155, 175, 290, 58),
         color: Color(0xCC383D66),
         strokeColor: Color(0xAA8EA1FF),
+        assetPath: _barrierAsset,
+        visualScale: 1.04,
       ),
     ],
   );
@@ -5909,13 +6177,43 @@ class _StageObstacle {
     required this.color,
     required this.strokeColor,
     this.detailColor,
+    this.assetPath,
+    this.visualScale = 1.35,
+    this.visualOffsetY = 0,
+    this.rotation = 0,
   });
 
   final Rect rect;
   final Color color;
   final Color strokeColor;
   final Color? detailColor;
+  final String? assetPath;
+  final double visualScale;
+  final double visualOffsetY;
+  final double rotation;
   double get radius => 8;
+  Rect get visualRect {
+    final size = math.max(rect.width, rect.height) * visualScale;
+    return Rect.fromCenter(
+      center: rect.center.translate(0, visualOffsetY),
+      width: size,
+      height: size,
+    );
+  }
+}
+
+class _CompanionRuntimeVariant {
+  const _CompanionRuntimeVariant({
+    required this.id,
+    required this.animationSet,
+    required this.color,
+    required this.accentColor,
+  });
+
+  final String id;
+  final CompanionAnimationSet animationSet;
+  final Color color;
+  final Color accentColor;
 }
 
 class _DropRoll {

@@ -264,11 +264,11 @@ class GrassGameProgressController extends ChangeNotifier {
           baseAttackMultiplier: 1,
           colorValue: 0xFF49D17D,
           avatarAssetPath:
-              'assets/game/grass_game/images/player/avatar_soldier.webp',
+              'assets/game/grass_game/images/player/avatar_player_02.png',
           walkPreviewAssetPath:
-              'assets/game/grass_game/images/player/preview_male_walk.gif',
+              'assets/game/grass_game/images/player/preview_player_02_walk.gif',
           gameSpriteSheetAssetPath:
-              'assets/game/grass_game/images/player/player_soldier_walk_8dir_sheet.png',
+              'assets/game/grass_game/images/player/player_02_walk_8dir_sheet.png',
           isOwned: true,
         ),
       ],
@@ -356,7 +356,7 @@ class GrassGameProgressController extends ChangeNotifier {
     themeId: 'deathmatch',
     themeName: 'Cosmic Rift',
     sceneAssetPath: '$_stageImageRoot/stage_10_cosmos.webp',
-    battlefieldAssetPath: '$_stageImageRoot/stage_10_cosmos.webp',
+    battlefieldAssetPath: '',
     difficulty: 99,
     enemyCount: 0,
     enemyStrengthMultiplier: 1.25,
@@ -399,7 +399,7 @@ class GrassGameProgressController extends ChangeNotifier {
       themeId: _themeIdForChapter(chapter),
       themeName: _themeNameForChapter(chapter),
       sceneAssetPath: _sceneAssetForChapter(chapter),
-      battlefieldAssetPath: _sceneAssetForChapter(chapter),
+      battlefieldAssetPath: '',
       difficulty: chapter * 10 + stage,
       enemyCount: (56 + chapter * 13 + stage * 6) * 4,
       enemyStrengthMultiplier: double.parse(
@@ -457,7 +457,7 @@ class GrassGameProgressController extends ChangeNotifier {
       themeId: _farmTheme.id,
       themeName: _farmTheme.name,
       sceneAssetPath: _sceneAssetForChapter(1),
-      battlefieldAssetPath: _sceneAssetForChapter(1),
+      battlefieldAssetPath: '',
       difficulty: 10 + stage,
       enemyCount: enemyCounts[index],
       enemyStrengthMultiplier: strength[index],

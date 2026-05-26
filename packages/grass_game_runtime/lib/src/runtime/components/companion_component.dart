@@ -28,6 +28,8 @@ class CompanionComponent extends SpriteAnimationComponent {
     required this.slotIndex,
     required this.moveSpeed,
     required this.remainingLifetime,
+    required this.formationPhase,
+    required this.wanderRadius,
     required CompanionAnimationSet animationSet,
     required Vector2 position,
   })  : _walkAnimations = animationSet.createWalkAnimations(),
@@ -42,6 +44,8 @@ class CompanionComponent extends SpriteAnimationComponent {
   final String companionId;
   final int slotIndex;
   final double moveSpeed;
+  final double formationPhase;
+  final double wanderRadius;
   double remainingLifetime;
   double attackTimer = 0;
   final Map<EnemyFacing, SpriteAnimation> _walkAnimations;

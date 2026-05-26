@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/services.dart';
@@ -189,7 +188,7 @@ void main() {
         earlyStages.every(
           (stage) =>
               File(stage.sceneAssetPath).existsSync() &&
-              File(stage.battlefieldAssetPath).existsSync(),
+              stage.battlefieldAssetPath.isEmpty,
         ),
         isTrue,
       );
@@ -303,6 +302,39 @@ void main() {
           reason:
               '${character.id} walk sheet must not keep white background noise',
         );
+      }
+    });
+
+    test('shadow guard summon pool contains multiple companion sheets',
+        () async {
+      const companionSheets = [
+        'assets/game/grass_game/images/companions/'
+            'companion_shadow_guard_walk_8dir_sheet.png',
+        'assets/game/grass_game/images/companions/'
+            'companion_azure_drone_walk_8dir_sheet.png',
+        'assets/game/grass_game/images/companions/'
+            'companion_emerald_spirit_archer_walk_8dir_sheet.png',
+        'assets/game/grass_game/images/companions/'
+            'companion_golden_shield_squire_walk_8dir_sheet.png',
+        'assets/game/grass_game/images/companions/'
+            'companion_silver_blade_puppet_walk_8dir_sheet.png',
+        'assets/game/grass_game/images/companions/'
+            'companion_violet_void_imp_walk_8dir_sheet.png',
+      ];
+
+      expect(companionSheets, hasLength(greaterThan(1)));
+      for (final sheetPath in companionSheets) {
+        expect(File(sheetPath).existsSync(), isTrue);
+        final bytes = await rootBundle.load(sheetPath);
+        final codec = await ui.instantiateImageCodec(
+          bytes.buffer.asUint8List(),
+        );
+        final frame = await codec.getNextFrame();
+        addTearDown(frame.image.dispose);
+
+        expect(frame.image.width, 768, reason: sheetPath);
+        expect(frame.image.height, 1024, reason: sheetPath);
+        expect(await _whitePixelRatio(frame.image), lessThanOrEqualTo(0.035));
       }
     });
 
@@ -450,6 +482,37 @@ void main() {
           'assets/game/grass_game/images/guaishou/${id}_walk_8dir_sheet.webp',
         );
         expect(walkSheet.existsSync(), isTrue);
+      }
+    });
+
+    test('battlefield maps use generated placeholders until map art exists',
+        () async {
+      SharedPreferences.setMockInitialValues({});
+      final controller = GrassGameProgressController.defaults();
+      await controller.loadSavedProgress();
+
+      expect(
+        controller.stages.every((stage) => stage.sceneAssetPath.isNotEmpty),
+        isTrue,
+      );
+      expect(
+        controller.stages.every((stage) => stage.battlefieldAssetPath.isEmpty),
+        isTrue,
+      );
+    });
+
+    test('stage obstacle prop assets exist', () {
+      const obstacleAssets = [
+        'assets/game/grass_game/images/obstacles/obstacle_abandoned_car.png',
+        'assets/game/grass_game/images/obstacles/obstacle_concrete_barrier.png',
+        'assets/game/grass_game/images/obstacles/obstacle_leafy_tree.png',
+        'assets/game/grass_game/images/obstacles/obstacle_dead_tree.png',
+        'assets/game/grass_game/images/obstacles/obstacle_mossy_boulders.png',
+        'assets/game/grass_game/images/obstacles/obstacle_crystal_rock.png',
+      ];
+
+      for (final assetPath in obstacleAssets) {
+        expect(File(assetPath).existsSync(), isTrue, reason: assetPath);
       }
     });
 

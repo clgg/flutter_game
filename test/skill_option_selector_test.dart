@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:grass_game_domain/grass_game_domain.dart';
 
@@ -191,6 +193,24 @@ void main() {
         nextOptions.map((skill) => skill.id).toList(),
         isNot(firstOptions.map((skill) => skill.id).toList()),
       );
+    });
+
+    test('all selectable skills use existing single icon assets', () {
+      for (final skill in skills) {
+        final iconAssetPath = skill.iconAssetPath;
+
+        expect(iconAssetPath, isNotNull, reason: skill.id);
+        expect(
+          File(iconAssetPath!).existsSync(),
+          isTrue,
+          reason: '${skill.id} icon is missing: $iconAssetPath',
+        );
+        expect(
+          iconAssetPath,
+          isNot(contains(RegExp(r'_lv[1-5]\.'))),
+          reason: '${skill.id} should use one icon for every level',
+        );
+      }
     });
   });
 }

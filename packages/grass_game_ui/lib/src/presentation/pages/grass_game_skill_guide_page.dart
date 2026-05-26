@@ -3,8 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../application/skills/skill_guide_catalog.dart';
 
-const _fusionIconAsset =
-    'assets/game/grass_game/images/skills/skill_weapon_fusion_icon.png';
+const _skillAssetRoot = 'assets/game/grass_game/images/skills';
 
 class GrassGameSkillGuidePage extends StatefulWidget {
   const GrassGameSkillGuidePage({super.key});
@@ -67,58 +66,67 @@ class _GrassGameSkillGuidePageState extends State<GrassGameSkillGuidePage> {
 
 String _skillAssetForTree(String treeId) {
   return switch (treeId) {
-    'star_projectile' =>
-      'assets/game/grass_game/images/skills/skill_star_projectile.webp',
-    'orbit_blade' =>
-      'assets/game/grass_game/images/skills/skill_orbit_blade.webp',
-    'thunder_matrix' =>
-      'assets/game/grass_game/images/skills/skill_thunder_matrix.webp',
-    'void_magnet' =>
-      'assets/game/grass_game/images/skills/skill_void_magnet.webp',
-    'ice_nova' => 'assets/game/grass_game/images/skills/skill_ice_nova.webp',
-    'fire_trail' =>
-      'assets/game/grass_game/images/skills/skill_fire_trail.webp',
-    'poison_spore' =>
-      'assets/game/grass_game/images/skills/skill_poison_spore.webp',
-    'shadow_guard' =>
-      'assets/game/grass_game/images/skills/skill_shadow_guard.png',
-    'ultimate' => _fusionIconAsset,
-    _ => 'assets/game/grass_game/images/skills/skill_star_projectile.webp',
+    'star_projectile' => _normalSkillIcon('star_projectile'),
+    'orbit_blade' => _normalSkillIcon('orbit_blade'),
+    'thunder_matrix' => _normalSkillIcon('thunder_matrix'),
+    'void_magnet' => _normalSkillIcon('void_magnet'),
+    'ice_nova' => _normalSkillIcon('ice_nova'),
+    'fire_trail' => _normalSkillIcon('fire_trail'),
+    'poison_spore' => _normalSkillIcon('poison_spore'),
+    'shadow_guard' => _normalSkillIcon('shadow_guard'),
+    'ultimate' => '$_skillAssetRoot/skill_ultimate_star_judgement.png',
+    _ => _normalSkillIcon('star_projectile'),
   };
 }
 
+String _normalSkillIcon(String skillId) =>
+    '$_skillAssetRoot/skill_$skillId.png';
+
 String _skillAssetForNode(String nodeId) {
-  if (nodeId.startsWith('ultimate_')) {
-    return _fusionIconAsset;
+  const exactAssets = {
+    'evolve_star_barrage': '$_skillAssetRoot/skill_evolve_star_barrage.png',
+    'evolve_moon_wheel': '$_skillAssetRoot/skill_evolve_moon_wheel.png',
+    'evolve_thunder_chain': '$_skillAssetRoot/skill_evolve_thunder_chain.png',
+    'evolve_black_hole': '$_skillAssetRoot/skill_evolve_black_hole.png',
+    'evolve_permafrost_field':
+        '$_skillAssetRoot/skill_evolve_permafrost_field.png',
+    'evolve_inferno_path': '$_skillAssetRoot/skill_evolve_inferno_path.png',
+    'evolve_corrosive_plague':
+        '$_skillAssetRoot/skill_evolve_corrosive_plague.png',
+    'evolve_twin_shadow': '$_skillAssetRoot/skill_evolve_twin_shadow.png',
+    'ultimate_star_judgement':
+        '$_skillAssetRoot/skill_ultimate_star_judgement.png',
+    'ultimate_black_moon': '$_skillAssetRoot/skill_ultimate_black_moon.png',
+    'ultimate_frost_inferno':
+        '$_skillAssetRoot/skill_ultimate_frost_inferno.png',
+  };
+  final exactAsset = exactAssets[nodeId];
+  if (exactAsset != null) {
+    return exactAsset;
   }
-  if (nodeId.contains('orbit') || nodeId.contains('moon')) {
+
+  if (nodeId.startsWith('orbit_blade_')) {
     return _skillAssetForTree('orbit_blade');
   }
-  if (nodeId.contains('thunder') || nodeId.contains('lightning')) {
+  if (nodeId.startsWith('thunder_matrix_')) {
     return _skillAssetForTree('thunder_matrix');
   }
-  if (nodeId.contains('void') ||
-      nodeId.contains('black_hole') ||
-      nodeId.contains('black_moon')) {
+  if (nodeId.startsWith('void_magnet_')) {
     return _skillAssetForTree('void_magnet');
   }
-  if (nodeId.contains('ice') || nodeId.contains('frost')) {
+  if (nodeId.startsWith('ice_nova_')) {
     return _skillAssetForTree('ice_nova');
   }
-  if (nodeId.contains('fire') || nodeId.contains('inferno')) {
+  if (nodeId.startsWith('fire_trail_')) {
     return _skillAssetForTree('fire_trail');
   }
-  if (nodeId.contains('poison') ||
-      nodeId.contains('spore') ||
-      nodeId.contains('plague')) {
+  if (nodeId.startsWith('poison_spore_')) {
     return _skillAssetForTree('poison_spore');
   }
-  if (nodeId.contains('shadow')) {
+  if (nodeId.startsWith('shadow_guard_')) {
     return _skillAssetForTree('shadow_guard');
   }
-  if (nodeId.contains('star') ||
-      nodeId.contains('barrage') ||
-      nodeId.contains('judgement')) {
+  if (nodeId.startsWith('star_projectile_')) {
     return _skillAssetForTree('star_projectile');
   }
   return _skillAssetForTree('star_projectile');
