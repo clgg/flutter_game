@@ -49,7 +49,20 @@ frameH = 128
 
 ## 3. 8 方向行顺序
 
-所有 `*_8dir_sheet.png` 都使用同一行顺序：
+所有 `*_8dir_sheet.png` 都使用同一行顺序。代码中的 `PlayerFacing` 和 `EnemyFacing` 与图片行号一一对应：
+
+| 图片行号 | 代码方向 | 屏幕移动方向 | 素材朝向要求 |
+| ---: | --- | --- | --- |
+| 0 | `front` | 向下 | 面向屏幕下方 / 正面 |
+| 1 | `frontRight` | 向右下 | 面向右下 |
+| 2 | `right` | 向右 | 面向右侧 |
+| 3 | `backRight` | 向右上 | 面向右上 |
+| 4 | `back` | 向上 | 面向屏幕上方 / 背面 |
+| 5 | `backLeft` | 向左上 | 面向左上 |
+| 6 | `left` | 向左 | 面向左侧 |
+| 7 | `frontLeft` | 向左下 | 面向左下 |
+
+等价英文行顺序：
 
 ```text
 row 0: front/down
@@ -63,6 +76,8 @@ row 7: down_left
 ```
 
 每行帧数由图片宽度决定。当前人物、怪兽和动物小怪都是 6 帧；帧顺序从左到右播放。
+
+新增人物或怪物时，必须先按上表确认每一行对应方向。不要把第 1 行当作背面，也不要沿用旧 4 方向素材的 `front/back/left/right` 排列直接入库。
 
 ## 4. 格内安全区
 
@@ -154,8 +169,8 @@ target column 1 <- source column 3
 
 ```text
 Generate a transparent PNG spritesheet for a Flutter + Flame top-down survivor game character.
-Canvas size must be exactly 256x1024 pixels.
-The sheet must be a fixed grid: 2 columns and 8 rows, each cell exactly 128x128 pixels.
+Canvas size must be exactly 768x1024 pixels.
+The sheet must be a fixed grid: 6 columns and 8 rows, each cell exactly 128x128 pixels.
 Do not draw grid lines.
 Each character frame must stay fully inside its own 128x128 cell.
 No hair, head, weapon, hand, foot, cape, tail, horn, glow, shadow, or effect may cross cell boundaries.
@@ -166,15 +181,14 @@ Keep the feet aligned around y=116 to y=122 inside each cell.
 Use true transparent background.
 
 Rows:
-row 0 front/down walk, 2 frames: left foot forward, right foot forward.
-row 0 front/down walk, 2 frames: left foot forward, right foot forward.
-row 1 down_right walk, 2 frames: left foot forward, right foot forward.
-row 2 right walk, 2 frames: left foot forward, right foot forward.
-row 3 up_right walk, 2 frames: left foot forward, right foot forward.
-row 4 back/up walk, 2 frames: left foot forward, right foot forward.
-row 5 up_left walk, 2 frames: left foot forward, right foot forward.
-row 6 left walk, 2 frames: left foot forward, right foot forward.
-row 7 down_left walk, 2 frames: left foot forward, right foot forward.
+row 0 front/down walk, 6 frames.
+row 1 down_right walk, 6 frames.
+row 2 right walk, 6 frames.
+row 3 up_right walk, 6 frames.
+row 4 back/up walk, 6 frames.
+row 5 up_left walk, 6 frames.
+row 6 left walk, 6 frames.
+row 7 down_left walk, 6 frames.
 
 Use the attached old character spritesheet only as identity/style reference.
 Do not copy its bad cropping or spacing.
@@ -185,9 +199,9 @@ Output one complete spritesheet only.
 
 ## 8. 验收清单
 
-- 图片尺寸必须正好是 `256x1024`。
+- 图片尺寸必须正好是 `768x1024`。
 - 必须是透明 PNG。
-- 必须正好 `2列 x 8行`，单格 `128x128`。
+- 必须正好 `6列 x 8行`，单格 `128x128`。
 - 每个格子都要有内容。
 - 每个格子的四周边缘不能有主体贴边或越界残片。
 - 每个格子不能有重叠阴影、半透明叠影、攻击弧线或邻格残片。
@@ -196,10 +210,11 @@ Output one complete spritesheet only.
 
 ## 9. 当前工具
 
-把旧人物 `1536x1024 / 6x4 / 256x256` 行走图转换成 `256x1024 / 2x8 / 128x128` 运行时固定网格：
+人物和怪兽运行图都应输出为 `768x1024 / 6x8 / 128x128` 固定网格。旧转换脚本只用于历史素材修复；新增正式素材应优先按第 7 节直接生成 6 帧 8 方向图。
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File tools/grass_game_build_player_fixed_grid.ps1
+powershell -ExecutionPolicy Bypass -File tools/grass_game_build_guaishou_fixed_grid.ps1
 ```
 
 验收固定网格尺寸、空格和贴边风险：

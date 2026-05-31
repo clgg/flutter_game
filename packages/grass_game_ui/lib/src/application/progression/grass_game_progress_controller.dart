@@ -611,7 +611,7 @@ class GrassGameProgressController extends ChangeNotifier {
           _ => 'Shatter the bone altar and stop the endless reassembly.',
         },
       9 => switch (stage) {
-          1 => 'Investigate the first alien pod and survive the scout swarm.',
+          1 => 'Investigate the first alien pod and survive the alien swarm.',
           2 =>
             'Strange gravity bends the base lanes around broken radar dishes.',
           3 => 'Disable the beacon towers before more invaders land.',
