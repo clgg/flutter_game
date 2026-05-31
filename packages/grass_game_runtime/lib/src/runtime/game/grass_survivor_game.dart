@@ -3792,24 +3792,14 @@ class GrassSurvivorGame extends FlameGame {
       if (distanceSquared > hitRadius * hitRadius) {
         continue;
       }
-      final flatDamage = beam.flatDamage;
-      final damage = flatDamage == null
-          ? math.max(
-              1,
-              (enemy.hp *
-                      (enemy.enemyId == 'boss'
-                          ? beam.bossHpDamageRatio
-                          : beam.normalHpDamageRatio))
-                  .ceil(),
-            )
-          : math.max(
-              1,
-              (flatDamage *
-                      (enemy.enemyId == 'boss'
-                          ? beam.bossFlatDamageMultiplier
-                          : 1))
-                  .ceil(),
-            );
+      final damage = math.max(
+        1,
+        (enemy.hp *
+                (enemy.enemyId == 'boss'
+                    ? beam.bossHpDamageRatio
+                    : beam.normalHpDamageRatio))
+            .ceil(),
+      );
       enemy.takeDamage(damage);
       hitCount++;
     }
@@ -5465,8 +5455,6 @@ class _ChargedUltimateBeam {
     this.spinTurns = 5,
     this.normalHpDamageRatio = 0.50,
     this.bossHpDamageRatio = 0.10,
-    this.flatDamage,
-    this.bossFlatDamageMultiplier = 0.35,
     this.glowColor = const Color(0xFFFFD36E),
     this.bodyColor = const Color(0xFFFFF2A6),
     this.coreColor = const Color(0xFFFFFFFF),
@@ -5481,8 +5469,6 @@ class _ChargedUltimateBeam {
   final double spinTurns;
   final double normalHpDamageRatio;
   final double bossHpDamageRatio;
-  final int? flatDamage;
-  final double bossFlatDamageMultiplier;
   final Color glowColor;
   final Color bodyColor;
   final Color coreColor;
